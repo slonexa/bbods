@@ -85,10 +85,12 @@ def main():
                 print(f"\n-- Cross-platform matches (Auto Targets + Map): {len(cross_matches)}")
                 
                 if cross_matches:
-                    cross_results = engine.process_matches(cross_matches, min_spread=0.0)
+                    cross_results = engine.process_matches(cross_matches, min_spread=0.0, poly_data=poly_data)
                     for xr in cross_results:
                         time_info = f" [{xr.get('time_warning', '')}]" if xr.get("time_warning") else ""
-                        print(f"   {xr['title']}: spread={xr['spread_after_fees']*100:.2f}% (Bybit={xr['prob_a']*100:.1f}%, Poly={xr['prob_b']*100:.1f}%){time_info}")
+                        synth_info = " [SYNTH_PRICE]" if xr.get("opp_price_is_synthetic") else ""
+                        arb_status = " [SUREBET!]" if xr.get("is_arb") else (" [TIME-RISKY ARB]" if xr.get("is_arb_time_risky") else "")
+                        print(f"   {xr['title']}: spread={xr['spread_after_fees']*100:.2f}% (Bybit={xr['prob_a']*100:.1f}%, Poly={xr['prob_b']*100:.1f}%){time_info}{synth_info}{arb_status}")
                     all_spreads.extend(cross_results)
                 
                 # 3. Save all to DB

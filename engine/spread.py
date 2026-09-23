@@ -1,13 +1,22 @@
 from typing import Dict, Any, Tuple, List
 
+MAX_TIME_DIFF_HOURS = 0.5  # Events with greater difference are not considered a true surebet
+
 class SpreadEngine:
-    def __init__(self, fee_a: float = 0.0, fee_b: float = 0.0, slippage: float = 0.0):
+    def __init__(
+        self, 
+        fee_a: float = 0.0, 
+        fee_b: float = 0.0, 
+        slippage: float = 0.0, 
+        max_time_diff_hours: float = MAX_TIME_DIFF_HOURS
+    ):
         # Polymarket has 0 fees generally (except for limit orders sometimes, or gas fees)
         # Bybit might have trading fees (e.g., 0.1%).
         # Slippage depends on liquidity. We can set defaults for MVP.
         self.fee_a = fee_a
         self.fee_b = fee_b
         self.slippage = slippage
+        self.max_time_diff_hours = max_time_diff_hours
 
     def calculate_spread(self, event_a: Dict[str, Any], event_b: Dict[str, Any]) -> float:
         """
@@ -86,22 +95,35 @@ class SpreadEngine:
             "stake_neg_pct": round(stake_neg_pct, 4)
         }
 
-    def process_matches(self, matches: List[Tuple[Dict, Dict]], min_spread: float = 0.0) -> List[Dict]:
+    def process_matches(
+        self, 
+        matches: List[Tuple[Dict, Dict]], 
+        min_spread: float = 0.0, 
+        poly_data: List[Dict] = None
+    ) -> List[Dict]:
         """
         Calculates spread and true Dutch Book hedging for cross-platform matches.
         
         True cross-platform hedge logic:
           Leg A: Buy contract on Bybit (odds = O_a, cost = 1/O_a)
-          Leg B: Buy complementary contract on Polymarket (price = 1 - P_match, cost = 1 - P_match)
+          Leg B: Buy complementary contract on Polymarket (price of opp outcome in poly_data)
           Total Hedge Cost = cost_a + cost_b_opp
-          - If Total Cost < 1.0 (after fees): TRUE GUARANTEED ARBITRAGE (Surebet)!
-          - If Total Cost >= 1.0: Equal-payout hedge with known house margin.
-          
-        Stakes for equal payout on both outcomes:
-          Stake_A = Total_Bankroll * (cost_a / Total_Cost)
-          Stake_B = Total_Bankroll * (cost_b_opp / Total_Cost)
-          Payout_A = Payout_B = Total_Bankroll / Total_Cost
+          - If Total Cost < 1.0 (after fees) AND settlement time matches: TRUE GUARANTEED ARBITRAGE (Surebet)!
+          - If time differs > max_time_diff_hours: flagged as is_arb_time_risky (not guaranteed surebet).
         """
+        poly_lookup = {}
+        if poly_data:
+            for item in poly_data:
+                mid = str(item.get("market_id", ""))
+                out = (item.get("outcome") or "").strip().upper()
+                poly_lookup[mid.upper()] = item
+                if "-" in mid:
+                    base_id = mid.rsplit("-", 1)[0].strip()
+                    poly_lookup[(base_id.upper(), out)] = item
+                raw_t = item.get("raw_title") or ""
+                if raw_t:
+                    poly_lookup[(raw_t.strip().lower(), out)] = item
+
         results = []
         for ea, eb in matches:
             spread = self.calculate_spread(ea, eb)
@@ -144,14 +166,35 @@ class SpreadEngine:
 
                 poly_out = poly_ev.get("outcome", outcome_b).upper()
                 opp_poly_out = "NO" if poly_out == "YES" else "YES"
-                cost_poly_opp = max(0.001, round(1.0 - prob_poly, 4))
-                odds_poly_opp = round(1.0 / cost_poly_opp, 4)
+
+                opp_item = None
+                poly_market_id = str(poly_ev.get("market_id", ""))
+                if poly_lookup and poly_market_id:
+                    if "-" in poly_market_id:
+                        base_id = poly_market_id.rsplit("-", 1)[0].strip()
+                        opp_item = poly_lookup.get((base_id.upper(), opp_poly_out)) or poly_lookup.get(f"{base_id}-{opp_poly_out}".upper())
+                    if not opp_item:
+                        raw_t = poly_ev.get("raw_title") or ""
+                        if raw_t:
+                            opp_item = poly_lookup.get((raw_t.strip().lower(), opp_poly_out))
+
+                if opp_item and opp_item.get("implied_probability", 0) > 0:
+                    cost_poly_opp = float(opp_item["implied_probability"])
+                    opp_price_is_synthetic = False
+                else:
+                    cost_poly_opp = max(0.001, round(1.0 - prob_poly, 4))
+                    opp_price_is_synthetic = True
+
+                odds_poly_opp = round(1.0 / cost_poly_opp, 4) if cost_poly_opp > 0 else 0.0
 
                 # --- 3. True Combined Hedge Cost & Margin ---
                 real_hedge_cost = round(cost_bybit + cost_poly_opp, 4)
                 total_fees = self.fee_a + self.fee_b + self.slippage
                 hedge_margin = round(1.0 - real_hedge_cost - total_fees, 4)
-                is_cross_arb = hedge_margin > 0
+
+                time_safe = abs(time_diff_h) <= self.max_time_diff_hours
+                is_cross_arb = (hedge_margin > 0) and time_safe
+                is_arb_time_risky = (hedge_margin > 0) and (not time_safe)
 
                 # --- 4. Mathematical Stakes (Guarantees Equal Payout) ---
                 stake_bybit_pct = round(cost_bybit / real_hedge_cost, 4) if real_hedge_cost > 0 else 0.5
@@ -188,6 +231,8 @@ class SpreadEngine:
                     "hedge_cost": real_hedge_cost,
                     "hedge_margin": hedge_margin,
                     "is_arb": is_cross_arb,
+                    "is_arb_time_risky": is_arb_time_risky,
+                    "opp_price_is_synthetic": opp_price_is_synthetic,
                     "action_a": action_a,
                     "action_b": action_b,
                     "action_summary": action_summary,

@@ -2214,6 +2214,8 @@
 
                 const isSelected = selectedMarketKey && (selectedMarketKey === rowKey || selectedMarketKey === row.title);
                 const isTrueArb = (row.is_arb === 1 || row.is_arb === true) && (row.hedge_margin > 0);
+                const isTimeRisky = (row.is_arb_time_risky === 1 || row.is_arb_time_risky === true) && (row.hedge_margin > 0);
+                const isSynthetic = (row.opp_price_is_synthetic === 1 || row.opp_price_is_synthetic === true);
                 const isStarred = starredMarkets.has(rowKey);
 
                 if (isSelected) tr.classList.add('row-selected');
@@ -2236,7 +2238,12 @@
                 const probB_num = 100 - probA_num;
 
                 const coinBadge = getCoinBadge(row.title);
-                const arbBadge = isTrueArb ? '<span class="badge badge-arb" style="margin-left:5px;">⚡ ВИЛКА</span>' : '';
+                let arbBadge = '';
+                if (isTrueArb) {
+                    arbBadge = '<span class="badge badge-arb" style="margin-left:5px;">⚡ ВИЛКА</span>';
+                } else if (isTimeRisky) {
+                    arbBadge = '<span class="badge badge-gap" style="margin-left:5px;" title="Хедж > 0%, но разница экспираций > 0.5ч">⚠️ РИСК ВРЕМЕНИ</span>';
+                }
                 const pinBadge = isSelected ? '<span class="pin-badge">📌 ВЫБРАНО</span>' : '';
                 const starClass = isStarred ? 'star-toggle starred' : 'star-toggle';
 
@@ -2264,13 +2271,14 @@
                        </a>`
                     : `<div class="exchange-box-cell"><span class="odds" style="color:var(--bybit-color);">${oddsA}</span><span class="prob-val">${probA}</span></div>`;
 
+                const synthBadge = isSynthetic ? '<span style="font-size:8.5px; color:var(--accent-amber);" title="Синтетическая цена (1 - P)">~синтет</span>' : '';
                 // Consolidated Poly Cell (Odds + Prob + Link)
                 const polyCellHtml = row.url_b 
                     ? `<a href="${row.url_b}" target="_blank" class="exchange-box-cell" onclick="event.stopPropagation();" title="Открыть Poly ↗">
-                         <div class="exchange-box-top"><span class="odds" style="color:var(--poly-color);">${oddsB}</span><span style="font-size:9px; color:var(--text-muted);">↗</span></div>
+                         <div class="exchange-box-top"><span class="odds" style="color:var(--poly-color);">${oddsB}</span><span style="font-size:9px; color:var(--text-muted);">↗</span> ${synthBadge}</div>
                          <span class="prob-val">${probB}</span>
                        </a>`
-                    : `<div class="exchange-box-cell"><span class="odds" style="color:var(--poly-color);">${oddsB}</span><span class="prob-val">${probB}</span></div>`;
+                    : `<div class="exchange-box-cell"><div class="exchange-box-top"><span class="odds" style="color:var(--poly-color);">${oddsB}</span> ${synthBadge}</div><span class="prob-val">${probB}</span></div>`;
 
                 const sparklineTd = testModeEnabled 
                     ? `<td style="text-align:center;">${renderSparkline(rowKey, row.spread_after_fees || 0)}</td>` 
@@ -2344,6 +2352,7 @@
             }
 
             const isTrueArb = (row.is_arb === 1 || row.is_arb === true) && (row.hedge_margin > 0);
+            const isTimeRisky = (row.is_arb_time_risky === 1 || row.is_arb_time_risky === true) && (row.hedge_margin > 0);
             let calcHtml = '';
 
             if (row.hedge_cost && row.hedge_cost > 0) {
@@ -2353,6 +2362,8 @@
 
                 if (isTrueArb) {
                     calcHtml = `<div class="trade-calc" style="background:rgba(16,185,129,0.15); border-color:var(--accent-emerald); color:var(--accent-emerald); font-weight:700;">🔥 $${bank} ➔ $${payout} (+${profitPct}% / +$${profitVal})</div>`;
+                } else if (isTimeRisky) {
+                    calcHtml = `<div class="trade-calc" style="background:rgba(245,158,11,0.12); border-color:var(--accent-amber); color:var(--accent-amber); font-weight:600;" title="Расчетная прибыль при одновременном закрытии (риск несовпадения экспираций)">⚠️ $${bank} ➔ $${payout} (+${profitPct}%)</div>`;
                 } else {
                     calcHtml = `<div class="trade-calc">💡 $${bank} ➔ Баланс: $${payout}</div>`;
                 }
@@ -2430,7 +2441,7 @@
 
                 const spreadPct = (item.spread_after_fees * 100).toFixed(2) + '%';
                 const time = new Date(item.detected_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                const isArb = (item.is_arb && item.hedge_margin > 0) ? ' <span class="badge badge-arb" style="font-size:9px;">ВИЛКА</span>' : '';
+                const isArb = (item.is_arb && item.hedge_margin > 0) ? ' <span class="badge badge-arb" style="font-size:9px;">ВИЛКА</span>' : (item.is_arb_time_risky ? ' <span class="badge badge-gap" style="font-size:8.5px;">⚠️ РИСК ВРЕМЕНИ</span>' : '');
                 const gap = item.time_diff_hours ? ` (${Math.abs(item.time_diff_hours).toFixed(0)}ч)` : '';
                 const pinBadge = isSelected ? '<span class="pin-badge" style="font-size:8.5px; padding:1px 3px;">📌 ВЫБРАНО</span>' : '';
                 const coinBadge = getCoinBadge(item.title);

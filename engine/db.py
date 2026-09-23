@@ -43,7 +43,9 @@ class Database:
                 action_a TEXT DEFAULT '',
                 action_b TEXT DEFAULT '',
                 hedge_cost REAL DEFAULT 0,
-                hedge_margin REAL DEFAULT 0
+                hedge_margin REAL DEFAULT 0,
+                is_arb_time_risky INTEGER DEFAULT 0,
+                opp_price_is_synthetic INTEGER DEFAULT 0
             )
         ''')
         
@@ -78,7 +80,9 @@ class Database:
             ("action_a", "TEXT DEFAULT ''"),
             ("action_b", "TEXT DEFAULT ''"),
             ("hedge_cost", "REAL DEFAULT 0"),
-            ("hedge_margin", "REAL DEFAULT 0")
+            ("hedge_margin", "REAL DEFAULT 0"),
+            ("is_arb_time_risky", "INTEGER DEFAULT 0"),
+            ("opp_price_is_synthetic", "INTEGER DEFAULT 0")
         ]:
             try:
                 cursor.execute(f"ALTER TABLE spreads ADD COLUMN {col_name} {col_type}")
@@ -123,8 +127,9 @@ class Database:
                     prob_sum, implied_cost, overround, is_arb, stake_a, stake_b,
                     time_diff_hours, time_warning,
                     action_summary, action_a, action_b,
-                    hedge_cost, hedge_margin
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    hedge_cost, hedge_margin,
+                    is_arb_time_risky, opp_price_is_synthetic
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 s["event_key"],
                 s["platform_a"],
@@ -150,7 +155,9 @@ class Database:
                 s.get("action_a", ""),
                 s.get("action_b", ""),
                 s.get("hedge_cost", 0.0),
-                s.get("hedge_margin", 0.0)
+                s.get("hedge_margin", 0.0),
+                1 if s.get("is_arb_time_risky", False) else 0,
+                1 if s.get("opp_price_is_synthetic", False) else 0
             ))
             
         conn.commit()
