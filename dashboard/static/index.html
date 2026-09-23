@@ -1,0 +1,2815 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ODDS PULSE — Crypto Arbitrage Terminal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #07090e;
+            --bg-card: rgba(17, 23, 34, 0.75);
+            --bg-card-hover: rgba(23, 32, 48, 0.85);
+            --bg-elevated: #151c28;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(56, 189, 248, 0.35);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-cyan: #38bdf8;
+            --accent-blue: #3b82f6;
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+            --accent-purple: #a855f7;
+            --bybit-color: #f7a600;
+            --poly-color: #2e5cff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            padding: 16px 20px;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(ellipse at 15% 0%, rgba(56, 189, 248, 0.07) 0%, transparent 50%),
+                radial-gradient(ellipse at 85% 10%, rgba(168, 85, 247, 0.06) 0%, transparent 45%);
+            background-attachment: fixed;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* ─── Top Navbar ─── */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 12px 20px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+        }
+
+        .brand-group {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-logo-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #0284c7, #6366f1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.45);
+        }
+
+        .brand-title {
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #f8fafc 20%, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-sub {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        .badge-live {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--accent-emerald);
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .pulse-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: var(--accent-emerald);
+            box-shadow: 0 0 8px var(--accent-emerald);
+            animation: pulse-live 1.8s infinite;
+        }
+
+        @keyframes pulse-live {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-nav {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-nav:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-nav.active {
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+        }
+
+        .btn-test-branch {
+            background: rgba(168, 85, 247, 0.12);
+            border: 1px solid rgba(168, 85, 247, 0.35);
+            color: #d8b4fe;
+        }
+
+        .btn-test-branch:hover {
+            background: rgba(168, 85, 247, 0.22);
+            color: #fff;
+        }
+
+        .btn-test-branch.active {
+            background: rgba(168, 85, 247, 0.25);
+            border-color: var(--accent-purple);
+            color: #fff;
+            box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+        }
+
+        .btn-clear-selection {
+            background: rgba(244, 63, 94, 0.12);
+            border: 1px solid rgba(244, 63, 94, 0.35);
+            color: var(--accent-rose);
+        }
+
+        .btn-clear-selection:hover {
+            background: rgba(244, 63, 94, 0.22);
+            color: #fff;
+        }
+
+        /* ─── Live Ticker Tape ─── */
+        .ticker-tape-wrap {
+            display: flex;
+            align-items: center;
+            background: rgba(14, 20, 30, 0.9);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 6px 14px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            overflow: hidden;
+        }
+
+        .ticker-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            white-space: nowrap;
+            margin-right: 12px;
+            padding-right: 12px;
+            border-right: 1px solid var(--border-subtle);
+        }
+
+        .ticker-content {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11.5px;
+            flex: 1;
+        }
+
+        .ticker-item {
+            display: inline-block;
+            margin-right: 24px;
+        }
+
+        .ticker-item b {
+            color: var(--text-primary);
+        }
+
+        /* ─── KPI Stats Strip ─── */
+        .kpi-strip {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 11px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.16);
+        }
+
+        .kpi-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent-blue);
+        }
+
+        .kpi-card.kpi-arbs::after { background: var(--accent-emerald); }
+        .kpi-card.kpi-high::after { background: var(--accent-amber); }
+        .kpi-card.kpi-sync::after { background: var(--accent-purple); }
+
+        .kpi-label {
+            font-size: 10.5px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 3px;
+        }
+
+        .kpi-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .kpi-sub {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-top: 1px;
+        }
+
+        .kpi-icon {
+            font-size: 24px;
+            opacity: 0.7;
+        }
+
+        /* ─── Bankroll & Audio Control Bar ─── */
+        .bankroll-panel {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 10px 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .bankroll-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .bankroll-input-wrap {
+            display: inline-flex;
+            align-items: center;
+            background: #090d14;
+            border: 1px solid var(--border-glow);
+            border-radius: 6px;
+            padding: 3px 9px;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
+        }
+
+        .bankroll-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--accent-cyan);
+            font-size: 15px;
+            font-weight: 700;
+            width: 65px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .preset-group {
+            display: inline-flex;
+            gap: 5px;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            border-radius: 6px;
+            padding: 4px 9px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .preset-btn.active {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+        }
+
+        /* ─── Search & Filters Bar ─── */
+        .filter-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 10px 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .search-box-wrap {
+            position: relative;
+            flex: 1;
+            min-width: 220px;
+            max-width: 360px;
+        }
+
+        .search-input {
+            width: 100%;
+            background: #090d14;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 7px 12px 7px 32px;
+            color: var(--text-primary);
+            font-size: 12.5px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .filter-chips {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .chip-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            border-radius: 20px;
+            padding: 4px 11px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.15s ease;
+        }
+
+        .chip-btn:hover {
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .chip-btn.active {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .chip-btn.chip-arb.active {
+            background: rgba(16, 185, 129, 0.16);
+            border-color: var(--accent-emerald);
+            color: var(--accent-emerald);
+        }
+
+        .chip-btn.chip-star.active {
+            background: rgba(245, 158, 11, 0.16);
+            border-color: var(--accent-amber);
+            color: var(--accent-amber);
+        }
+
+        /* ─── Top Opportunities Carousel ─── */
+        .top-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .top-scroll-container {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 6px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+        }
+
+        .top-scroll-container::-webkit-scrollbar {
+            height: 6px;
+        }
+        .top-scroll-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+        }
+
+        .top-card {
+            background: rgba(22, 29, 42, 0.85);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 11px 13px;
+            min-width: 260px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .top-card:hover {
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            background: rgba(28, 38, 54, 0.95);
+        }
+
+        .card-selected {
+            border-color: var(--accent-cyan) !important;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.35) !important;
+            background: rgba(20, 36, 56, 0.95) !important;
+        }
+
+        /* ─── Navigation Tabs & Quick Sorters ─── */
+        .tab-bar-wrap {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 12px 0 10px;
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 8px;
+        }
+
+        .tab-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            padding: 7px 14px;
+            color: var(--text-secondary);
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn-active {
+            color: var(--accent-cyan);
+            background: rgba(56, 189, 248, 0.12);
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+
+        /* ─── Tables ─── */
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            background: var(--bg-card);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+            margin-bottom: 24px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 10px 13px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 12.5px;
+            vertical-align: middle;
+        }
+
+        body.mode-dense th, body.mode-dense td {
+            padding: 6px 10px;
+            font-size: 11.5px;
+        }
+
+        th {
+            background-color: rgba(14, 19, 28, 0.95);
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 10.5px;
+            letter-spacing: 0.6px;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        tr {
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+
+        tr:hover {
+            background-color: rgba(255, 255, 255, 0.035);
+        }
+
+        tr.row-selected {
+            background-color: rgba(20, 38, 60, 0.8) !important;
+            box-shadow: inset 4px 0 0 var(--accent-cyan);
+        }
+
+        tr.row-arb-highlight {
+            background-color: rgba(16, 185, 129, 0.04);
+        }
+
+        .spread-positive {
+            color: var(--accent-emerald);
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .spread-negative {
+            color: var(--accent-rose);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .odds {
+            color: #c084fc;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .prob-val {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-secondary);
+        }
+
+        /* ─── Real Exchange Badges & Official Logos from Folder ─── */
+        .exchange-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 11.5px;
+            letter-spacing: 0.4px;
+            white-space: nowrap;
+        }
+
+        .exchange-badge-bybit {
+            background: rgba(247, 166, 0, 0.12);
+            border: 1px solid rgba(247, 166, 0, 0.35);
+            color: #f7a600;
+        }
+
+        .exchange-badge-poly {
+            background: rgba(46, 92, 255, 0.14);
+            border: 1px solid rgba(46, 92, 255, 0.4);
+            color: #7096ff;
+        }
+
+        .btn-exchange {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .btn-exchange:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            text-decoration: none;
+        }
+
+        .btn-bybit {
+            background: #f7a600;
+            color: #0b0e14 !important;
+            box-shadow: 0 0 8px rgba(247, 166, 0, 0.3);
+        }
+
+        .btn-poly {
+            background: #2e5cff;
+            color: #ffffff !important;
+            box-shadow: 0 0 8px rgba(46, 92, 255, 0.3);
+        }
+
+        .btn-dual {
+            background: linear-gradient(135deg, #f7a600, #2e5cff);
+            color: #ffffff !important;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+        }
+
+        /* ─── Badges & Tags ─── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+
+        .badge-arb {
+            background: rgba(16, 185, 129, 0.18);
+            color: var(--accent-emerald);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
+        }
+
+        .badge-over {
+            background: rgba(244, 63, 94, 0.15);
+            color: var(--accent-rose);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+        }
+
+        .badge-sync {
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--accent-emerald);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .badge-gap {
+            background: rgba(245, 158, 11, 0.12);
+            color: var(--accent-amber);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .pin-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 9.5px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            background: rgba(56, 189, 248, 0.18);
+            border: 1px solid var(--accent-cyan);
+            padding: 1px 5px;
+            border-radius: 4px;
+            margin-left: 6px;
+        }
+
+        /* ─── Real Crypto Coins from Folder ─── */
+        .coin-img-icon {
+            width: 22px;
+            height: 22px;
+            margin-right: 7px;
+            vertical-align: middle;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .coin-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: 800;
+            flex-shrink: 0;
+            margin-right: 7px;
+            color: #fff;
+        }
+
+        .coin-sol { background: linear-gradient(135deg, #9945ff, #14f195); box-shadow: 0 0 6px rgba(20, 241, 149, 0.4); }
+        .coin-other { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+
+        /* ─── Probability Balance Visualizer Bar ─── */
+        .prob-bar-container {
+            width: 75px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+            display: flex;
+            margin: 4px auto 0;
+        }
+
+        .prob-bar-fill-bybit {
+            background: var(--bybit-color);
+            height: 100%;
+        }
+
+        .prob-bar-fill-poly {
+            background: var(--poly-color);
+            height: 100%;
+        }
+
+        /* ─── Trade Steps Breakdown ─── */
+        .trade-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 220px;
+        }
+
+        .trade-leg {
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .trade-leg-bybit {
+            background: rgba(247, 166, 0, 0.12);
+            border: 1px solid rgba(247, 166, 0, 0.35);
+            color: #ffb726;
+        }
+
+        .trade-leg-poly {
+            background: rgba(46, 92, 255, 0.14);
+            border: 1px solid rgba(46, 92, 255, 0.4);
+            color: #93c5fd;
+        }
+
+        .trade-calc {
+            font-size: 10.5px;
+            color: #93c5fd;
+            background: #090d14;
+            padding: 3px 7px;
+            border-radius: 4px;
+            border: 1px dashed rgba(255, 255, 255, 0.12);
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .trade-min-warn {
+            font-size: 10px;
+            color: #e3b341;
+            background: rgba(227, 179, 65, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid rgba(227, 179, 65, 0.3);
+            display: inline-block;
+        }
+
+        .action-btns-wrap {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 3px;
+        }
+
+        .btn-mini-tool {
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            font-size: 10px;
+            padding: 3px 7px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s;
+        }
+
+        .btn-mini-tool:hover {
+            color: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .btn-mini-paper {
+            background: rgba(168, 85, 247, 0.12);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            color: #d8b4fe;
+        }
+
+        .btn-mini-paper:hover {
+            background: rgba(168, 85, 247, 0.22);
+            border-color: var(--accent-purple);
+            color: #fff;
+        }
+
+        .star-toggle {
+            cursor: pointer;
+            font-size: 15px;
+            color: var(--text-muted);
+            transition: color 0.15s, transform 0.15s;
+        }
+
+        .star-toggle:hover {
+            transform: scale(1.2);
+            color: var(--accent-amber);
+        }
+
+        .star-toggle.starred {
+            color: var(--accent-amber);
+            text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+        }
+
+        /* ─── Modal Styles ─── */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-backdrop.show {
+            display: flex;
+        }
+
+        .modal-box {
+            background: #111827;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 580px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 24px rgba(56, 189, 248, 0.2);
+            overflow: hidden;
+            animation: modal-enter 0.2s ease-out;
+        }
+
+        @keyframes modal-enter {
+            from { opacity: 0; transform: translateY(12px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 14px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .modal-order-card {
+            background: #090d14;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+        }
+
+        /* ─── Circular Progress Bar ─── */
+        .refresh-circle-wrap {
+            position: relative;
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .refresh-circle-svg {
+            transform: rotate(-90deg);
+        }
+
+        .circle-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.1);
+            stroke-width: 3;
+        }
+
+        .circle-progress {
+            fill: none;
+            stroke: var(--accent-cyan);
+            stroke-width: 3;
+            stroke-dasharray: 63;
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear;
+        }
+
+        /* ─── Toast Notification ─── */
+        .toast-msg {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: rgba(17, 24, 39, 0.95);
+            border: 1px solid var(--accent-purple);
+            color: #fff;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(168, 85, 247, 0.35);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 2000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.25s ease-out;
+            pointer-events: none;
+        }
+
+        .toast-msg.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ─── Top Navbar ─── -->
+    <header class="navbar">
+        <div class="brand-group">
+            <div class="brand-logo-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="#ffffff" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div>
+                <div class="brand-title">
+                    ODDS PULSE
+                    <span class="badge-live">
+                        <span class="pulse-dot"></span>
+                        LIVE
+                    </span>
+                </div>
+                <div class="brand-sub">Crypto Arbitrage Terminal • Bybit vs Polymarket</div>
+            </div>
+        </div>
+
+        <div class="nav-actions">
+            <!-- Countdown Ring & Status -->
+            <div style="display:flex; align-items:center; gap:8px; margin-right:6px;">
+                <div class="refresh-circle-wrap" title="Секунд до обновления котировок">
+                    <svg class="refresh-circle-svg" width="24" height="24" viewBox="0 0 24 24">
+                        <circle class="circle-bg" cx="12" cy="12" r="10" />
+                        <circle id="circle-progress" class="circle-progress" cx="12" cy="12" r="10" />
+                    </svg>
+                </div>
+                <span id="status" class="mono" style="font-size:12px; color:var(--accent-cyan);">Подключение...</span>
+            </div>
+
+            <!-- Auto-refresh Pause Toggle -->
+            <button id="btn-pause-refresh" class="btn-nav" onclick="toggleAutoRefresh()" title="Поставить обновление на паузу (Горячая клавиша: Space)">
+                <span id="pause-icon">⏸️</span>
+                <span id="pause-text">Пауза</span>
+            </button>
+
+            <!-- Dense Mode Toggle -->
+            <button id="btn-dense-mode" class="btn-nav" onclick="toggleDenseMode()" title="Переключить плотность строк (Горячая клавиша: D)">
+                📏 Плотный вид
+            </button>
+
+            <!-- Test Mode Branch Toggle -->
+            <button id="btn-test-mode" class="btn-nav btn-test-branch" onclick="toggleTestMode()" title="Включить экспериментальные функции: Демо-портфель, Спарклайны, Ползунок спреда">
+                🧪 Режим теста: <span id="test-mode-status">ВЫКЛ</span>
+            </button>
+
+            <!-- Desktop Push Notification Toggle -->
+            <button id="btn-push-notify" class="btn-nav" onclick="enablePushNotifications()" title="Уведомления на рабочий стол Windows при нахождении вилки">
+                🔔 Web Push
+            </button>
+
+            <!-- Audio Alerts Toggle -->
+            <button id="sound-toggle-btn" class="btn-nav" onclick="toggleSoundAlerts()" title="Звуковое оповещение при появлении арбитражной вилки">
+                🔕 Звук: ВЫКЛ
+            </button>
+
+            <!-- Export to CSV -->
+            <button class="btn-nav" onclick="exportToCSV()" title="Скачать срез котировок в CSV файл для Excel">
+                📥 CSV
+            </button>
+
+            <!-- Clear selection / unpin -->
+            <button id="btn-clear-sel" class="btn-nav btn-clear-selection" style="display:none;" onclick="clearSelection()" title="Снять выделение со страйка">
+                ✕ Снять пин
+            </button>
+        </div>
+    </header>
+
+    <!-- ─── Live Activity Ticker Tape ─── -->
+    <div class="ticker-tape-wrap">
+        <div class="ticker-label">
+            <span>⚡ ЛЕНТА СОБЫТИЙ:</span>
+        </div>
+        <div class="ticker-content" id="ticker-content">
+            <span class="ticker-item">🔄 Инициализация ленты сигналов...</span>
+        </div>
+    </div>
+
+    <!-- ─── KPI Metrics Strip ─── -->
+    <div class="kpi-strip">
+        <div class="kpi-card">
+            <div>
+                <div class="kpi-label">Мониторинг рынков</div>
+                <div class="kpi-value mono" id="kpi-total-markets">0</div>
+                <div class="kpi-sub">Синхронных страйков в базе</div>
+            </div>
+            <div class="kpi-icon">📊</div>
+        </div>
+        <div class="kpi-card kpi-arbs">
+            <div>
+                <div class="kpi-label">Вилок прямо сейчас</div>
+                <div class="kpi-value mono" id="kpi-active-arbs" style="color:var(--accent-emerald);">0</div>
+                <div class="kpi-sub">Гарантированная прибыль > 0%</div>
+            </div>
+            <div class="kpi-icon">⚡</div>
+        </div>
+        <div class="kpi-card kpi-high">
+            <div>
+                <div class="kpi-label">Макс. спред сессии</div>
+                <div class="kpi-value mono" id="kpi-max-spread" style="color:var(--accent-amber);">0.00%</div>
+                <div class="kpi-sub" id="kpi-max-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;">-</div>
+            </div>
+            <div class="kpi-icon">🏆</div>
+        </div>
+        <div class="kpi-card kpi-sync">
+            <div>
+                <div class="kpi-label">Синхронность дат</div>
+                <div class="kpi-value mono" id="kpi-sync-ratio" style="color:var(--accent-purple);">100%</div>
+                <div class="kpi-sub">Без временного риска экспирации</div>
+            </div>
+            <div class="kpi-icon">⏱️</div>
+        </div>
+    </div>
+
+    <!-- ─── Bankroll Calculator & Settings Panel ─── -->
+    <div class="bankroll-panel">
+        <div class="bankroll-controls">
+            <span style="font-weight:700; font-size:13px; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+                💰 Тестовый банк:
+            </span>
+            <div class="bankroll-input-wrap">
+                <span style="color:var(--text-muted); font-size:13px; margin-right:4px;">$</span>
+                <input id="bankroll-input" class="bankroll-input" type="number" min="1" step="1" value="20" oninput="setBankroll(this.value)">
+            </div>
+            <div class="preset-group">
+                <button class="preset-btn" data-val="10" onclick="setBankroll(10)">$10</button>
+                <button class="preset-btn active" data-val="20" onclick="setBankroll(20)">$20</button>
+                <button class="preset-btn" data-val="50" onclick="setBankroll(50)">$50</button>
+                <button class="preset-btn" data-val="100" onclick="setBankroll(100)">$100</button>
+                <button class="preset-btn" data-val="250" onclick="setBankroll(250)">$250</button>
+                <button class="preset-btn" data-val="500" onclick="setBankroll(500)">$500</button>
+                <button class="preset-btn" data-val="1000" onclick="setBankroll(1000)">$1000</button>
+            </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <div style="font-size:11px; color:var(--text-muted);">
+                Мин. ордер бирж: <b style="color:var(--text-secondary);">$1.00</b>
+            </div>
+            <button class="preset-btn" onclick="testSound()" title="Проверить звучание аудио-сигнала">
+                🔊 Тест звука
+            </button>
+        </div>
+    </div>
+
+    <!-- ─── Top Opportunities Carousel ─── -->
+    <div class="top-section">
+        <div class="section-header">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:16px;">🏆</span>
+                <h3 style="margin:0; font-size:14px; font-weight:700; color:var(--accent-cyan);">Лучшие возможности сессии (Top Spreads)</h3>
+            </div>
+            <span style="font-size:11px; color:var(--text-muted);">Кликните на карточку для перехода к сделке</span>
+        </div>
+        <div id="top-spreads-container" class="top-scroll-container">
+            <div style="color:var(--text-muted); font-size:12px; padding:10px 0;">Сбор данных...</div>
+        </div>
+    </div>
+
+    <!-- ─── Interactive Search & Filter Panel ─── -->
+    <div class="filter-panel">
+        <div class="search-box-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="market-search" class="search-input" placeholder="Поиск по монете (BTC, ETH, SOL) или страйку..." oninput="handleSearch(this.value)">
+        </div>
+
+        <div class="filter-chips">
+            <span style="font-size:11px; font-weight:700; color:var(--text-muted); margin-right:4px;">ФИЛЬТРЫ:</span>
+            <button id="chip-arb-only" class="chip-btn chip-arb" onclick="toggleFilter('arb_only')">
+                ⚡ Только вилки (>0%)
+            </button>
+            <button id="chip-sync-only" class="chip-btn" onclick="toggleFilter('sync_only')">
+                ⏱️ Только синхронные
+            </button>
+            <button id="chip-starred-only" class="chip-btn chip-star" onclick="toggleFilter('starred_only')">
+                ⭐ Избранные
+            </button>
+
+            <!-- Test Mode Feature: Min Spread Slider -->
+            <div id="min-spread-filter-wrap" style="display:none; align-items:center; gap:6px; background:rgba(255,255,255,0.04); border:1px solid var(--border-subtle); padding:3px 8px; border-radius:16px;">
+                <span style="font-size:10.5px; font-weight:700; color:var(--accent-purple);">Спред ≥</span>
+                <input type="range" id="min-spread-slider" min="0" max="5" step="0.1" value="0" oninput="handleMinSpreadChange(this.value)" style="width:65px; cursor:pointer;">
+                <span id="min-spread-val" class="mono" style="font-size:11px; font-weight:700; color:var(--accent-cyan); width:32px;">0.0%</span>
+            </div>
+
+            <span style="height:16px; width:1px; background:var(--border-subtle); margin:0 4px;"></span>
+
+            <button class="chip-btn active" data-asset="all" onclick="filterAsset('all')">Все активы</button>
+            <button class="chip-btn" data-asset="BTC" onclick="filterAsset('BTC')">
+                <img src="/media/logo/Bitcoin/Bitcoin_id_4h5jyQK_0.svg" alt="BTC" style="height:12px; vertical-align:middle;"> BTC
+            </button>
+            <button class="chip-btn" data-asset="ETH" onclick="filterAsset('ETH')">
+                <img src="/media/logo/Ethereum/Ethereum_Logo_0.svg" alt="ETH" style="height:12px; vertical-align:middle;"> ETH
+            </button>
+            <button class="chip-btn" data-asset="SOL" onclick="filterAsset('SOL')">◎ SOL</button>
+        </div>
+    </div>
+
+    <!-- ─── Navigation Tabs & Quick Sorting ─── -->
+    <div class="tab-bar-wrap">
+        <div class="tab-group">
+            <button id="tab-btn-cross" class="tab-btn tab-btn-active" onclick="switchTab('cross')">
+                🌐 Кросс-платформа (Live)
+            </button>
+            <button id="tab-btn-comp" class="tab-btn" onclick="switchTab('comp')">
+                🔄 Внутри биржи (Bybit Dutch Book)
+            </button>
+            <button id="tab-btn-paper" class="tab-btn" onclick="switchTab('paper')" style="display:none; color:var(--accent-purple);">
+                💼 Демо-портфель (<span id="paper-badge-count">0</span>)
+            </button>
+            <button id="tab-btn-debug" class="tab-btn" onclick="switchTab('debug')">
+                🛠️ Дебаг (Сырой поток тиков)
+            </button>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            <span style="font-size:11px; color:var(--text-muted); font-weight:700;">СОРТИРОВКА:</span>
+            <button id="sort-btn-spread" class="preset-btn active" onclick="setSort('spread')">📈 По спреду <span id="sort-arrow-spread">▼</span></button>
+            <button id="sort-btn-margin" class="preset-btn" onclick="setSort('margin')">🔥 По марже <span id="sort-arrow-margin"></span></button>
+            <button id="sort-btn-time" class="preset-btn" onclick="setSort('time')">⏱ По времени <span id="sort-arrow-time"></span></button>
+        </div>
+    </div>
+
+    <!-- ─── Tab 1: Cross Platform Table ─── -->
+    <div id="tab-cross">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:36px; text-align:center;">⭐</th>
+                        <th onclick="setSort('title')" style="cursor:pointer;" title="Сортировать по названию">Событие (Страйк) <span id="sort-col-title"></span></th>
+                        <th>🎯 План сделки (Что брать)</th>
+                        <th>
+                            <div class="exchange-badge exchange-badge-bybit">
+                                <img src="/media/logo/Bybit/Bybit_Logo_2.svg" alt="Bybit" style="height:14px; width:auto; vertical-align:middle;">
+                            </div>
+                        </th>
+                        <th>Prob A</th>
+                        <th onclick="setSort('odds_a')" style="cursor:pointer;" title="Сортировать по коэффициенту Bybit">Коэфф A <span id="sort-col-odds_a"></span></th>
+                        <th style="text-align:center;" title="Визуальное сравнение вероятностей">Баланс</th>
+                        <th>
+                            <div class="exchange-badge exchange-badge-poly">
+                                <img src="/media/logo/Polymarket/Polymarket_icon-blue_2.png" alt="Poly" style="height:15px; width:15px; vertical-align:middle;">
+                                <span style="font-size:11px;">POLY</span>
+                            </div>
+                        </th>
+                        <th>Prob B</th>
+                        <th onclick="setSort('odds_b')" style="cursor:pointer;" title="Сортировать по коэффициенту Poly">Коэфф B <span id="sort-col-odds_b"></span></th>
+                        <th onclick="setSort('spread')" style="cursor:pointer; color:var(--accent-cyan);" title="Сортировать по спреду">Спред (net) <span id="sort-col-spread">▼</span></th>
+                        <th class="th-sparkline" style="display:none; text-align:center;" title="Динамика спреда в реальном времени">Тренд</th>
+                        <th>Экспирация</th>
+                        <th>Прямые ссылки</th>
+                        <th onclick="setSort('time')" style="cursor:pointer;" title="Сортировать по времени">Время <span id="sort-col-time"></span></th>
+                    </tr>
+                </thead>
+                <tbody id="cross-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ─── Tab 2: Complementary Bybit Table ─── -->
+    <div id="tab-comp" style="display: none;">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Событие</th>
+                        <th>Сторона A</th>
+                        <th>Prob A</th>
+                        <th>Коэфф A</th>
+                        <th>Сторона B</th>
+                        <th>Prob B</th>
+                        <th>Коэфф B</th>
+                        <th>Реком. сплит %</th>
+                        <th>1/Oa + 1/Ob</th>
+                        <th>Маржа</th>
+                        <th>Арб?</th>
+                        <th>Время</th>
+                    </tr>
+                </thead>
+                <tbody id="complementary-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ─── Tab 4: Paper Trading Portfolio (Test Mode) ─── -->
+    <div id="tab-paper" style="display: none;">
+        <div style="background:var(--bg-card); border:1px solid var(--accent-purple); border-radius:10px; padding:14px 18px; margin-bottom:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+                <div>
+                    <h3 style="margin:0; font-size:15px; font-weight:700; color:#d8b4fe;">💼 Виртуальный демо-портфель (Paper Trading)</h3>
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Симуляция арбитражных сделок без риска реальных денег</div>
+                </div>
+                <button class="btn-nav" onclick="clearPaperPortfolio()" style="color:var(--accent-rose); border-color:rgba(244,63,94,0.3);">
+                    🗑️ Очистить портфель
+                </button>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px;">
+                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:8px; padding:10px 14px;">
+                    <div style="font-size:10.5px; color:var(--text-muted); text-transform:uppercase;">Всего позиций</div>
+                    <div id="paper-kpi-count" class="mono" style="font-size:18px; font-weight:700; color:var(--text-primary);">0</div>
+                </div>
+                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:8px; padding:10px 14px;">
+                    <div style="font-size:10.5px; color:var(--text-muted); text-transform:uppercase;">Инвестировано ($)</div>
+                    <div id="paper-kpi-invested" class="mono" style="font-size:18px; font-weight:700; color:var(--accent-cyan);">$0.00</div>
+                </div>
+                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:8px; padding:10px 14px;">
+                    <div style="font-size:10.5px; color:var(--text-muted); text-transform:uppercase;">Ожидаемая прибыль ($)</div>
+                    <div id="paper-kpi-profit" class="mono" style="font-size:18px; font-weight:700; color:var(--accent-emerald);">+$0.00</div>
+                </div>
+                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:8px; padding:10px 14px;">
+                    <div style="font-size:10.5px; color:var(--text-muted); text-transform:uppercase;">Средний ROI</div>
+                    <div id="paper-kpi-roi" class="mono" style="font-size:18px; font-weight:700; color:var(--accent-purple);">0.0%</div>
+                </div>
+            </div>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Время входа</th>
+                        <th>Событие (Страйк)</th>
+                        <th>Банк</th>
+                        <th>🟡 Bybit ордер</th>
+                        <th>🔵 Poly ордер</th>
+                        <th>Спред входа</th>
+                        <th>Гарант. выплата</th>
+                        <th>Чистая прибыль</th>
+                        <th>Статус</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody id="paper-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ─── Tab 3: Debug Raw Ticks Stream ─── -->
+    <div id="tab-debug" style="display: none;">
+        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:10px; background:var(--bg-card); padding:10px 14px; border-radius:6px; border:1px solid var(--border-subtle);">
+            🛠️ <b>Режим отладки:</b> Непрерывный хронологический лог тиков напрямую из базы данных (каждые 8-10 сек):
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Время</th>
+                        <th>Сырое событие (Raw event_key)</th>
+                        <th>Сделка</th>
+                        <th>Платф A</th>
+                        <th>Prob A</th>
+                        <th>Коэфф A</th>
+                        <th>Платф B</th>
+                        <th>Prob B</th>
+                        <th>Коэфф B</th>
+                        <th>Спред</th>
+                        <th>Ссылки</th>
+                    </tr>
+                </thead>
+                <tbody id="debug-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ─── Deal Breakdown Modal ─── -->
+    <div id="deal-modal" class="modal-backdrop" onclick="closeModalOnBackdrop(event)">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div>
+                    <h3 id="modal-title" style="font-size:15px; font-weight:700; color:var(--text-primary);">Калькулятор сделки</h3>
+                    <div id="modal-subtitle" style="font-size:11px; color:var(--text-muted); margin-top:2px;">Детализация арбитражной позиции</div>
+                </div>
+                <button class="btn-mini-tool" onclick="closeModal()" style="font-size:16px; padding:4px 8px;">✕</button>
+            </div>
+            <div class="modal-body" id="modal-body-content">
+                <!-- Content dynamically populated -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn-nav" id="modal-btn-paper" onclick="addActiveModalToPaper()" style="background:rgba(168,85,247,0.18); border-color:var(--accent-purple); color:#d8b4fe;">
+                    ⚡ В портфель
+                </button>
+                <button class="btn-nav" id="modal-btn-dual" onclick="openDualFromModal()" style="background:linear-gradient(135deg, #f7a600, #2e5cff); color:#fff; border:none;">
+                    🚀 Открыть обе биржи
+                </button>
+                <button class="btn-nav" onclick="copyModalDeal()" style="color:var(--accent-cyan); border-color:var(--accent-cyan);">
+                    📋 Скопировать
+                </button>
+                <button class="btn-nav" onclick="closeModal()">
+                    Закрыть
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── Toast Container ─── -->
+    <div id="toast" class="toast-msg">
+        <span id="toast-text">Сделка добавлена в демо-портфель!</span>
+    </div>
+
+    <!-- ─── Embedded Scripts ─── -->
+    <script>
+        // State variables
+        let currentBankroll = parseFloat(localStorage.getItem('userBankroll')) || 20;
+        let soundAlertsEnabled = localStorage.getItem('soundAlerts') === 'true';
+        let denseModeEnabled = localStorage.getItem('denseMode') === 'true';
+        let testModeEnabled = localStorage.getItem('testMode') === 'true';
+        let minSpreadFilterVal = 0.0;
+
+        let autoRefreshEnabled = true;
+        let refreshSecondsLeft = 5;
+        let refreshIntervalTimer = null;
+        let countdownIntervalTimer = null;
+
+        let lastArbCount = 0;
+        let cachedData = [];
+        let cachedTopData = [];
+        let cachedCrossData = [];
+        let activeModalRow = null;
+
+        // Paper Trading Positions
+        let paperTrades = JSON.parse(localStorage.getItem('paperTrades') || '[]');
+
+        // Filters State
+        let searchQuery = '';
+        let filterArbOnly = false;
+        let filterSyncOnly = false;
+        let filterStarredOnly = false;
+        let selectedAsset = 'all';
+        let starredMarkets = new Set(JSON.parse(localStorage.getItem('starredMarkets') || '[]'));
+
+        // Sorting State
+        let sortField = localStorage.getItem('sortField') || 'spread';
+        let sortOrder = localStorage.getItem('sortOrder') || 'desc';
+        let selectedMarketKey = localStorage.getItem('selectedMarketKey') || null;
+        let currentTab = 'cross';
+
+        // Official Folder Logos Paths
+        const LOGO_BYBIT = '/media/logo/Bybit/Bybit_Logo_2.svg';
+        const LOGO_POLY = '/media/logo/Polymarket/Polymarket_icon-blue_2.png';
+        const LOGO_BTC = '/media/logo/Bitcoin/Bitcoin_id_4h5jyQK_0.svg';
+        const LOGO_ETH = '/media/logo/Ethereum/Ethereum_Logo_0.svg';
+
+        // ─── Initialization ───
+        function initApp() {
+            initBankrollUI();
+            updateSoundBtn();
+            updateClearBtn();
+            updateSortIndicators();
+            applyDenseMode();
+            applyTestModeUI();
+            updatePaperBadge();
+
+            fetchSpreads();
+            fetchTopSpreads();
+
+            startRefreshLoops();
+            setupHotkeys();
+        }
+
+        function startRefreshLoops() {
+            if (refreshIntervalTimer) clearInterval(refreshIntervalTimer);
+            if (countdownIntervalTimer) clearInterval(countdownIntervalTimer);
+
+            refreshSecondsLeft = 5;
+            updateCircleProgress();
+
+            countdownIntervalTimer = setInterval(() => {
+                if (!autoRefreshEnabled) return;
+                refreshSecondsLeft--;
+                if (refreshSecondsLeft < 0) refreshSecondsLeft = 5;
+                updateCircleProgress();
+            }, 1000);
+
+            refreshIntervalTimer = setInterval(() => {
+                if (!autoRefreshEnabled) return;
+                fetchSpreads();
+                if (currentTab === 'debug') fetchRawSpreads();
+            }, 5000);
+
+            setInterval(() => {
+                if (autoRefreshEnabled) fetchTopSpreads();
+            }, 15000);
+        }
+
+        function updateCircleProgress() {
+            const circle = document.getElementById('circle-progress');
+            if (!circle) return;
+            const total = 63;
+            const offset = total - (total * (refreshSecondsLeft / 5));
+            circle.style.strokeDashoffset = offset;
+        }
+
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            const btn = document.getElementById('btn-pause-refresh');
+            const icon = document.getElementById('pause-icon');
+            const text = document.getElementById('pause-text');
+
+            if (autoRefreshEnabled) {
+                btn.classList.remove('active');
+                icon.innerText = '⏸️';
+                text.innerText = 'Пауза';
+                refreshSecondsLeft = 5;
+            } else {
+                btn.classList.add('active');
+                icon.innerText = '▶️';
+                text.innerText = 'Возобновить';
+            }
+        }
+
+        function toggleDenseMode() {
+            denseModeEnabled = !denseModeEnabled;
+            localStorage.setItem('denseMode', denseModeEnabled);
+            applyDenseMode();
+        }
+
+        function applyDenseMode() {
+            const btn = document.getElementById('btn-dense-mode');
+            if (denseModeEnabled) {
+                document.body.classList.add('mode-dense');
+                if (btn) btn.classList.add('active');
+            } else {
+                document.body.classList.remove('mode-dense');
+                if (btn) btn.classList.remove('active');
+            }
+        }
+
+        // ─── Test Mode Toggle & Features ───
+        function toggleTestMode() {
+            testModeEnabled = !testModeEnabled;
+            localStorage.setItem('testMode', testModeEnabled);
+            applyTestModeUI();
+            if (cachedCrossData.length > 0) renderCross(cachedCrossData);
+            showToast(testModeEnabled ? '🧪 Режим теста активирован!' : 'Режим теста отключен');
+        }
+
+        function applyTestModeUI() {
+            const btn = document.getElementById('btn-test-mode');
+            const status = document.getElementById('test-mode-status');
+            const paperTab = document.getElementById('tab-btn-paper');
+            const minSpreadWrap = document.getElementById('min-spread-filter-wrap');
+            const thSpark = document.querySelector('.th-sparkline');
+
+            if (btn) btn.classList.toggle('active', testModeEnabled);
+            if (status) status.innerText = testModeEnabled ? 'ВКЛ' : 'ВЫКЛ';
+
+            if (paperTab) paperTab.style.display = testModeEnabled ? 'inline-flex' : 'none';
+            if (minSpreadWrap) minSpreadWrap.style.display = testModeEnabled ? 'inline-flex' : 'none';
+            if (thSpark) thSpark.style.display = testModeEnabled ? 'table-cell' : 'none';
+
+            if (!testModeEnabled && currentTab === 'paper') {
+                switchTab('cross');
+            }
+        }
+
+        function handleMinSpreadChange(val) {
+            minSpreadFilterVal = parseFloat(val) || 0.0;
+            const el = document.getElementById('min-spread-val');
+            if (el) el.innerText = minSpreadFilterVal.toFixed(1) + '%';
+            renderTables(cachedData);
+        }
+
+        // ─── Mini Sparkline Generator ───
+        function renderSparkline(rowKey, currentSpread) {
+            window.__spread_history = window.__spread_history || {};
+            if (!window.__spread_history[rowKey]) {
+                window.__spread_history[rowKey] = [];
+            }
+            const hist = window.__spread_history[rowKey];
+            const spVal = Math.round((currentSpread || 0) * 1000) / 10; // in %
+            if (hist.length === 0 || hist[hist.length - 1] !== spVal) {
+                hist.push(spVal);
+                if (hist.length > 7) hist.shift();
+            }
+            if (hist.length < 2) {
+                return `<span style="font-size:10px; color:var(--text-muted);">• • •</span>`;
+            }
+            const min = Math.min(...hist);
+            const max = Math.max(...hist);
+            const range = (max - min) || 0.05;
+            const width = 42;
+            const height = 16;
+            const points = hist.map((v, idx) => {
+                const x = (idx / (hist.length - 1)) * width;
+                const y = height - ((v - min) / range) * (height - 4) - 2;
+                return `${x.toFixed(1)},${y.toFixed(1)}`;
+            }).join(' ');
+
+            const isUp = hist[hist.length - 1] >= hist[0];
+            const strokeColor = isUp ? 'var(--accent-emerald)' : 'var(--accent-rose)';
+            const arrow = isUp ? '↗' : '↘';
+
+            return `
+                <div style="display:inline-flex; align-items:center; gap:2px;" title="Динамика спреда: ${hist.join(' ➔ ')}%">
+                    <svg width="${width}" height="${height}" style="overflow:visible;">
+                        <polyline fill="none" stroke="${strokeColor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" points="${points}" />
+                    </svg>
+                    <span style="font-size:9.5px; color:${strokeColor}; font-weight:700;">${arrow}</span>
+                </div>
+            `;
+        }
+
+        // ─── Toast System ───
+        function showToast(text) {
+            const toast = document.getElementById('toast');
+            const toastText = document.getElementById('toast-text');
+            if (!toast) return;
+            toastText.innerText = text;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        // ─── Paper Trading Implementation ───
+        function addToPaperPortfolio(row) {
+            if (!row) return;
+            const bank = currentBankroll;
+
+            let splitA = row.stake_a ? Math.round(row.stake_a * 100) : 50;
+            let splitB = 100 - splitA;
+            if (splitA === 0 && splitB === 0 && row.odds_a > 0 && row.odds_b > 0) {
+                const invA = 1.0 / row.odds_a;
+                const invB = 1.0 / row.odds_b;
+                splitA = Math.round((invA / (invA + invB)) * 100);
+                splitB = 100 - splitA;
+            }
+
+            const stakeA = Math.max(0.01, Math.round((bank * (splitA / 100)) * 100) / 100);
+            const stakeB = Math.max(0.01, Math.round((bank - stakeA) * 100) / 100);
+
+            let guaranteedPayout = bank;
+            let netProfit = 0;
+            if (row.hedge_cost && row.hedge_cost > 0) {
+                guaranteedPayout = bank / row.hedge_cost;
+                netProfit = guaranteedPayout - bank;
+            }
+
+            const trade = {
+                id: Date.now(),
+                title: row.title || row.event_key,
+                event_key: row.event_key,
+                bank: bank,
+                stake_a: stakeA,
+                stake_b: stakeB,
+                action_a: row.action_a || 'Bybit ABOVE',
+                action_b: row.action_b || 'Poly NO',
+                odds_a: row.odds_a || 0,
+                odds_b: row.odds_b || 0,
+                spread_pct: ((row.spread_after_fees || 0) * 100).toFixed(2),
+                guaranteed_payout: guaranteedPayout.toFixed(2),
+                net_profit: netProfit.toFixed(2),
+                created_at: new Date().toISOString(),
+                status: 'OPEN'
+            };
+
+            paperTrades.unshift(trade);
+            localStorage.setItem('paperTrades', JSON.stringify(paperTrades));
+            updatePaperBadge();
+            renderPaperPortfolio();
+            showToast(`💼 Сделка "${trade.title}" добавлена в портфель на $${bank}!`);
+        }
+
+        function addActiveModalToPaper() {
+            if (activeModalRow) {
+                addToPaperPortfolio(activeModalRow);
+            }
+        }
+
+        function closePaperTrade(id) {
+            paperTrades = paperTrades.map(t => {
+                if (t.id === id) t.status = 'WON';
+                return t;
+            });
+            localStorage.setItem('paperTrades', JSON.stringify(paperTrades));
+            renderPaperPortfolio();
+            showToast('💰 Сделка зафиксирована с прибылью!');
+        }
+
+        function removePaperTrade(id) {
+            paperTrades = paperTrades.filter(t => t.id !== id);
+            localStorage.setItem('paperTrades', JSON.stringify(paperTrades));
+            updatePaperBadge();
+            renderPaperPortfolio();
+        }
+
+        function clearPaperPortfolio() {
+            if (confirm('Очистить все сделки из демо-портфеля?')) {
+                paperTrades = [];
+                localStorage.removeItem('paperTrades');
+                updatePaperBadge();
+                renderPaperPortfolio();
+            }
+        }
+
+        function updatePaperBadge() {
+            const countEl = document.getElementById('paper-badge-count');
+            const openCount = paperTrades.filter(t => t.status === 'OPEN').length;
+            if (countEl) countEl.innerText = openCount;
+        }
+
+        function renderPaperPortfolio() {
+            const tbody = document.getElementById('paper-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            let totalInvested = 0;
+            let totalProfit = 0;
+
+            if (paperTrades.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:30px;">В демо-портфеле пока нет открытых сделок. Нажмите «⚡ В портфель» у любой вилки!</td></tr>';
+            } else {
+                paperTrades.forEach(t => {
+                    totalInvested += parseFloat(t.bank) || 0;
+                    totalProfit += parseFloat(t.net_profit) || 0;
+
+                    const tr = document.createElement('tr');
+                    const time = new Date(t.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                    const isWon = t.status === 'WON';
+                    const statusBadge = isWon 
+                        ? '<span class="badge badge-arb">✓ ЗАКРЫТА (+$$)</span>' 
+                        : '<span class="badge badge-sync">⚡ АКТИВНА</span>';
+
+                    tr.innerHTML = `
+                        <td class="mono" style="font-size:11px; color:var(--text-muted);">${time}</td>
+                        <td><b>${t.title}</b></td>
+                        <td class="mono font-bold" style="color:var(--accent-cyan);">$${t.bank}</td>
+                        <td><span style="font-size:11px; color:var(--bybit-color);">${t.action_a} ($${t.stake_a}) @ ${t.odds_a}x</span></td>
+                        <td><span style="font-size:11px; color:var(--poly-color);">${t.action_b} ($${t.stake_b}) @ ${t.odds_b}x</span></td>
+                        <td><span class="spread-positive">+${t.spread_pct}%</span></td>
+                        <td class="mono font-bold">$${t.guaranteed_payout}</td>
+                        <td class="mono" style="color:var(--accent-emerald); font-weight:700;">+$${t.net_profit}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <div style="display:flex; gap:4px;">
+                                ${!isWon ? `<button class="btn-mini-tool" onclick="closePaperTrade(${t.id})" title="Зафиксировать прибыль">💰 Закрыть</button>` : ''}
+                                <button class="btn-mini-tool" onclick="removePaperTrade(${t.id})" style="color:var(--accent-rose);" title="Удалить">✕</button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            const kpiCount = document.getElementById('paper-kpi-count');
+            const kpiInvested = document.getElementById('paper-kpi-invested');
+            const kpiProfit = document.getElementById('paper-kpi-profit');
+            const kpiRoi = document.getElementById('paper-kpi-roi');
+
+            if (kpiCount) kpiCount.innerText = paperTrades.length;
+            if (kpiInvested) kpiInvested.innerText = `$${totalInvested.toFixed(2)}`;
+            if (kpiProfit) kpiProfit.innerText = `+$${totalProfit.toFixed(2)}`;
+            const avgRoi = totalInvested > 0 ? ((totalProfit / totalInvested) * 100).toFixed(1) : '0.0';
+            if (kpiRoi) kpiRoi.innerText = `+${avgRoi}%`;
+        }
+
+        // ─── Bankroll UI ───
+        function initBankrollUI() {
+            const input = document.getElementById('bankroll-input');
+            if (input) input.value = currentBankroll;
+            document.querySelectorAll('.preset-btn[data-val]').forEach(btn => {
+                btn.classList.toggle('active', parseFloat(btn.dataset.val) === currentBankroll);
+            });
+        }
+
+        function setBankroll(val) {
+            const num = parseFloat(val);
+            if (!isNaN(num) && num > 0) {
+                currentBankroll = num;
+                localStorage.setItem('userBankroll', num);
+                const input = document.getElementById('bankroll-input');
+                if (input && parseFloat(input.value) !== num) input.value = num;
+
+                document.querySelectorAll('.preset-btn[data-val]').forEach(btn => {
+                    btn.classList.toggle('active', parseFloat(btn.dataset.val) === num);
+                });
+
+                if (cachedData.length > 0) renderTables(cachedData);
+                if (cachedTopData.length > 0) renderTopSpreadsCards(cachedTopData);
+                if (activeModalRow) openDealModal(activeModalRow);
+            }
+        }
+
+        // ─── Sound System ───
+        function toggleSoundAlerts() {
+            soundAlertsEnabled = !soundAlertsEnabled;
+            localStorage.setItem('soundAlerts', soundAlertsEnabled);
+            updateSoundBtn();
+            if (soundAlertsEnabled) playArbChime();
+        }
+
+        function updateSoundBtn() {
+            const btn = document.getElementById('sound-toggle-btn');
+            if (btn) {
+                btn.innerHTML = soundAlertsEnabled ? '🔔 Звук: ВКЛ' : '🔕 Звук: ВЫКЛ';
+                btn.classList.toggle('active', soundAlertsEnabled);
+            }
+        }
+
+        function testSound() {
+            playArbChime();
+        }
+
+        function playArbChime() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const now = ctx.currentTime;
+                
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(587.33, now); // D5
+                osc1.frequency.exponentialRampToValueAtTime(880.00, now + 0.15); // A5
+                gain1.gain.setValueAtTime(0.25, now);
+                gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.35);
+
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'triangle';
+                osc2.frequency.setValueAtTime(1174.66, now + 0.12); // D6
+                gain2.gain.setValueAtTime(0.2, now + 0.12);
+                gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(now + 0.12);
+                osc2.stop(now + 0.45);
+            } catch (e) {
+                console.warn('Audio synthesis failed:', e);
+            }
+        }
+
+        // ─── Dual Open Helper ───
+        function openDualExchanges(urlA, urlB) {
+            if (urlA) window.open(urlA, '_blank');
+            if (urlB) window.open(urlB, '_blank');
+        }
+
+        function openDualFromModal() {
+            if (activeModalRow) {
+                openDualExchanges(activeModalRow.url_a, activeModalRow.url_b);
+            }
+        }
+
+        function enablePushNotifications() {
+            if (!("Notification" in window)) {
+                alert("Ваш браузер не поддерживает HTML5 уведомления.");
+                return;
+            }
+            Notification.requestPermission().then(permission => {
+                const btn = document.getElementById('btn-push-notify');
+                if (permission === "granted") {
+                    btn.classList.add('active');
+                    btn.innerHTML = '🔔 Web Push: ВКЛ';
+                    new Notification("ODDS PULSE Terminal", {
+                        body: "Оповещения о вилках успешно включены!",
+                        icon: LOGO_POLY
+                    });
+                } else {
+                    btn.classList.remove('active');
+                    btn.innerHTML = '🔕 Web Push: ВЫКЛ';
+                }
+            });
+        }
+
+        // ─── Data Fetching ───
+        async function fetchSpreads() {
+            const statusEl = document.getElementById('status');
+            statusEl.innerText = 'Обновление...';
+            try {
+                const response = await fetch('/api/spreads');
+                const result = await response.json();
+                cachedData = result.data || [];
+                renderTables(cachedData);
+                updateKPIMetrics(cachedData);
+                updateTickerTape(cachedData);
+
+                const trueArbs = cachedData.filter(r => (r.is_arb === 1 || r.is_arb === true) && (r.hedge_margin > 0));
+                if (trueArbs.length > lastArbCount) {
+                    if (soundAlertsEnabled) playArbChime();
+                    if ("Notification" in window && Notification.permission === "granted") {
+                        const topArb = trueArbs[0];
+                        const spreadStr = topArb.spread_after_fees ? `+${(topArb.spread_after_fees * 100).toFixed(2)}%` : '';
+                        new Notification(`⚡ Найдена вилка ${spreadStr}`, {
+                            body: `${topArb.title || topArb.event_key} (Bybit + Poly)`,
+                            icon: LOGO_POLY
+                        });
+                    }
+                }
+                lastArbCount = trueArbs.length;
+
+                statusEl.innerText = '✅ ' + new Date().toLocaleTimeString();
+                statusEl.style.color = 'var(--accent-emerald)';
+            } catch (error) {
+                console.error("Error fetching spreads", error);
+                statusEl.innerText = '❌ Ошибка сети';
+                statusEl.style.color = 'var(--accent-rose)';
+            }
+        }
+
+        async function fetchTopSpreads() {
+            try {
+                const response = await fetch('/api/top_spreads');
+                const result = await response.json();
+                cachedTopData = result.data || [];
+                renderTopSpreadsCards(cachedTopData);
+            } catch (err) {
+                console.error("Error loading top spreads", err);
+            }
+        }
+
+        async function fetchRawSpreads() {
+            try {
+                const response = await fetch('/api/raw_spreads');
+                const result = await response.json();
+                renderDebug(result.data);
+            } catch (err) {
+                console.error("Error fetching raw debug spreads", err);
+            }
+        }
+
+        // ─── Ticker Tape Updater ───
+        function updateTickerTape(data) {
+            const container = document.getElementById('ticker-content');
+            if (!container) return;
+
+            const cross = data.filter(r => !r.prob_sum || r.prob_sum === 0);
+            const arbs = cross.filter(r => (r.is_arb === 1 || r.is_arb === true) && (r.hedge_margin > 0));
+
+            let items = [];
+            const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+
+            if (arbs.length > 0) {
+                arbs.slice(0, 3).forEach(a => {
+                    const sp = (a.spread_after_fees * 100).toFixed(2);
+                    items.push(`<span class="ticker-item" style="color:var(--accent-emerald);">🔥 <b>${a.title || a.event_key}</b>: ВИЛКА +${sp}% (${a.platform_a} / ${a.platform_b})</span>`);
+                });
+            }
+
+            const highest = [...cross].sort((a,b) => (b.spread_after_fees||0) - (a.spread_after_fees||0)).slice(0, 2);
+            highest.forEach(h => {
+                const sp = (h.spread_after_fees * 100).toFixed(2);
+                items.push(`<span class="ticker-item">📈 <b>${h.title || h.event_key}</b>: спред +${sp}% • ${now}</span>`);
+            });
+
+            items.push(`<span class="ticker-item" style="color:var(--accent-cyan);">🟢 Bybit & Polymarket стаканы синхронизированы</span>`);
+            container.innerHTML = items.join(' | ');
+        }
+
+        // ─── KPI Calculations ───
+        function updateKPIMetrics(data) {
+            const cross = data.filter(r => !r.prob_sum || r.prob_sum === 0);
+            const totalEl = document.getElementById('kpi-total-markets');
+            const arbsEl = document.getElementById('kpi-active-arbs');
+            const maxEl = document.getElementById('kpi-max-spread');
+            const maxTitleEl = document.getElementById('kpi-max-title');
+            const syncEl = document.getElementById('kpi-sync-ratio');
+
+            if (totalEl) totalEl.innerText = cross.length;
+
+            const arbs = cross.filter(r => (r.is_arb === 1 || r.is_arb === true) && (r.hedge_margin > 0));
+            if (arbsEl) arbsEl.innerText = arbs.length;
+
+            let maxSpread = 0;
+            let maxTitle = '-';
+            cross.forEach(r => {
+                if (r.spread_after_fees && r.spread_after_fees > maxSpread) {
+                    maxSpread = r.spread_after_fees;
+                    maxTitle = r.title || r.event_key;
+                }
+            });
+            if (maxEl) maxEl.innerText = (maxSpread > 0) ? `+${(maxSpread * 100).toFixed(2)}%` : '0.00%';
+            if (maxTitleEl) {
+                maxTitleEl.innerText = maxTitle;
+                maxTitleEl.title = maxTitle;
+            }
+
+            if (cross.length > 0) {
+                const synced = cross.filter(r => !r.time_warning && (!r.time_diff_hours || Math.abs(r.time_diff_hours) < 0.5));
+                const pct = Math.round((synced.length / cross.length) * 100);
+                if (syncEl) syncEl.innerText = `${pct}%`;
+            }
+        }
+
+        // ─── Filtering & Search ───
+        function handleSearch(val) {
+            searchQuery = (val || '').trim().toLowerCase();
+            renderTables(cachedData);
+        }
+
+        function toggleFilter(filterKey) {
+            if (filterKey === 'arb_only') {
+                filterArbOnly = !filterArbOnly;
+                document.getElementById('chip-arb-only').classList.toggle('active', filterArbOnly);
+            } else if (filterKey === 'sync_only') {
+                filterSyncOnly = !filterSyncOnly;
+                document.getElementById('chip-sync-only').classList.toggle('active', filterSyncOnly);
+            } else if (filterKey === 'starred_only') {
+                filterStarredOnly = !filterStarredOnly;
+                document.getElementById('chip-starred-only').classList.toggle('active', filterStarredOnly);
+            }
+            renderTables(cachedData);
+        }
+
+        function filterAsset(asset) {
+            selectedAsset = asset;
+            document.querySelectorAll('[data-asset]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.asset === asset);
+            });
+            renderTables(cachedData);
+        }
+
+        function toggleStar(e, key) {
+            e.stopPropagation();
+            if (starredMarkets.has(key)) {
+                starredMarkets.delete(key);
+            } else {
+                starredMarkets.add(key);
+            }
+            localStorage.setItem('starredMarkets', JSON.stringify(Array.from(starredMarkets)));
+            renderTables(cachedData);
+        }
+
+        // ─── Coin Badge Helper using Folder Logos ───
+        function getCoinBadge(title) {
+            const t = (title || '').toUpperCase();
+            if (t.includes('BTC') || t.includes('BITCOIN')) {
+                return `<img src="${LOGO_BTC}" alt="BTC" class="coin-img-icon" title="Bitcoin">`;
+            } else if (t.includes('ETH') || t.includes('ETHEREUM')) {
+                return `<img src="${LOGO_ETH}" alt="ETH" class="coin-img-icon" title="Ethereum">`;
+            } else if (t.includes('SOL') || t.includes('SOLANA')) {
+                return '<span class="coin-icon coin-sol" title="Solana">◎</span>';
+            }
+            return '<span class="coin-icon coin-other" title="Crypto">$</span>';
+        }
+
+        // ─── Rendering Engine ───
+        function renderTables(data) {
+            const complementary = data.filter(r => r.prob_sum && r.prob_sum > 0);
+            const cross = data.filter(r => !r.prob_sum || r.prob_sum === 0);
+
+            renderComplementary(complementary);
+            renderCross(cross);
+            if (testModeEnabled) renderPaperPortfolio();
+        }
+
+        function renderCross(data) {
+            cachedCrossData = data;
+            const tbody = document.getElementById('cross-body');
+            tbody.innerHTML = '';
+
+            let filtered = data.filter(row => {
+                const title = (row.title || row.event_key || '').toLowerCase();
+                const key = row.title || row.event_key;
+                const spreadNet = (row.spread_after_fees || 0) * 100;
+
+                if (searchQuery && !title.includes(searchQuery)) return false;
+
+                if (testModeEnabled && minSpreadFilterVal > 0) {
+                    if (spreadNet < minSpreadFilterVal) return false;
+                }
+
+                if (filterArbOnly) {
+                    const isArb = (row.is_arb === 1 || row.is_arb === true) && (row.hedge_margin > 0);
+                    if (!isArb) return false;
+                }
+
+                if (filterSyncOnly) {
+                    const hasGap = row.time_warning || (row.time_diff_hours && Math.abs(row.time_diff_hours) >= 0.5);
+                    if (hasGap) return false;
+                }
+
+                if (filterStarredOnly && !starredMarkets.has(key)) return false;
+
+                if (selectedAsset !== 'all') {
+                    if (selectedAsset === 'BTC' && !title.includes('btc') && !title.includes('bitcoin')) return false;
+                    if (selectedAsset === 'ETH' && !title.includes('eth') && !title.includes('ethereum')) return false;
+                    if (selectedAsset === 'SOL' && !title.includes('sol') && !title.includes('solana')) return false;
+                }
+
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="15" style="text-align:center; color:var(--text-muted); padding:30px;">Ничего не найдено по заданным фильтрам</td></tr>';
+                return;
+            }
+
+            filtered.sort((a, b) => {
+                const aKey = a.title || a.event_key;
+                const bKey = b.title || b.event_key;
+                const aStarred = starredMarkets.has(aKey) ? 1 : 0;
+                const bStarred = starredMarkets.has(bKey) ? 1 : 0;
+
+                if (aStarred !== bStarred) return bStarred - aStarred;
+
+                let valA, valB;
+                if (sortField === 'spread') {
+                    valA = a.spread_after_fees || 0;
+                    valB = b.spread_after_fees || 0;
+                } else if (sortField === 'margin') {
+                    valA = (a.hedge_margin !== undefined && a.hedge_margin !== null) ? a.hedge_margin : -999;
+                    valB = (b.hedge_margin !== undefined && b.hedge_margin !== null) ? b.hedge_margin : -999;
+                } else if (sortField === 'time') {
+                    valA = new Date(a.detected_at || 0).getTime();
+                    valB = new Date(b.detected_at || 0).getTime();
+                } else if (sortField === 'odds_a') {
+                    valA = a.odds_a || 0;
+                    valB = b.odds_a || 0;
+                } else if (sortField === 'odds_b') {
+                    valA = a.odds_b || 0;
+                    valB = b.odds_b || 0;
+                } else if (sortField === 'title') {
+                    valA = (a.title || '').toLowerCase();
+                    valB = (b.title || '').toLowerCase();
+                    return sortOrder === 'desc' ? valB.localeCompare(valA) : valA.localeCompare(valB);
+                }
+                return sortOrder === 'desc' ? (valB - valA) : (valA - valB);
+            });
+
+            filtered.forEach(row => {
+                const tr = document.createElement('tr');
+                const rowKey = row.title || row.event_key;
+                tr.dataset.key = rowKey;
+
+                const isSelected = selectedMarketKey && (selectedMarketKey === rowKey || selectedMarketKey === row.title);
+                const isTrueArb = (row.is_arb === 1 || row.is_arb === true) && (row.hedge_margin > 0);
+                const isStarred = starredMarkets.has(rowKey);
+
+                if (isSelected) tr.classList.add('row-selected');
+                if (isTrueArb) tr.classList.add('row-arb-highlight');
+
+                tr.onclick = (e) => {
+                    if (e.target.tagName !== 'A' && e.target.tagName !== 'BUTTON' && !e.target.classList.contains('star-toggle') && !e.target.classList.contains('btn-mini-paper')) {
+                        toggleSelect(rowKey);
+                    }
+                };
+
+                const probA = (row.prob_a * 100).toFixed(1) + '%';
+                const probB = (row.prob_b * 100).toFixed(1) + '%';
+                const oddsA = row.odds_a ? row.odds_a.toFixed(3) + 'x' : '-';
+                const oddsB = row.odds_b ? row.odds_b.toFixed(3) + 'x' : '-';
+                const spread = (row.spread_after_fees * 100).toFixed(2) + '%';
+                const time = new Date(row.detected_at).toLocaleTimeString();
+
+                const probA_num = Math.max(5, Math.min(95, Math.round((row.prob_a || 0.5) * 100)));
+                const probB_num = 100 - probA_num;
+
+                const coinBadge = getCoinBadge(row.title);
+                const arbBadge = isTrueArb ? '<span class="badge badge-arb" style="margin-left:6px;">⚡ ВИЛКА</span>' : '';
+                const pinBadge = isSelected ? '<span class="pin-badge">📌 ВЫБРАНО</span>' : '';
+                const starClass = isStarred ? 'star-toggle starred' : 'star-toggle';
+
+                let expInfo = '-';
+                if (row.time_warning) {
+                    expInfo = `<span class="badge badge-gap">${row.time_warning}</span>`;
+                } else if (row.time_diff_hours !== undefined && row.time_diff_hours !== 0) {
+                    expInfo = `<span class="badge badge-gap">⚠️ ${Math.abs(row.time_diff_hours).toFixed(1)}ч разрыв</span>`;
+                } else {
+                    expInfo = `<span class="badge badge-sync">✓ Синхрон</span>`;
+                }
+
+                const actionHtml = formatTradePlan(row);
+
+                let linksHtml = '<div style="display:flex; gap:5px; flex-wrap:nowrap;">';
+                if (row.url_a) {
+                    linksHtml += `<a href="${row.url_a}" target="_blank" class="btn-exchange btn-bybit" onclick="selectMarket('${rowKey}')"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:11px; filter:brightness(0); vertical-align:middle;"> Bybit ↗</a>`;
+                }
+                if (row.url_b) {
+                    linksHtml += `<a href="${row.url_b}" target="_blank" class="btn-exchange btn-poly" onclick="selectMarket('${rowKey}')"><img src="${LOGO_POLY}" alt="Poly" style="height:12px; vertical-align:middle;"> Poly ↗</a>`;
+                }
+                if (row.url_a && row.url_b) {
+                    linksHtml += `<button class="btn-exchange btn-dual" onclick="openDualExchanges('${row.url_a}','${row.url_b}')" title="Открыть обе биржи одновременно в соседних вкладках">🚀 Обе</button>`;
+                }
+                linksHtml += '</div>';
+
+                const sparklineTd = testModeEnabled 
+                    ? `<td style="text-align:center;">${renderSparkline(rowKey, row.spread_after_fees || 0)}</td>` 
+                    : '';
+
+                tr.innerHTML = `
+                    <td style="text-align:center;"><span class="${starClass}" onclick="toggleStar(event, '${rowKey}')">★</span></td>
+                    <td>
+                        <div style="display:flex; align-items:center;">
+                            ${coinBadge}
+                            <div>
+                                <b style="color:var(--text-primary); font-size:12.5px;">${row.title || row.event_key}</b>
+                                ${pinBadge}
+                            </div>
+                        </div>
+                    </td>
+                    <td>${actionHtml}</td>
+                    <td>
+                        <div style="font-weight:700; color:var(--bybit-color); display:flex; align-items:center; gap:5px;">
+                            <img src="${LOGO_BYBIT}" alt="Bybit" style="height:13px; vertical-align:middle;">
+                        </div>
+                    </td>
+                    <td class="prob-val">${probA}</td>
+                    <td class="odds">${oddsA}</td>
+                    <td>
+                        <div class="prob-bar-container" title="Bybit: ${probA} vs Poly: ${probB}">
+                            <div class="prob-bar-fill-bybit" style="width:${probA_num}%"></div>
+                            <div class="prob-bar-fill-poly" style="width:${probB_num}%"></div>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight:700; color:var(--poly-color); display:flex; align-items:center; gap:4px;">
+                            <img src="${LOGO_POLY}" alt="Poly" style="height:14px; vertical-align:middle;"> Poly
+                        </div>
+                    </td>
+                    <td class="prob-val">${probB}</td>
+                    <td class="odds">${oddsB}</td>
+                    <td><span class="spread-positive">+${spread}</span>${arbBadge}</td>
+                    ${sparklineTd}
+                    <td>${expInfo}</td>
+                    <td>${linksHtml}</td>
+                    <td class="timestamp mono" style="font-size:11px; color:var(--text-muted);">${time}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function formatTradePlan(row) {
+            if (!row.action_summary) return '<span style="color:var(--text-muted);">-</span>';
+
+            const isBybitAbove = row.action_summary.includes('Bybit: ABOVE') || (row.action_a && row.action_a.includes('ABOVE'));
+            const isPolyYes = row.action_summary.includes('Poly: YES') || (row.action_b && row.action_b.includes('YES'));
+
+            const bybitActionText = row.action_a ? row.action_a.replace('Bybit: ', '') : (isBybitAbove ? 'ВЫШЕ (ABOVE) ↗' : 'НИЖЕ (BELOW) ↘');
+            const polyActionText = row.action_b ? row.action_b.replace('Poly: ', '') : (isPolyYes ? 'Купить YES ↗' : 'Купить NO ↘');
+
+            let splitA = row.stake_a ? Math.round(row.stake_a * 100) : null;
+            let splitB = row.stake_b ? Math.round(row.stake_b * 100) : null;
+            if (!splitA || !splitB || (splitA === 0 && splitB === 0)) {
+                if (row.odds_a > 0 && row.odds_b > 0) {
+                    const invA = 1.0 / row.odds_a;
+                    const invB = 1.0 / row.odds_b;
+                    const tot = invA + invB;
+                    splitA = Math.round((invA / tot) * 100);
+                    splitB = 100 - splitA;
+                } else {
+                    splitA = 50;
+                    splitB = 50;
+                }
+            } else {
+                splitB = 100 - splitA;
+            }
+
+            const bank = currentBankroll;
+            const stakeA_num = Math.max(0.01, Math.round((bank * (splitA / 100)) * 100) / 100);
+            const stakeB_num = Math.max(0.01, Math.round((bank - stakeA_num) * 100) / 100);
+
+            const minPct = Math.min(splitA, splitB) / 100.0;
+            const recommendedBank = minPct > 0 ? Math.ceil(1.0 / minPct) : 20;
+
+            let minWarnHtml = '';
+            if (stakeA_num < 1.0 || stakeB_num < 1.0) {
+                minWarnHtml = `<div class="trade-min-warn">⚠️ Доля < $1.00 (лимит). Рек. банк: <b>$${recommendedBank}</b></div>`;
+            }
+
+            const isTrueArb = (row.is_arb === 1 || row.is_arb === true) && (row.hedge_margin > 0);
+            let calcHtml = '';
+
+            if (row.hedge_cost && row.hedge_cost > 0) {
+                const payout = (bank / row.hedge_cost).toFixed(2);
+                const profitVal = (payout - bank).toFixed(2);
+                const profitPct = ((1.0 / row.hedge_cost - 1.0) * 100).toFixed(1);
+
+                if (isTrueArb) {
+                    calcHtml = `<div class="trade-calc" style="background:rgba(16,185,129,0.15); border-color:var(--accent-emerald); color:var(--accent-emerald); font-weight:700;">🔥 ВИЛКА на $${bank}: Bybit $${stakeA_num.toFixed(2)} + Poly $${stakeB_num.toFixed(2)} ➔ Выплата $${payout} (+${profitPct}% / +$${profitVal})</div>`;
+                } else {
+                    calcHtml = `<div class="trade-calc">💡 На $${bank}: Bybit $${stakeA_num.toFixed(2)} + Poly $${stakeB_num.toFixed(2)} ➔ Баланс: $${payout}</div>`;
+                }
+            }
+
+            const bybitSimpleAction = bybitActionText.split(' ')[0] || 'ВЫШЕ';
+            const polySimpleAction = polyActionText.split(' ')[1] || 'YES';
+            const copyText = `${row.title || row.event_key} | Bybit: ${bybitSimpleAction} $${stakeA_num.toFixed(2)} | Poly: ${polySimpleAction} $${stakeB_num.toFixed(2)}`;
+
+            const rowKey = row.title || row.event_key;
+            window.__row_cache = window.__row_cache || {};
+            window.__row_cache[rowKey] = row;
+
+            const paperBtnHtml = testModeEnabled 
+                ? `<button class="btn-mini-tool btn-mini-paper" onclick="addToPaperPortfolio(window.__row_cache['${rowKey.replace(/'/g, "\\'")}'])" title="Взять сделку в виртуальный портфель">⚡ В портфель</button>`
+                : '';
+
+            return `
+                <div class="trade-steps">
+                    <div class="trade-leg trade-leg-bybit">
+                        <span style="display:flex; align-items:center; gap:4px;">
+                            <img src="${LOGO_BYBIT}" alt="Bybit" style="height:10px; filter:brightness(0) invert(1);"> <b>${bybitActionText}</b>
+                        </span>
+                        <span class="mono" style="opacity:0.9; font-size:10.5px;">$${stakeA_num.toFixed(2)} (${splitA}%)</span>
+                    </div>
+                    <div class="trade-leg trade-leg-poly">
+                        <span style="display:flex; align-items:center; gap:4px;">
+                            <img src="${LOGO_POLY}" alt="Poly" style="height:11px;"> <b>${polyActionText}</b>
+                        </span>
+                        <span class="mono" style="opacity:0.9; font-size:10.5px;">$${stakeB_num.toFixed(2)} (${splitB}%)</span>
+                    </div>
+                    ${calcHtml}
+                    ${minWarnHtml}
+                    <div class="action-btns-wrap">
+                        <button class="btn-mini-tool" onclick="copyDealToClipboard(this, '${copyText.replace(/'/g, "\\'")}')">
+                            📋 Копировать
+                        </button>
+                        <button class="btn-mini-tool" onclick="openDealModalByKey('${rowKey.replace(/'/g, "\\'")}')">
+                            🧮 Калькулятор
+                        </button>
+                        ${paperBtnHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        // ─── Top Spreads Carousel Cards ───
+        function renderTopSpreadsCards(data) {
+            const container = document.getElementById('top-spreads-container');
+            if (!container) return;
+
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div style="color:var(--text-muted); font-size:12px;">Пока нет зафиксированных возможностей (>0%)</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            data.slice(0, 6).forEach(item => {
+                const card = document.createElement('div');
+                const itemKey = item.title || item.event_key;
+                const isSelected = selectedMarketKey && (selectedMarketKey === itemKey || selectedMarketKey === item.title);
+
+                card.className = 'top-card' + (isSelected ? ' card-selected' : '');
+                card.onclick = (e) => {
+                    if (e.target.tagName !== 'A' && e.target.tagName !== 'BUTTON') {
+                        selectAndScroll(itemKey);
+                    }
+                };
+
+                const spreadPct = (item.spread_after_fees * 100).toFixed(2) + '%';
+                const time = new Date(item.detected_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const isArb = (item.is_arb && item.hedge_margin > 0) ? ' <span class="badge badge-arb" style="font-size:9px;">ВИЛКА</span>' : '';
+                const gap = item.time_diff_hours ? ` (${Math.abs(item.time_diff_hours).toFixed(0)}ч)` : '';
+                const pinBadge = isSelected ? '<span class="pin-badge" style="font-size:9px; padding:1px 4px;">📌 ВЫБРАНО</span>' : '';
+                const coinBadge = getCoinBadge(item.title);
+
+                const actionHtml = formatTradePlan(item);
+
+                card.innerHTML = `
+                    <div>
+                        <div style="font-size:11.5px; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; justify-content:space-between; align-items:center;" title="${item.title}">
+                            <span style="display:flex; align-items:center;">
+                                ${coinBadge}
+                                <b>${item.title}</b>
+                            </span>
+                            ${pinBadge}
+                        </div>
+                        <div style="font-size:18px; font-weight:800; color:var(--accent-emerald); margin: 5px 0;" class="mono">+${spreadPct}${isArb}</div>
+                        <div style="margin-bottom:6px;">${actionHtml}</div>
+                    </div>
+                    <div style="margin-top:6px; border-top: 1px solid var(--border-subtle); padding-top:6px;">
+                        <div style="font-size:10px; color:var(--accent-cyan); margin-bottom: 6px;">Bybit / Poly${gap} • <span style="color:var(--text-muted);">${time}</span></div>
+                        <div style="display:flex; gap:5px;">
+                            ${item.url_a ? `<a href="${item.url_a}" target="_blank" class="btn-exchange btn-bybit" style="flex:1; text-align:center;" onclick="selectMarket('${itemKey}')"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:11px; filter:brightness(0); vertical-align:middle;"> Bybit ↗</a>` : ''}
+                            ${item.url_b ? `<a href="${item.url_b}" target="_blank" class="btn-exchange btn-poly" style="flex:1; text-align:center;" onclick="selectMarket('${itemKey}')"><img src="${LOGO_POLY}" alt="Poly" style="height:12px; vertical-align:middle;"> Poly ↗</a>` : ''}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // ─── Modal Deal Breakdown ───
+        function openDealModalByKey(key) {
+            const row = window.__row_cache && window.__row_cache[key];
+            if (row) openDealModal(row);
+        }
+
+        function openDealModal(row) {
+            activeModalRow = row;
+            const modal = document.getElementById('deal-modal');
+            const titleEl = document.getElementById('modal-title');
+            const subtitleEl = document.getElementById('modal-subtitle');
+            const bodyEl = document.getElementById('modal-body-content');
+
+            titleEl.innerText = row.title || row.event_key;
+            subtitleEl.innerText = `Страйк: ${row.event_key} • Обнаружено: ${new Date(row.detected_at).toLocaleTimeString()}`;
+
+            let splitA = row.stake_a ? Math.round(row.stake_a * 100) : 50;
+            let splitB = 100 - splitA;
+            if (splitA === 0 && splitB === 0 && row.odds_a > 0 && row.odds_b > 0) {
+                const invA = 1.0 / row.odds_a;
+                const invB = 1.0 / row.odds_b;
+                splitA = Math.round((invA / (invA + invB)) * 100);
+                splitB = 100 - splitA;
+            }
+
+            const bank = currentBankroll;
+            const stakeA = Math.max(0.01, Math.round((bank * (splitA / 100)) * 100) / 100);
+            const stakeB = Math.max(0.01, Math.round((bank - stakeA) * 100) / 100);
+
+            const payoutA = (stakeA * (row.odds_a || 0)).toFixed(2);
+            const payoutB = (stakeB * (row.odds_b || 0)).toFixed(2);
+
+            let guaranteedPayout = '0.00';
+            let netProfitVal = '0.00';
+            let netProfitPct = '0.00';
+
+            if (row.hedge_cost && row.hedge_cost > 0) {
+                const payout = (bank / row.hedge_cost);
+                guaranteedPayout = payout.toFixed(2);
+                netProfitVal = (payout - bank).toFixed(2);
+                netProfitPct = ((1.0 / row.hedge_cost - 1.0) * 100).toFixed(2);
+            } else {
+                guaranteedPayout = Math.min(parseFloat(payoutA), parseFloat(payoutB)).toFixed(2);
+                netProfitVal = (parseFloat(guaranteedPayout) - bank).toFixed(2);
+                netProfitPct = ((parseFloat(netProfitVal) / bank) * 100).toFixed(2);
+            }
+
+            const isArb = (row.is_arb === 1 || row.is_arb === true) && (row.hedge_margin > 0);
+
+            bodyEl.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:8px; padding:10px 14px; margin-bottom:14px;">
+                    <span style="font-size:12px; color:var(--text-secondary);">Инвестиционный банк:</span>
+                    <div class="bankroll-input-wrap">
+                        <span style="color:var(--text-muted); font-size:13px; margin-right:4px;">$</span>
+                        <input class="bankroll-input" type="number" min="1" step="1" value="${bank}" onchange="setBankroll(this.value)">
+                    </div>
+                </div>
+
+                <div class="modal-order-card" style="border-left:4px solid var(--bybit-color);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <span style="font-weight:700; color:var(--bybit-color); font-size:13px; display:flex; align-items:center; gap:5px;">
+                            <img src="${LOGO_BYBIT}" alt="Bybit" style="height:12px;"> Ордер 1: Bybit
+                        </span>
+                        <span class="mono" style="font-size:12px; color:var(--text-muted);">${row.odds_a ? row.odds_a.toFixed(3) + 'x' : '-'}</span>
+                    </div>
+                    <div style="font-size:13px; color:var(--text-primary); margin-bottom:4px;">
+                        Действие: <b>${row.action_a || 'ABOVE'}</b>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-secondary);">
+                        <span>Сумма ордера: <b class="mono" style="color:var(--accent-cyan);">$${stakeA.toFixed(2)}</b> (${splitA}%)</span>
+                        <span>Выплата при успехе: <b class="mono" style="color:var(--text-primary);">$${payoutA}</b></span>
+                    </div>
+                </div>
+
+                <div class="modal-order-card" style="border-left:4px solid var(--poly-color);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <span style="font-weight:700; color:var(--poly-color); font-size:13px; display:flex; align-items:center; gap:5px;">
+                            <img src="${LOGO_POLY}" alt="Poly" style="height:13px;"> Ордер 2: Polymarket
+                        </span>
+                        <span class="mono" style="font-size:12px; color:var(--text-muted);">${row.odds_b ? row.odds_b.toFixed(3) + 'x' : '-'}</span>
+                    </div>
+                    <div style="font-size:13px; color:var(--text-primary); margin-bottom:4px;">
+                        Действие: <b>${row.action_b || 'BUY YES'}</b>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-secondary);">
+                        <span>Сумма ордера: <b class="mono" style="color:var(--accent-cyan);">$${stakeB.toFixed(2)}</b> (${splitB}%)</span>
+                        <span>Выплата при успехе: <b class="mono" style="color:var(--text-primary);">$${payoutB}</b></span>
+                    </div>
+                </div>
+
+                <div style="background:${isArb ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.03)'}; border:1px solid ${isArb ? 'rgba(16,185,129,0.3)' : 'var(--border-subtle)'}; border-radius:8px; padding:12px 14px; margin-top:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <span style="font-size:12px; color:var(--text-secondary);">Гарантированный возврат:</span>
+                        <span class="mono" style="font-size:15px; font-weight:700; color:var(--text-primary);">$${guaranteedPayout}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:12px; font-weight:700; color:${isArb ? 'var(--accent-emerald)' : 'var(--text-secondary)'};">Чистая прибыль:</span>
+                        <span class="mono" style="font-size:16px; font-weight:800; color:${isArb ? 'var(--accent-emerald)' : 'var(--text-muted)'};">
+                            ${parseFloat(netProfitVal) >= 0 ? '+' : ''}$${netProfitVal} (${parseFloat(netProfitPct) >= 0 ? '+' : ''}${netProfitPct}%)
+                        </span>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('deal-modal').classList.remove('show');
+            activeModalRow = null;
+        }
+
+        function closeModalOnBackdrop(e) {
+            if (e.target.id === 'deal-modal') closeModal();
+        }
+
+        function copyModalDeal() {
+            if (!activeModalRow) return;
+            const r = activeModalRow;
+            const bank = currentBankroll;
+            const text = `⚡ ARBITRAGE SIGNAL: ${r.title || r.event_key}\n• Bybit: ${r.action_a || 'ABOVE'} ($${(bank * 0.5).toFixed(2)})\n• Poly: ${r.action_b || 'BUY NO'} ($${(bank * 0.5).toFixed(2)})\n• Net Spread: +${((r.spread_after_fees || 0) * 100).toFixed(2)}%\n• Bybit: ${r.url_a}\n• Poly: ${r.url_b}`;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✓ Сигнал сделки скопирован в буфер обмена!');
+            });
+        }
+
+        // ─── Complementary Table ───
+        function renderComplementary(data) {
+            const tbody = document.getElementById('complementary-body');
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="12" style="text-align:center; color:var(--text-muted); padding:24px;">Нет данных о комплементарных парах</td></tr>';
+                return;
+            }
+
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                const probA = (row.prob_a * 100).toFixed(2) + '%';
+                const probB = (row.prob_b * 100).toFixed(2) + '%';
+                const oddsA = row.odds_a ? row.odds_a.toFixed(3) + 'x' : '-';
+                const oddsB = row.odds_b ? row.odds_b.toFixed(3) + 'x' : '-';
+                const stakeA = row.stake_a ? (row.stake_a * 100).toFixed(1) : '-';
+                const stakeB = row.stake_b ? (row.stake_b * 100).toFixed(1) : '-';
+                const stakeSplit = (row.stake_a && row.stake_b) ? `${stakeA}% / ${stakeB}%` : '-';
+                const impliedCost = (row.implied_cost && row.implied_cost > 0) ? row.implied_cost.toFixed(4) : (row.prob_sum ? row.prob_sum.toFixed(4) : '-');
+                const margin = row.spread_after_fees ? (row.spread_after_fees * 100).toFixed(3) + '%' : '-';
+                const isArb = row.is_arb;
+                const time = new Date(row.detected_at).toLocaleTimeString();
+
+                const platA = row.url_a ? `<a href="${row.url_a}" target="_blank" style="color:var(--bybit-color); font-weight:600;"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:10px; vertical-align:middle;"> ${row.platform_a}</a>` : row.platform_a;
+                const platB = row.url_b ? `<a href="${row.url_b}" target="_blank" style="color:var(--bybit-color); font-weight:600;"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:10px; vertical-align:middle;"> ${row.platform_b}</a>` : row.platform_b;
+
+                const marginClass = row.spread_after_fees > 0 ? 'spread-positive' : 'spread-negative';
+                const arbBadge = isArb ? '<span class="badge badge-arb">✓ ДА</span>' : '<span class="badge badge-over">НЕТ</span>';
+
+                tr.innerHTML = `
+                    <td><b>${row.title || row.event_key}</b></td>
+                    <td>${platA}</td>
+                    <td class="mono">${probA}</td>
+                    <td class="odds">${oddsA}</td>
+                    <td>${platB}</td>
+                    <td class="mono">${probB}</td>
+                    <td class="odds">${oddsB}</td>
+                    <td><b class="mono" style="color:var(--accent-purple);">${stakeSplit}</b></td>
+                    <td class="mono">${impliedCost}</td>
+                    <td class="${marginClass}">${margin}</td>
+                    <td>${arbBadge}</td>
+                    <td class="timestamp mono" style="color:var(--text-muted);">${time}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ─── Debug Raw Table ───
+        function renderDebug(data) {
+            const tbody = document.getElementById('debug-body');
+            tbody.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding:24px;">Нет сырых записей в БД</td></tr>';
+                return;
+            }
+
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                const probA = (row.prob_a * 100).toFixed(2) + '%';
+                const probB = (row.prob_b * 100).toFixed(2) + '%';
+                const oddsA = row.odds_a ? row.odds_a.toFixed(3) + 'x' : '-';
+                const oddsB = row.odds_b ? row.odds_b.toFixed(3) + 'x' : '-';
+                const spread = (row.spread_after_fees * 100).toFixed(2) + '%';
+                const time = new Date(row.detected_at).toLocaleTimeString();
+
+                const platA = row.url_a ? `<a href="${row.url_a}" target="_blank">${row.platform_a}</a>` : row.platform_a;
+                const platB = row.url_b ? `<a href="${row.url_b}" target="_blank">${row.platform_b}</a>` : row.platform_b;
+                const actionHtml = row.action_summary ? `<span class="badge badge-arb">${row.action_summary}</span>` : '-';
+
+                let linksHtml = '<div style="display:flex; gap:4px;">';
+                if (row.url_a) linksHtml += `<a href="${row.url_a}" target="_blank" class="btn-exchange btn-bybit" style="font-size:10px; padding:2px 5px;"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:9px; filter:brightness(0); vertical-align:middle;"> Bybit ↗</a>`;
+                if (row.url_b) linksHtml += `<a href="${row.url_b}" target="_blank" class="btn-exchange btn-poly" style="font-size:10px; padding:2px 5px;"><img src="${LOGO_POLY}" alt="Poly" style="height:10px; vertical-align:middle;"> Poly ↗</a>`;
+                linksHtml += '</div>';
+
+                tr.innerHTML = `
+                    <td class="timestamp mono" style="color:var(--text-muted); font-size:11px;">${time}</td>
+                    <td><span class="mono" style="font-size:11px; color:var(--text-secondary);">${row.title || row.event_key}</span></td>
+                    <td>${actionHtml}</td>
+                    <td>${platA}</td>
+                    <td class="mono">${probA}</td>
+                    <td class="odds">${oddsA}</td>
+                    <td>${platB}</td>
+                    <td class="mono">${probB}</td>
+                    <td class="odds">${oddsB}</td>
+                    <td><span class="spread-positive">+${spread}</span></td>
+                    <td>${linksHtml}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ─── Tabs & Sorting Controls ───
+        function switchTab(tab) {
+            currentTab = tab;
+            ['cross', 'comp', 'paper', 'debug'].forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (el) el.style.display = (tab === t) ? 'block' : 'none';
+                if (btn) btn.classList.toggle('tab-btn-active', tab === t);
+            });
+            if (tab === 'debug') fetchRawSpreads();
+            if (tab === 'paper') renderPaperPortfolio();
+        }
+
+        function setSort(field) {
+            if (sortField === field) {
+                sortOrder = (sortOrder === 'desc') ? 'asc' : 'desc';
+            } else {
+                sortField = field;
+                sortOrder = 'desc';
+            }
+            localStorage.setItem('sortField', sortField);
+            localStorage.setItem('sortOrder', sortOrder);
+            updateSortIndicators();
+            if (cachedCrossData.length > 0) renderCross(cachedCrossData);
+        }
+
+        function updateSortIndicators() {
+            const arrow = sortOrder === 'desc' ? '▼' : '▲';
+            ['spread', 'margin', 'time'].forEach(f => {
+                const btn = document.getElementById(`sort-btn-${f}`);
+                const arr = document.getElementById(`sort-arrow-${f}`);
+                if (btn) btn.classList.toggle('active', sortField === f);
+                if (arr) arr.innerText = (sortField === f) ? arrow : '';
+            });
+            ['title', 'odds_a', 'odds_b', 'spread', 'time'].forEach(f => {
+                const col = document.getElementById(`sort-col-${f}`);
+                if (col) col.innerText = (sortField === f) ? arrow : '';
+            });
+        }
+
+        // ─── Pinning & Selection ───
+        function toggleSelect(key) {
+            if (selectedMarketKey === key) {
+                selectedMarketKey = null;
+                localStorage.removeItem('selectedMarketKey');
+            } else {
+                selectedMarketKey = key;
+                localStorage.setItem('selectedMarketKey', key);
+            }
+            updateClearBtn();
+            renderTables(cachedData);
+            renderTopSpreadsCards(cachedTopData);
+        }
+
+        function selectMarket(key) {
+            selectedMarketKey = key;
+            localStorage.setItem('selectedMarketKey', key);
+            updateClearBtn();
+            renderTables(cachedData);
+            renderTopSpreadsCards(cachedTopData);
+        }
+
+        function selectAndScroll(key) {
+            selectMarket(key);
+            switchTab('cross');
+            setTimeout(() => {
+                const rows = document.querySelectorAll('#cross-body tr');
+                for (const r of rows) {
+                    if (r.dataset.key === key) {
+                        r.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        break;
+                    }
+                }
+            }, 100);
+        }
+
+        function clearSelection() {
+            selectedMarketKey = null;
+            localStorage.removeItem('selectedMarketKey');
+            updateClearBtn();
+            renderTables(cachedData);
+            renderTopSpreadsCards(cachedTopData);
+        }
+
+        function updateClearBtn() {
+            const btn = document.getElementById('btn-clear-sel');
+            if (btn) btn.style.display = selectedMarketKey ? 'inline-flex' : 'none';
+        }
+
+        function copyDealToClipboard(btn, text) {
+            if (!navigator.clipboard) return;
+            navigator.clipboard.writeText(text).then(() => {
+                const orig = btn.innerHTML;
+                btn.innerHTML = '✓ Скопировано!';
+                btn.style.color = 'var(--accent-emerald)';
+                btn.style.borderColor = 'var(--accent-emerald)';
+                setTimeout(() => {
+                    btn.innerHTML = orig;
+                    btn.style.color = '';
+                    btn.style.borderColor = '';
+                }, 1600);
+            });
+        }
+
+        // ─── CSV Export ───
+        function exportToCSV() {
+            if (!cachedCrossData || cachedCrossData.length === 0) {
+                alert('Нет данных для экспорта');
+                return;
+            }
+
+            const headers = ['Title', 'Event Key', 'Platform A', 'Prob A', 'Odds A', 'Platform B', 'Prob B', 'Odds B', 'Spread Net %', 'Is Arb', 'Time Gap (hrs)', 'Detected At'];
+            const rows = cachedCrossData.map(r => [
+                `"${(r.title || '').replace(/"/g, '""')}"`,
+                `"${(r.event_key || '').replace(/"/g, '""')}"`,
+                r.platform_a,
+                ((r.prob_a || 0) * 100).toFixed(2),
+                r.odds_a || 0,
+                r.platform_b,
+                ((r.prob_b || 0) * 100).toFixed(2),
+                r.odds_b || 0,
+                ((r.spread_after_fees || 0) * 100).toFixed(2),
+                (r.is_arb === 1 || r.is_arb === true) ? 'YES' : 'NO',
+                r.time_diff_hours || 0,
+                `"${r.detected_at}"`
+            ]);
+
+            const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `odds_pulse_export_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // ─── Hotkeys ───
+        function setupHotkeys() {
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT') {
+                    if (e.key === 'Escape') e.target.blur();
+                    return;
+                }
+
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    toggleAutoRefresh();
+                } else if (e.key === 'd' || e.key === 'в' || e.key === 'D') {
+                    toggleDenseMode();
+                } else if (e.key === 'Escape') {
+                    closeModal();
+                } else if (e.key === '/' || e.key === 'f') {
+                    e.preventDefault();
+                    const s = document.getElementById('market-search');
+                    if (s) s.focus();
+                } else if (e.key === 't' || e.key === 'е') {
+                    toggleTestMode();
+                }
+            });
+        }
+
+        // Run application on load
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

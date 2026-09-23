@@ -1,0 +1,6 @@
+requests
+fastapi
+uvicorn
+pydantic
+curl_cffi
+websocket-client
