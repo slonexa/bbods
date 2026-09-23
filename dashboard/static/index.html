@@ -586,7 +586,7 @@
         }
 
         th, td {
-            padding: 10px 13px;
+            padding: 10px 14px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             font-size: 12.5px;
             vertical-align: middle;
@@ -673,42 +673,30 @@
             color: #7096ff;
         }
 
-        .btn-exchange {
+        /* Clickable interactive odds/platform cell */
+        .platform-link-wrap {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 4px 8px;
+            gap: 4px;
+            text-decoration: none;
+            padding: 3px 7px;
             border-radius: 5px;
-            text-decoration: none;
-            cursor: pointer;
-            border: none;
-            transition: opacity 0.2s, transform 0.1s;
+            transition: all 0.15s ease;
         }
 
-        .btn-exchange:hover {
-            opacity: 0.9;
+        .platform-link-wrap:hover {
+            background: rgba(255, 255, 255, 0.08);
             transform: translateY(-1px);
-            text-decoration: none;
         }
 
-        .btn-bybit {
-            background: #f7a600;
-            color: #0b0e14 !important;
-            box-shadow: 0 0 8px rgba(247, 166, 0, 0.3);
+        .platform-link-wrap .ext-arrow {
+            font-size: 10px;
+            color: var(--text-muted);
+            transition: color 0.15s;
         }
 
-        .btn-poly {
-            background: #2e5cff;
-            color: #ffffff !important;
-            box-shadow: 0 0 8px rgba(46, 92, 255, 0.3);
-        }
-
-        .btn-dual {
-            background: linear-gradient(135deg, #f7a600, #2e5cff);
-            color: #ffffff !important;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+        .platform-link-wrap:hover .ext-arrow {
+            color: var(--accent-cyan);
         }
 
         /* ─── Badges & Tags ─── */
@@ -770,6 +758,7 @@
             vertical-align: middle;
             border-radius: 50%;
             flex-shrink: 0;
+            box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
         }
 
         .coin-icon {
@@ -810,7 +799,7 @@
             height: 100%;
         }
 
-        /* ─── Trade Steps Breakdown ─── */
+        /* ─── Trade Steps Breakdown (Interactive Clickable Legs) ─── */
         .trade-steps {
             display: flex;
             flex-direction: column;
@@ -824,21 +813,42 @@
             justify-content: space-between;
             gap: 6px;
             font-size: 11px;
-            padding: 3px 8px;
-            border-radius: 4px;
+            padding: 4px 8px;
+            border-radius: 5px;
             font-weight: 600;
             white-space: nowrap;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .trade-leg:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.15);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+        }
+
+        .leg-arrow {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-left: 2px;
+            transition: transform 0.15s, opacity 0.15s;
+        }
+
+        .trade-leg:hover .leg-arrow {
+            opacity: 1;
+            transform: translate(1px, -1px);
         }
 
         .trade-leg-bybit {
-            background: rgba(247, 166, 0, 0.12);
-            border: 1px solid rgba(247, 166, 0, 0.35);
+            background: rgba(247, 166, 0, 0.14);
+            border: 1px solid rgba(247, 166, 0, 0.4);
             color: #ffb726;
         }
 
         .trade-leg-poly {
-            background: rgba(46, 92, 255, 0.14);
-            border: 1px solid rgba(46, 92, 255, 0.4);
+            background: rgba(46, 92, 255, 0.16);
+            border: 1px solid rgba(46, 92, 255, 0.45);
             color: #93c5fd;
         }
 
@@ -972,6 +982,7 @@
             display: flex;
             justify-content: flex-end;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
         .modal-order-card {
@@ -1196,7 +1207,7 @@
                 <span style="font-size:16px;">🏆</span>
                 <h3 style="margin:0; font-size:14px; font-weight:700; color:var(--accent-cyan);">Лучшие возможности сессии (Top Spreads)</h3>
             </div>
-            <span style="font-size:11px; color:var(--text-muted);">Кликните на карточку для перехода к сделке</span>
+            <span style="font-size:11px; color:var(--text-muted);">Кликните на карточку или ногу сделки для перехода ↗</span>
         </div>
         <div id="top-spreads-container" class="top-scroll-container">
             <div style="color:var(--text-muted); font-size:12px; padding:10px 0;">Сбор данных...</div>
@@ -1236,7 +1247,7 @@
                 <img src="/media/logo/Bitcoin/Bitcoin_id_4h5jyQK_0.svg" alt="BTC" style="height:12px; vertical-align:middle;"> BTC
             </button>
             <button class="chip-btn" data-asset="ETH" onclick="filterAsset('ETH')">
-                <img src="/media/logo/Ethereum/Ethereum_Logo_0.svg" alt="ETH" style="height:12px; vertical-align:middle;"> ETH
+                <img src="/media/logo/Ethereum/Ethereum_Icon_0.jpeg" alt="ETH" style="height:14px; width:14px; border-radius:50%; vertical-align:middle;"> ETH
             </button>
             <button class="chip-btn" data-asset="SOL" onclick="filterAsset('SOL')">◎ SOL</button>
         </div>
@@ -1275,7 +1286,7 @@
                     <tr>
                         <th style="width:36px; text-align:center;">⭐</th>
                         <th onclick="setSort('title')" style="cursor:pointer;" title="Сортировать по названию">Событие (Страйк) <span id="sort-col-title"></span></th>
-                        <th>🎯 План сделки (Что брать)</th>
+                        <th>🎯 План сделки (Клик по ноге для перехода ↗)</th>
                         <th>
                             <div class="exchange-badge exchange-badge-bybit">
                                 <img src="/media/logo/Bybit/Bybit_Logo_2.svg" alt="Bybit" style="height:14px; width:auto; vertical-align:middle;">
@@ -1295,7 +1306,6 @@
                         <th onclick="setSort('spread')" style="cursor:pointer; color:var(--accent-cyan);" title="Сортировать по спреду">Спред (net) <span id="sort-col-spread">▼</span></th>
                         <th class="th-sparkline" style="display:none; text-align:center;" title="Динамика спреда в реальном времени">Тренд</th>
                         <th>Экспирация</th>
-                        <th>Прямые ссылки</th>
                         <th onclick="setSort('time')" style="cursor:pointer;" title="Сортировать по времени">Время <span id="sort-col-time"></span></th>
                     </tr>
                 </thead>
@@ -1403,7 +1413,6 @@
                         <th>Prob B</th>
                         <th>Коэфф B</th>
                         <th>Спред</th>
-                        <th>Ссылки</th>
                     </tr>
                 </thead>
                 <tbody id="debug-body">
@@ -1429,9 +1438,12 @@
                 <button class="btn-nav" id="modal-btn-paper" onclick="addActiveModalToPaper()" style="background:rgba(168,85,247,0.18); border-color:var(--accent-purple); color:#d8b4fe;">
                     ⚡ В портфель
                 </button>
-                <button class="btn-nav" id="modal-btn-dual" onclick="openDualFromModal()" style="background:linear-gradient(135deg, #f7a600, #2e5cff); color:#fff; border:none;">
-                    🚀 Открыть обе биржи
-                </button>
+                <a id="modal-link-bybit" href="#" target="_blank" class="btn-nav" style="background:#f7a600; color:#0b0e14; font-weight:700; border:none; text-decoration:none;">
+                    <img src="/media/logo/Bybit/Bybit_Logo_2.svg" alt="Bybit" style="height:12px; filter:brightness(0); vertical-align:middle; margin-right:4px;"> Bybit ↗
+                </a>
+                <a id="modal-link-poly" href="#" target="_blank" class="btn-nav" style="background:#2e5cff; color:#fff; font-weight:700; border:none; text-decoration:none;">
+                    <img src="/media/logo/Polymarket/Polymarket_icon-blue_2.png" alt="Poly" style="height:13px; vertical-align:middle; margin-right:4px;"> Poly ↗
+                </a>
                 <button class="btn-nav" onclick="copyModalDeal()" style="color:var(--accent-cyan); border-color:var(--accent-cyan);">
                     📋 Скопировать
                 </button>
@@ -1488,7 +1500,7 @@
         const LOGO_BYBIT = '/media/logo/Bybit/Bybit_Logo_2.svg';
         const LOGO_POLY = '/media/logo/Polymarket/Polymarket_icon-blue_2.png';
         const LOGO_BTC = '/media/logo/Bitcoin/Bitcoin_id_4h5jyQK_0.svg';
-        const LOGO_ETH = '/media/logo/Ethereum/Ethereum_Logo_0.svg';
+        const LOGO_ETH = '/media/logo/Ethereum/Ethereum_Icon_0.jpeg';
 
         // ─── Initialization ───
         function initApp() {
@@ -1617,7 +1629,7 @@
                 window.__spread_history[rowKey] = [];
             }
             const hist = window.__spread_history[rowKey];
-            const spVal = Math.round((currentSpread || 0) * 1000) / 10; // in %
+            const spVal = Math.round((currentSpread || 0) * 1000) / 10;
             if (hist.length === 0 || hist[hist.length - 1] !== spVal) {
                 hist.push(spVal);
                 if (hist.length > 7) hist.shift();
@@ -1885,18 +1897,6 @@
             }
         }
 
-        // ─── Dual Open Helper ───
-        function openDualExchanges(urlA, urlB) {
-            if (urlA) window.open(urlA, '_blank');
-            if (urlB) window.open(urlB, '_blank');
-        }
-
-        function openDualFromModal() {
-            if (activeModalRow) {
-                openDualExchanges(activeModalRow.url_a, activeModalRow.url_b);
-            }
-        }
-
         function enablePushNotifications() {
             if (!("Notification" in window)) {
                 alert("Ваш браузер не поддерживает HTML5 уведомления.");
@@ -2137,7 +2137,7 @@
             });
 
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="15" style="text-align:center; color:var(--text-muted); padding:30px;">Ничего не найдено по заданным фильтрам</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="14" style="text-align:center; color:var(--text-muted); padding:30px;">Ничего не найдено по заданным фильтрам</td></tr>';
                 return;
             }
 
@@ -2217,17 +2217,14 @@
 
                 const actionHtml = formatTradePlan(row);
 
-                let linksHtml = '<div style="display:flex; gap:5px; flex-wrap:nowrap;">';
-                if (row.url_a) {
-                    linksHtml += `<a href="${row.url_a}" target="_blank" class="btn-exchange btn-bybit" onclick="selectMarket('${rowKey}')"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:11px; filter:brightness(0); vertical-align:middle;"> Bybit ↗</a>`;
-                }
-                if (row.url_b) {
-                    linksHtml += `<a href="${row.url_b}" target="_blank" class="btn-exchange btn-poly" onclick="selectMarket('${rowKey}')"><img src="${LOGO_POLY}" alt="Poly" style="height:12px; vertical-align:middle;"> Poly ↗</a>`;
-                }
-                if (row.url_a && row.url_b) {
-                    linksHtml += `<button class="btn-exchange btn-dual" onclick="openDualExchanges('${row.url_a}','${row.url_b}')" title="Открыть обе биржи одновременно в соседних вкладках">🚀 Обе</button>`;
-                }
-                linksHtml += '</div>';
+                // Clickable Bybit and Poly odds
+                const oddsALink = row.url_a 
+                    ? `<a href="${row.url_a}" target="_blank" class="platform-link-wrap" onclick="event.stopPropagation();" title="Открыть стакан Bybit ↗"><span class="odds">${oddsA}</span><span class="ext-arrow">↗</span></a>`
+                    : `<span class="odds">${oddsA}</span>`;
+
+                const oddsBLink = row.url_b 
+                    ? `<a href="${row.url_b}" target="_blank" class="platform-link-wrap" onclick="event.stopPropagation();" title="Открыть стакан Poly ↗"><span class="odds">${oddsB}</span><span class="ext-arrow">↗</span></a>`
+                    : `<span class="odds">${oddsB}</span>`;
 
                 const sparklineTd = testModeEnabled 
                     ? `<td style="text-align:center;">${renderSparkline(rowKey, row.spread_after_fees || 0)}</td>` 
@@ -2251,7 +2248,7 @@
                         </div>
                     </td>
                     <td class="prob-val">${probA}</td>
-                    <td class="odds">${oddsA}</td>
+                    <td>${oddsALink}</td>
                     <td>
                         <div class="prob-bar-container" title="Bybit: ${probA} vs Poly: ${probB}">
                             <div class="prob-bar-fill-bybit" style="width:${probA_num}%"></div>
@@ -2264,11 +2261,10 @@
                         </div>
                     </td>
                     <td class="prob-val">${probB}</td>
-                    <td class="odds">${oddsB}</td>
+                    <td>${oddsBLink}</td>
                     <td><span class="spread-positive">+${spread}</span>${arbBadge}</td>
                     ${sparklineTd}
                     <td>${expInfo}</td>
-                    <td>${linksHtml}</td>
                     <td class="timestamp mono" style="font-size:11px; color:var(--text-muted);">${time}</td>
                 `;
                 tbody.appendChild(tr);
@@ -2342,18 +2338,24 @@
 
             return `
                 <div class="trade-steps">
-                    <div class="trade-leg trade-leg-bybit">
+                    <a href="${row.url_a || '#'}" target="_blank" class="trade-leg trade-leg-bybit" onclick="event.stopPropagation();" title="Открыть Bybit ↗">
                         <span style="display:flex; align-items:center; gap:4px;">
                             <img src="${LOGO_BYBIT}" alt="Bybit" style="height:10px; filter:brightness(0) invert(1);"> <b>${bybitActionText}</b>
                         </span>
-                        <span class="mono" style="opacity:0.9; font-size:10.5px;">$${stakeA_num.toFixed(2)} (${splitA}%)</span>
-                    </div>
-                    <div class="trade-leg trade-leg-poly">
+                        <span style="display:flex; align-items:center; gap:3px;">
+                            <span class="mono" style="opacity:0.9; font-size:10.5px;">$${stakeA_num.toFixed(2)} (${splitA}%)</span>
+                            <span class="leg-arrow">↗</span>
+                        </span>
+                    </a>
+                    <a href="${row.url_b || '#'}" target="_blank" class="trade-leg trade-leg-poly" onclick="event.stopPropagation();" title="Открыть Poly ↗">
                         <span style="display:flex; align-items:center; gap:4px;">
                             <img src="${LOGO_POLY}" alt="Poly" style="height:11px;"> <b>${polyActionText}</b>
                         </span>
-                        <span class="mono" style="opacity:0.9; font-size:10.5px;">$${stakeB_num.toFixed(2)} (${splitB}%)</span>
-                    </div>
+                        <span style="display:flex; align-items:center; gap:3px;">
+                            <span class="mono" style="opacity:0.9; font-size:10.5px;">$${stakeB_num.toFixed(2)} (${splitB}%)</span>
+                            <span class="leg-arrow">↗</span>
+                        </span>
+                    </a>
                     ${calcHtml}
                     ${minWarnHtml}
                     <div class="action-btns-wrap">
@@ -2415,9 +2417,9 @@
                     </div>
                     <div style="margin-top:6px; border-top: 1px solid var(--border-subtle); padding-top:6px;">
                         <div style="font-size:10px; color:var(--accent-cyan); margin-bottom: 6px;">Bybit / Poly${gap} • <span style="color:var(--text-muted);">${time}</span></div>
-                        <div style="display:flex; gap:5px;">
-                            ${item.url_a ? `<a href="${item.url_a}" target="_blank" class="btn-exchange btn-bybit" style="flex:1; text-align:center;" onclick="selectMarket('${itemKey}')"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:11px; filter:brightness(0); vertical-align:middle;"> Bybit ↗</a>` : ''}
-                            ${item.url_b ? `<a href="${item.url_b}" target="_blank" class="btn-exchange btn-poly" style="flex:1; text-align:center;" onclick="selectMarket('${itemKey}')"><img src="${LOGO_POLY}" alt="Poly" style="height:12px; vertical-align:middle;"> Poly ↗</a>` : ''}
+                        <div style="display:flex; gap:6px;">
+                            ${item.url_a ? `<a href="${item.url_a}" target="_blank" class="platform-link-wrap" style="flex:1; justify-content:center; background:rgba(247,166,0,0.12); color:#ffb726;" onclick="selectMarket('${itemKey}')"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:11px; filter:brightness(0) invert(1);"> Bybit ↗</a>` : ''}
+                            ${item.url_b ? `<a href="${item.url_b}" target="_blank" class="platform-link-wrap" style="flex:1; justify-content:center; background:rgba(46,92,255,0.14); color:#93c5fd;" onclick="selectMarket('${itemKey}')"><img src="${LOGO_POLY}" alt="Poly" style="height:12px;"> Poly ↗</a>` : ''}
                         </div>
                     </div>
                 `;
@@ -2437,9 +2439,14 @@
             const titleEl = document.getElementById('modal-title');
             const subtitleEl = document.getElementById('modal-subtitle');
             const bodyEl = document.getElementById('modal-body-content');
+            const linkBybit = document.getElementById('modal-link-bybit');
+            const linkPoly = document.getElementById('modal-link-poly');
 
             titleEl.innerText = row.title || row.event_key;
             subtitleEl.innerText = `Страйк: ${row.event_key} • Обнаружено: ${new Date(row.detected_at).toLocaleTimeString()}`;
+
+            if (linkBybit) linkBybit.href = row.url_a || '#';
+            if (linkPoly) linkPoly.href = row.url_b || '#';
 
             let splitA = row.stake_a ? Math.round(row.stake_a * 100) : 50;
             let splitB = 100 - splitA;
@@ -2575,8 +2582,8 @@
                 const isArb = row.is_arb;
                 const time = new Date(row.detected_at).toLocaleTimeString();
 
-                const platA = row.url_a ? `<a href="${row.url_a}" target="_blank" style="color:var(--bybit-color); font-weight:600;"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:10px; vertical-align:middle;"> ${row.platform_a}</a>` : row.platform_a;
-                const platB = row.url_b ? `<a href="${row.url_b}" target="_blank" style="color:var(--bybit-color); font-weight:600;"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:10px; vertical-align:middle;"> ${row.platform_b}</a>` : row.platform_b;
+                const platA = row.url_a ? `<a href="${row.url_a}" target="_blank" style="color:var(--bybit-color); font-weight:600;"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:10px; vertical-align:middle;"> ${row.platform_a} ↗</a>` : row.platform_a;
+                const platB = row.url_b ? `<a href="${row.url_b}" target="_blank" style="color:var(--bybit-color); font-weight:600;"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:10px; vertical-align:middle;"> ${row.platform_b} ↗</a>` : row.platform_b;
 
                 const marginClass = row.spread_after_fees > 0 ? 'spread-positive' : 'spread-negative';
                 const arbBadge = isArb ? '<span class="badge badge-arb">✓ ДА</span>' : '<span class="badge badge-over">НЕТ</span>';
@@ -2605,7 +2612,7 @@
             tbody.innerHTML = '';
 
             if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding:24px;">Нет сырых записей в БД</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:24px;">Нет сырых записей в БД</td></tr>';
                 return;
             }
 
@@ -2618,14 +2625,9 @@
                 const spread = (row.spread_after_fees * 100).toFixed(2) + '%';
                 const time = new Date(row.detected_at).toLocaleTimeString();
 
-                const platA = row.url_a ? `<a href="${row.url_a}" target="_blank">${row.platform_a}</a>` : row.platform_a;
-                const platB = row.url_b ? `<a href="${row.url_b}" target="_blank">${row.platform_b}</a>` : row.platform_b;
+                const platA = row.url_a ? `<a href="${row.url_a}" target="_blank" style="color:var(--bybit-color);"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:9px; filter:brightness(0) invert(1); vertical-align:middle;"> ${row.platform_a} ↗</a>` : row.platform_a;
+                const platB = row.url_b ? `<a href="${row.url_b}" target="_blank" style="color:var(--poly-color);"><img src="${LOGO_POLY}" alt="Poly" style="height:10px; vertical-align:middle;"> ${row.platform_b} ↗</a>` : row.platform_b;
                 const actionHtml = row.action_summary ? `<span class="badge badge-arb">${row.action_summary}</span>` : '-';
-
-                let linksHtml = '<div style="display:flex; gap:4px;">';
-                if (row.url_a) linksHtml += `<a href="${row.url_a}" target="_blank" class="btn-exchange btn-bybit" style="font-size:10px; padding:2px 5px;"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:9px; filter:brightness(0); vertical-align:middle;"> Bybit ↗</a>`;
-                if (row.url_b) linksHtml += `<a href="${row.url_b}" target="_blank" class="btn-exchange btn-poly" style="font-size:10px; padding:2px 5px;"><img src="${LOGO_POLY}" alt="Poly" style="height:10px; vertical-align:middle;"> Poly ↗</a>`;
-                linksHtml += '</div>';
 
                 tr.innerHTML = `
                     <td class="timestamp mono" style="color:var(--text-muted); font-size:11px;">${time}</td>
@@ -2638,7 +2640,6 @@
                     <td class="mono">${probB}</td>
                     <td class="odds">${oddsB}</td>
                     <td><span class="spread-positive">+${spread}</span></td>
-                    <td>${linksHtml}</td>
                 `;
                 tbody.appendChild(tr);
             });

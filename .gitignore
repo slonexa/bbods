@@ -32,3 +32,5 @@ desktop.ini
 # Scratch & temporary
 temp_*
 scratch/
+
+*.zip
