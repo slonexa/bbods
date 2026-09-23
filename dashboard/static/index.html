@@ -30,16 +30,21 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
+        html {
+            font-size: 13.5px;
+        }
+
         body {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-body);
             color: var(--text-primary);
-            padding: 16px 20px;
+            padding: 10px 16px;
             min-height: 100vh;
             background-image: 
-                radial-gradient(ellipse at 15% 0%, rgba(56, 189, 248, 0.07) 0%, transparent 50%),
-                radial-gradient(ellipse at 85% 10%, rgba(168, 85, 247, 0.06) 0%, transparent 45%);
+                radial-gradient(ellipse at 15% 0%, rgba(56, 189, 248, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 85% 10%, rgba(168, 85, 247, 0.05) 0%, transparent 45%);
             background-attachment: fixed;
+            transition: zoom 0.15s ease;
         }
 
         .mono {
@@ -54,69 +59,70 @@
             background: var(--bg-card);
             backdrop-filter: blur(16px);
             border: 1px solid var(--border-subtle);
-            border-radius: 12px;
-            padding: 12px 20px;
-            margin-bottom: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+            border-radius: 8px;
+            padding: 5px 12px;
+            margin-bottom: 6px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
         }
 
         .brand-group {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 10px;
+            flex-shrink: 0;
         }
 
         .brand-logo-icon {
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
+            width: 28px;
+            height: 28px;
+            border-radius: 7px;
             background: linear-gradient(135deg, #0284c7, #6366f1);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 16px rgba(56, 189, 248, 0.45);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
         }
 
         .brand-title {
-            font-size: 19px;
+            font-size: 15px;
             font-weight: 800;
-            letter-spacing: -0.5px;
+            letter-spacing: -0.3px;
             background: linear-gradient(135deg, #f8fafc 20%, #94a3b8);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .brand-sub {
-            font-size: 11px;
+            font-size: 9.5px;
             font-weight: 600;
             color: var(--text-muted);
-            letter-spacing: 0.8px;
+            letter-spacing: 0.5px;
             text-transform: uppercase;
         }
 
         .badge-live {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             background: rgba(16, 185, 129, 0.12);
             border: 1px solid rgba(16, 185, 129, 0.3);
             color: var(--accent-emerald);
-            padding: 3px 8px;
-            border-radius: 20px;
-            font-size: 11px;
+            padding: 1px 6px;
+            border-radius: 12px;
+            font-size: 9.5px;
             font-weight: 700;
             letter-spacing: 0.3px;
         }
 
         .pulse-dot {
-            width: 7px;
-            height: 7px;
+            width: 5px;
+            height: 5px;
             border-radius: 50%;
             background-color: var(--accent-emerald);
-            box-shadow: 0 0 8px var(--accent-emerald);
+            box-shadow: 0 0 5px var(--accent-emerald);
             animation: pulse-live 1.8s infinite;
         }
 
@@ -128,23 +134,24 @@
         .nav-actions {
             display: flex;
             align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
+            gap: 4px;
+            flex-wrap: nowrap;
         }
 
         .btn-nav {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border-subtle);
             color: var(--text-secondary);
-            border-radius: 8px;
-            padding: 6px 12px;
-            font-size: 12px;
+            border-radius: 5px;
+            padding: 4px 8px;
+            font-size: 11px;
             font-weight: 600;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            transition: all 0.2s ease;
+            gap: 4px;
+            transition: all 0.15s ease;
+            white-space: nowrap;
         }
 
         .btn-nav:hover {
@@ -157,7 +164,7 @@
             background: rgba(56, 189, 248, 0.15);
             color: var(--accent-cyan);
             border-color: var(--accent-cyan);
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.2);
         }
 
         .btn-test-branch {
@@ -175,7 +182,7 @@
             background: rgba(168, 85, 247, 0.25);
             border-color: var(--accent-purple);
             color: #fff;
-            box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.35);
         }
 
         .btn-clear-selection {
@@ -184,34 +191,48 @@
             color: var(--accent-rose);
         }
 
-        .btn-clear-selection:hover {
-            background: rgba(244, 63, 94, 0.22);
+        /* Scale selector dropdown */
+        .scale-selector {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            border-radius: 5px;
+            padding: 3px 6px;
+            font-size: 11px;
+            font-weight: 700;
+            outline: none;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .scale-selector:hover {
             color: #fff;
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
-        /* ─── Live Ticker Tape ─── */
+        /* ─── Compact Activity Ticker Tape ─── */
         .ticker-tape-wrap {
             display: flex;
             align-items: center;
-            background: rgba(14, 20, 30, 0.9);
+            background: rgba(14, 20, 30, 0.85);
             border: 1px solid var(--border-subtle);
-            border-radius: 8px;
-            padding: 6px 14px;
-            margin-bottom: 12px;
-            font-size: 12px;
+            border-radius: 6px;
+            padding: 3px 10px;
+            margin-bottom: 5px;
+            font-size: 10.5px;
             overflow: hidden;
         }
 
         .ticker-label {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             font-weight: 700;
             color: var(--accent-cyan);
             white-space: nowrap;
-            margin-right: 12px;
-            padding-right: 12px;
+            margin-right: 8px;
+            padding-right: 8px;
             border-right: 1px solid var(--border-subtle);
+            font-size: 10px;
         }
 
         .ticker-content {
@@ -220,44 +241,42 @@
             text-overflow: ellipsis;
             color: var(--text-secondary);
             font-family: 'JetBrains Mono', monospace;
-            font-size: 11.5px;
+            font-size: 10.5px;
             flex: 1;
         }
 
         .ticker-item {
             display: inline-block;
-            margin-right: 24px;
+            margin-right: 16px;
         }
 
         .ticker-item b {
             color: var(--text-primary);
         }
 
-        /* ─── KPI Stats Strip ─── */
+        /* ─── Compact KPI Stats Strip ─── */
         .kpi-strip {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 10px;
-            margin-bottom: 12px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 900px) {
+            .kpi-strip { grid-template-columns: repeat(2, 1fr); }
         }
 
         .kpi-card {
             background: var(--bg-card);
             backdrop-filter: blur(12px);
             border: 1px solid var(--border-subtle);
-            border-radius: 10px;
-            padding: 11px 15px;
+            border-radius: 6px;
+            padding: 4px 10px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             position: relative;
             overflow: hidden;
-            transition: transform 0.2s ease, border-color 0.2s ease;
-        }
-
-        .kpi-card:hover {
-            transform: translateY(-2px);
-            border-color: rgba(255, 255, 255, 0.16);
         }
 
         .kpi-card::after {
@@ -265,7 +284,7 @@
             position: absolute;
             top: 0;
             left: 0;
-            width: 4px;
+            width: 3px;
             height: 100%;
             background: var(--accent-blue);
         }
@@ -274,156 +293,99 @@
         .kpi-card.kpi-high::after { background: var(--accent-amber); }
         .kpi-card.kpi-sync::after { background: var(--accent-purple); }
 
+        .kpi-card-content {
+            display: flex;
+            align-items: baseline;
+            gap: 5px;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
         .kpi-label {
-            font-size: 10.5px;
+            font-size: 10px;
             font-weight: 600;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 3px;
+            letter-spacing: 0.4px;
         }
 
         .kpi-value {
-            font-size: 20px;
+            font-size: 14.5px;
             font-weight: 700;
             color: var(--text-primary);
         }
 
-        .kpi-sub {
-            font-size: 10px;
-            color: var(--text-secondary);
-            margin-top: 1px;
-        }
-
         .kpi-icon {
-            font-size: 24px;
-            opacity: 0.7;
-        }
-
-        /* ─── Bankroll & Audio Control Bar ─── */
-        .bankroll-panel {
-            background: var(--bg-card);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border-subtle);
-            border-radius: 10px;
-            padding: 10px 16px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .bankroll-controls {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .bankroll-input-wrap {
-            display: inline-flex;
-            align-items: center;
-            background: #090d14;
-            border: 1px solid var(--border-glow);
-            border-radius: 6px;
-            padding: 3px 9px;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
-        }
-
-        .bankroll-input {
-            background: transparent;
-            border: none;
-            outline: none;
-            color: var(--accent-cyan);
             font-size: 15px;
-            font-weight: 700;
-            width: 65px;
-            font-family: 'JetBrains Mono', monospace;
+            opacity: 0.6;
         }
 
-        .preset-group {
-            display: inline-flex;
-            gap: 5px;
-        }
-
-        .preset-btn {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border-subtle);
-            color: var(--text-secondary);
-            border-radius: 6px;
-            padding: 4px 9px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-
-        .preset-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .preset-btn.active {
-            background: rgba(56, 189, 248, 0.2);
-            border-color: var(--accent-cyan);
-            color: var(--accent-cyan);
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
-        }
-
-        /* ─── Search & Filters Bar ─── */
-        .filter-panel {
+        /* ─── Unified Command Toolbar (Search + Filters + Bankroll) ─── */
+        .unified-toolbar {
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
-            border-radius: 10px;
-            padding: 10px 16px;
-            margin-bottom: 12px;
+            border-radius: 6px;
+            padding: 5px 10px;
+            margin-bottom: 5px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 6px;
+        }
+
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+
+        .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
         }
 
         .search-box-wrap {
             position: relative;
-            flex: 1;
-            min-width: 220px;
-            max-width: 360px;
+            min-width: 200px;
+            max-width: 280px;
         }
 
         .search-input {
             width: 100%;
             background: #090d14;
             border: 1px solid var(--border-subtle);
-            border-radius: 8px;
-            padding: 7px 12px 7px 32px;
+            border-radius: 5px;
+            padding: 4px 8px 4px 26px;
             color: var(--text-primary);
-            font-size: 12.5px;
+            font-size: 11.5px;
             outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: border-color 0.15s;
         }
 
         .search-input:focus {
             border-color: var(--accent-cyan);
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.2);
         }
 
         .search-icon {
             position: absolute;
-            left: 10px;
+            left: 8px;
             top: 50%;
             transform: translateY(-50%);
             color: var(--text-muted);
+            font-size: 11px;
             pointer-events: none;
         }
 
         .filter-chips {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             flex-wrap: wrap;
         }
 
@@ -431,14 +393,14 @@
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--border-subtle);
             color: var(--text-secondary);
-            border-radius: 20px;
-            padding: 4px 11px;
-            font-size: 11px;
+            border-radius: 16px;
+            padding: 3px 9px;
+            font-size: 10.5px;
             font-weight: 600;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             transition: all 0.15s ease;
         }
 
@@ -466,63 +428,113 @@
             color: var(--accent-amber);
         }
 
-        /* ─── Top Opportunities Carousel ─── */
+        .toolbar-divider {
+            height: 14px;
+            width: 1px;
+            background: var(--border-subtle);
+            margin: 0 3px;
+        }
+
+        /* Bankroll in toolbar */
+        .bankroll-input-wrap {
+            display: inline-flex;
+            align-items: center;
+            background: #090d14;
+            border: 1px solid var(--border-glow);
+            border-radius: 6px;
+            padding: 2px 7px;
+        }
+
+        .bankroll-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--accent-cyan);
+            font-size: 14px;
+            font-weight: 700;
+            width: 55px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .preset-group {
+            display: inline-flex;
+            gap: 4px;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            border-radius: 5px;
+            padding: 3px 7px;
+            font-size: 10.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .preset-btn.active {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        /* ─── Collapsible Top Opportunities Carousel ─── */
         .top-section {
             background: var(--bg-card);
             backdrop-filter: blur(12px);
             border: 1px solid var(--border-subtle);
-            border-radius: 10px;
-            padding: 12px 16px;
-            margin-bottom: 12px;
+            border-radius: 6px;
+            padding: 5px 10px;
+            margin-bottom: 5px;
         }
 
         .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            cursor: pointer;
+            user-select: none;
         }
 
         .top-scroll-container {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             overflow-x: auto;
-            padding-bottom: 6px;
+            padding-top: 5px;
+            padding-bottom: 2px;
             scrollbar-width: thin;
-            scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
-        }
-
-        .top-scroll-container::-webkit-scrollbar {
-            height: 6px;
-        }
-        .top-scroll-container::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 3px;
         }
 
         .top-card {
             background: rgba(22, 29, 42, 0.85);
             border: 1px solid var(--border-subtle);
-            border-radius: 8px;
-            padding: 11px 13px;
-            min-width: 260px;
+            border-radius: 6px;
+            padding: 5px 8px;
+            min-width: 220px;
+            max-width: 260px;
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            gap: 4px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
         }
 
         .top-card:hover {
             border-color: rgba(255, 255, 255, 0.25);
-            transform: translateY(-2px);
             background: rgba(28, 38, 54, 0.95);
         }
 
         .card-selected {
             border-color: var(--accent-cyan) !important;
-            box-shadow: 0 0 16px rgba(56, 189, 248, 0.35) !important;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.3) !important;
             background: rgba(20, 36, 56, 0.95) !important;
         }
 
@@ -532,30 +544,30 @@
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 10px;
-            margin: 12px 0 10px;
+            gap: 6px;
+            margin: 5px 0 4px;
             border-bottom: 1px solid var(--border-subtle);
-            padding-bottom: 8px;
+            padding-bottom: 4px;
         }
 
         .tab-group {
             display: flex;
-            gap: 6px;
+            gap: 4px;
         }
 
         .tab-btn {
             background: transparent;
             border: 1px solid transparent;
-            border-radius: 8px;
-            padding: 7px 14px;
+            border-radius: 5px;
+            padding: 4px 10px;
             color: var(--text-secondary);
-            font-size: 12.5px;
+            font-size: 11px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.15s;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
         }
 
         .tab-btn:hover {
@@ -569,14 +581,14 @@
             border-color: rgba(56, 189, 248, 0.4);
         }
 
-        /* ─── Tables ─── */
+        /* ─── Consolidated Pro Table ─── */
         .table-container {
             overflow-x: auto;
             border: 1px solid var(--border-subtle);
-            border-radius: 10px;
+            border-radius: 8px;
             background: var(--bg-card);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-            margin-bottom: 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+            margin-bottom: 16px;
         }
 
         table {
@@ -586,15 +598,15 @@
         }
 
         th, td {
-            padding: 10px 14px;
+            padding: 5px 8px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            font-size: 12.5px;
+            font-size: 11.5px;
             vertical-align: middle;
         }
 
         body.mode-dense th, body.mode-dense td {
-            padding: 6px 10px;
-            font-size: 11.5px;
+            padding: 3px 6px;
+            font-size: 10.5px;
         }
 
         th {
@@ -602,15 +614,15 @@
             font-weight: 700;
             color: var(--text-muted);
             text-transform: uppercase;
-            font-size: 10.5px;
-            letter-spacing: 0.6px;
+            font-size: 10px;
+            letter-spacing: 0.5px;
             white-space: nowrap;
             user-select: none;
         }
 
         tr {
             cursor: pointer;
-            transition: background-color 0.15s ease;
+            transition: background-color 0.12s ease;
         }
 
         tr:hover {
@@ -619,7 +631,7 @@
 
         tr.row-selected {
             background-color: rgba(20, 38, 60, 0.8) !important;
-            box-shadow: inset 4px 0 0 var(--accent-cyan);
+            box-shadow: inset 3px 0 0 var(--accent-cyan);
         }
 
         tr.row-arb-highlight {
@@ -639,74 +651,43 @@
 
         .odds {
             color: #c084fc;
-            font-weight: 600;
+            font-weight: 700;
             font-family: 'JetBrains Mono', monospace;
         }
 
         .prob-val {
             font-family: 'JetBrains Mono', monospace;
-            color: var(--text-secondary);
+            color: var(--text-muted);
+            font-size: 10.5px;
         }
 
-        /* ─── Real Exchange Badges & Official Logos from Folder ─── */
-        .exchange-badge {
+        /* Merged Exchange Box */
+        .exchange-box-cell {
             display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-weight: 700;
-            font-size: 11.5px;
-            letter-spacing: 0.4px;
-            white-space: nowrap;
-        }
-
-        .exchange-badge-bybit {
-            background: rgba(247, 166, 0, 0.12);
-            border: 1px solid rgba(247, 166, 0, 0.35);
-            color: #f7a600;
-        }
-
-        .exchange-badge-poly {
-            background: rgba(46, 92, 255, 0.14);
-            border: 1px solid rgba(46, 92, 255, 0.4);
-            color: #7096ff;
-        }
-
-        /* Clickable interactive odds/platform cell */
-        .platform-link-wrap {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
+            flex-direction: column;
             text-decoration: none;
-            padding: 3px 7px;
+            padding: 3px 6px;
             border-radius: 5px;
             transition: all 0.15s ease;
         }
-
-        .platform-link-wrap:hover {
+        .exchange-box-cell:hover {
             background: rgba(255, 255, 255, 0.08);
             transform: translateY(-1px);
         }
-
-        .platform-link-wrap .ext-arrow {
-            font-size: 10px;
-            color: var(--text-muted);
-            transition: color 0.15s;
-        }
-
-        .platform-link-wrap:hover .ext-arrow {
-            color: var(--accent-cyan);
+        .exchange-box-top {
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         /* ─── Badges & Tags ─── */
         .badge {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            padding: 2px 7px;
+            gap: 3px;
+            padding: 2px 6px;
             border-radius: 4px;
-            font-size: 10.5px;
+            font-size: 10px;
             font-weight: 700;
             letter-spacing: 0.2px;
         }
@@ -715,13 +696,7 @@
             background: rgba(16, 185, 129, 0.18);
             color: var(--accent-emerald);
             border: 1px solid rgba(16, 185, 129, 0.4);
-            box-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
-        }
-
-        .badge-over {
-            background: rgba(244, 63, 94, 0.15);
-            color: var(--accent-rose);
-            border: 1px solid rgba(244, 63, 94, 0.3);
+            box-shadow: 0 0 6px rgba(16, 185, 129, 0.2);
         }
 
         .badge-sync {
@@ -740,53 +715,53 @@
             display: inline-flex;
             align-items: center;
             gap: 3px;
-            font-size: 9.5px;
+            font-size: 9px;
             font-weight: 700;
             color: var(--accent-cyan);
             background: rgba(56, 189, 248, 0.18);
             border: 1px solid var(--accent-cyan);
-            padding: 1px 5px;
-            border-radius: 4px;
-            margin-left: 6px;
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-left: 5px;
         }
 
-        /* ─── Real Crypto Coins from Folder ─── */
+        /* ─── Crypto Coins ─── */
         .coin-img-icon {
-            width: 22px;
-            height: 22px;
-            margin-right: 7px;
+            width: 20px;
+            height: 20px;
+            margin-right: 6px;
             vertical-align: middle;
             border-radius: 50%;
             flex-shrink: 0;
-            box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.4);
         }
 
         .coin-icon {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 800;
             flex-shrink: 0;
-            margin-right: 7px;
+            margin-right: 6px;
             color: #fff;
         }
 
-        .coin-sol { background: linear-gradient(135deg, #9945ff, #14f195); box-shadow: 0 0 6px rgba(20, 241, 149, 0.4); }
+        .coin-sol { background: linear-gradient(135deg, #9945ff, #14f195); box-shadow: 0 0 5px rgba(20, 241, 149, 0.4); }
         .coin-other { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
 
         /* ─── Probability Balance Visualizer Bar ─── */
         .prob-bar-container {
-            width: 75px;
-            height: 6px;
+            width: 60px;
+            height: 5px;
             background: rgba(255, 255, 255, 0.08);
             border-radius: 3px;
             overflow: hidden;
             display: flex;
-            margin: 4px auto 0;
+            margin: 0 auto;
         }
 
         .prob-bar-fill-bybit {
@@ -799,40 +774,46 @@
             height: 100%;
         }
 
-        /* ─── Trade Steps Breakdown (Interactive Clickable Legs) ─── */
+        /* ─── Trade Steps Compact Layout ─── */
         .trade-steps {
             display: flex;
             flex-direction: column;
+            gap: 2px;
+            min-width: 250px;
+        }
+
+        .trade-legs-pair {
+            display: flex;
             gap: 4px;
-            min-width: 220px;
+            align-items: center;
         }
 
         .trade-leg {
             display: inline-flex;
             align-items: center;
             justify-content: space-between;
-            gap: 6px;
-            font-size: 11px;
-            padding: 4px 8px;
-            border-radius: 5px;
+            gap: 4px;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
             font-weight: 600;
             white-space: nowrap;
             text-decoration: none;
             cursor: pointer;
             transition: all 0.15s ease;
+            flex: 1;
         }
 
         .trade-leg:hover {
             transform: translateY(-1px);
             filter: brightness(1.15);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
         }
 
         .leg-arrow {
-            font-size: 11px;
+            font-size: 9px;
             opacity: 0.6;
             margin-left: 2px;
-            transition: transform 0.15s, opacity 0.15s;
         }
 
         .trade-leg:hover .leg-arrow {
@@ -852,22 +833,31 @@
             color: #93c5fd;
         }
 
+        .trade-meta-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 4px;
+        }
+
         .trade-calc {
-            font-size: 10.5px;
+            font-size: 9.5px;
             color: #93c5fd;
             background: #090d14;
-            padding: 3px 7px;
-            border-radius: 4px;
+            padding: 1px 5px;
+            border-radius: 3px;
             border: 1px dashed rgba(255, 255, 255, 0.12);
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
             font-family: 'JetBrains Mono', monospace;
+            white-space: nowrap;
         }
 
         .trade-min-warn {
-            font-size: 10px;
+            font-size: 9px;
             color: #e3b341;
             background: rgba(227, 179, 65, 0.1);
-            padding: 2px 6px;
+            padding: 1px 4px;
             border-radius: 3px;
             border: 1px solid rgba(227, 179, 65, 0.3);
             display: inline-block;
@@ -876,22 +866,45 @@
         .action-btns-wrap {
             display: flex;
             align-items: center;
-            gap: 5px;
-            margin-top: 3px;
+            gap: 3px;
         }
 
         .btn-mini-tool {
-            background: transparent;
+            background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--border-subtle);
             color: var(--text-secondary);
-            font-size: 10px;
-            padding: 3px 7px;
-            border-radius: 4px;
+            font-size: 9px;
+            padding: 1px 5px;
+            border-radius: 3px;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            transition: all 0.15s;
+            gap: 2px;
+            transition: all 0.12s;
+            white-space: nowrap;
+        }
+
+        .btn-mini-tool:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        body.mode-dense .trade-steps {
+            gap: 1px;
+            min-width: 210px;
+        }
+        body.mode-dense .trade-leg {
+            padding: 1px 4px;
+            font-size: 9px;
+        }
+        body.mode-dense .trade-calc {
+            font-size: 8.5px;
+            padding: 1px 3px;
+        }
+        body.mode-dense .btn-mini-tool {
+            font-size: 8.5px;
+            padding: 1px 3px;
         }
 
         .btn-mini-tool:hover {
@@ -914,7 +927,7 @@
 
         .star-toggle {
             cursor: pointer;
-            font-size: 15px;
+            font-size: 14px;
             color: var(--text-muted);
             transition: color 0.15s, transform 0.15s;
         }
@@ -926,7 +939,7 @@
 
         .star-toggle.starred {
             color: var(--accent-amber);
-            text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+            text-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
         }
 
         /* ─── Modal Styles ─── */
@@ -951,7 +964,7 @@
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 12px;
             width: 100%;
-            max-width: 580px;
+            max-width: 560px;
             box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 24px rgba(56, 189, 248, 0.2);
             overflow: hidden;
             animation: modal-enter 0.2s ease-out;
@@ -963,7 +976,7 @@
         }
 
         .modal-header {
-            padding: 16px 20px;
+            padding: 14px 18px;
             background: rgba(255, 255, 255, 0.03);
             border-bottom: 1px solid var(--border-subtle);
             display: flex;
@@ -972,16 +985,16 @@
         }
 
         .modal-body {
-            padding: 20px;
+            padding: 18px;
         }
 
         .modal-footer {
-            padding: 14px 20px;
+            padding: 12px 18px;
             background: rgba(255, 255, 255, 0.03);
             border-top: 1px solid var(--border-subtle);
             display: flex;
             justify-content: flex-end;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
         }
 
@@ -989,15 +1002,15 @@
             background: #090d14;
             border: 1px solid var(--border-subtle);
             border-radius: 8px;
-            padding: 12px 14px;
+            padding: 11px 13px;
             margin-bottom: 10px;
         }
 
         /* ─── Circular Progress Bar ─── */
         .refresh-circle-wrap {
             position: relative;
-            width: 24px;
-            height: 24px;
+            width: 22px;
+            height: 22px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -1025,23 +1038,23 @@
         /* ─── Toast Notification ─── */
         .toast-msg {
             position: fixed;
-            bottom: 24px;
-            right: 24px;
+            bottom: 20px;
+            right: 20px;
             background: rgba(17, 24, 39, 0.95);
             border: 1px solid var(--accent-purple);
             color: #fff;
-            padding: 12px 18px;
+            padding: 10px 16px;
             border-radius: 8px;
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 600;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(168, 85, 247, 0.35);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             z-index: 2000;
             opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.25s ease-out;
+            transform: translateY(16px);
+            transition: all 0.2s ease-out;
             pointer-events: none;
         }
 
@@ -1057,7 +1070,7 @@
     <header class="navbar">
         <div class="brand-group">
             <div class="brand-logo-icon">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="#ffffff" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
             </div>
@@ -1075,44 +1088,52 @@
 
         <div class="nav-actions">
             <!-- Countdown Ring & Status -->
-            <div style="display:flex; align-items:center; gap:8px; margin-right:6px;">
+            <div style="display:flex; align-items:center; gap:6px; margin-right:4px;">
                 <div class="refresh-circle-wrap" title="Секунд до обновления котировок">
-                    <svg class="refresh-circle-svg" width="24" height="24" viewBox="0 0 24 24">
+                    <svg class="refresh-circle-svg" width="22" height="22" viewBox="0 0 24 24">
                         <circle class="circle-bg" cx="12" cy="12" r="10" />
                         <circle id="circle-progress" class="circle-progress" cx="12" cy="12" r="10" />
                     </svg>
                 </div>
-                <span id="status" class="mono" style="font-size:12px; color:var(--accent-cyan);">Подключение...</span>
+                <span id="status" class="mono" style="font-size:11px; color:var(--accent-cyan);">Подключение...</span>
             </div>
 
+            <!-- UI Scale Selector (85%, 90%, 100%) -->
+            <select id="ui-scale-select" class="scale-selector" onchange="changeUiScale(this.value)" title="Масштаб интерфейса под размер экрана">
+                <option value="100" selected>100%</option>
+                <option value="90">90%</option>
+                <option value="85">85%</option>
+                <option value="80">80%</option>
+            </select>
+
             <!-- Auto-refresh Pause Toggle -->
-            <button id="btn-pause-refresh" class="btn-nav" onclick="toggleAutoRefresh()" title="Поставить обновление на паузу (Горячая клавиша: Space)">
+            <button id="btn-pause-refresh" class="btn-nav" onclick="toggleAutoRefresh()" title="Пауза (Space)">
                 <span id="pause-icon">⏸️</span>
                 <span id="pause-text">Пауза</span>
             </button>
 
             <!-- Dense Mode Toggle -->
-            <button id="btn-dense-mode" class="btn-nav" onclick="toggleDenseMode()" title="Переключить плотность строк (Горячая клавиша: D)">
-                📏 Плотный вид
+            <button id="btn-dense-mode" class="btn-nav" onclick="toggleDenseMode()" title="Плотный вид строк (D)">
+                📏 Плотный
             </button>
 
             <!-- Test Mode Branch Toggle -->
-            <button id="btn-test-mode" class="btn-nav btn-test-branch" onclick="toggleTestMode()" title="Включить экспериментальные функции: Демо-портфель, Спарклайны, Ползунок спреда">
-                🧪 Режим теста: <span id="test-mode-status">ВЫКЛ</span>
+            <button id="btn-test-mode" class="btn-nav btn-test-branch" onclick="toggleTestMode()" title="Экспериментальный режим (Демо-портфель, Спарклайны, Ползунок)">
+                🧪 Тест: <span id="test-mode-status">ВЫКЛ</span>
             </button>
 
             <!-- Desktop Push Notification Toggle -->
-            <button id="btn-push-notify" class="btn-nav" onclick="enablePushNotifications()" title="Уведомления на рабочий стол Windows при нахождении вилки">
-                🔔 Web Push
+            <button id="btn-push-notify" class="btn-nav" onclick="enablePushNotifications()" title="Уведомления Windows на рабочий стол">
+                🔔 Push
             </button>
 
             <!-- Audio Alerts Toggle -->
-            <button id="sound-toggle-btn" class="btn-nav" onclick="toggleSoundAlerts()" title="Звуковое оповещение при появлении арбитражной вилки">
-                🔕 Звук: ВЫКЛ
+            <button id="sound-toggle-btn" class="btn-nav" onclick="toggleSoundAlerts()" title="Звук при нахождении вилки">
+                🔕 Звук
             </button>
 
             <!-- Export to CSV -->
-            <button class="btn-nav" onclick="exportToCSV()" title="Скачать срез котировок в CSV файл для Excel">
+            <button class="btn-nav" onclick="exportToCSV()" title="Скачать CSV для Excel">
                 📥 CSV
             </button>
 
@@ -1123,60 +1144,92 @@
         </div>
     </header>
 
-    <!-- ─── Live Activity Ticker Tape ─── -->
+    <!-- ─── Compact Live Activity Ticker Tape ─── -->
     <div class="ticker-tape-wrap">
         <div class="ticker-label">
-            <span>⚡ ЛЕНТА СОБЫТИЙ:</span>
+            <span>⚡ ТИКЕР:</span>
         </div>
         <div class="ticker-content" id="ticker-content">
             <span class="ticker-item">🔄 Инициализация ленты сигналов...</span>
         </div>
     </div>
 
-    <!-- ─── KPI Metrics Strip ─── -->
+    <!-- ─── Compact KPI Stats Strip ─── -->
     <div class="kpi-strip">
         <div class="kpi-card">
-            <div>
-                <div class="kpi-label">Мониторинг рынков</div>
-                <div class="kpi-value mono" id="kpi-total-markets">0</div>
-                <div class="kpi-sub">Синхронных страйков в базе</div>
+            <div class="kpi-card-content">
+                <span class="kpi-label">Рынков:</span>
+                <span class="kpi-value mono" id="kpi-total-markets">0</span>
             </div>
             <div class="kpi-icon">📊</div>
         </div>
         <div class="kpi-card kpi-arbs">
-            <div>
-                <div class="kpi-label">Вилок прямо сейчас</div>
-                <div class="kpi-value mono" id="kpi-active-arbs" style="color:var(--accent-emerald);">0</div>
-                <div class="kpi-sub">Гарантированная прибыль > 0%</div>
+            <div class="kpi-card-content">
+                <span class="kpi-label">Вилок прямо сейчас:</span>
+                <span class="kpi-value mono" id="kpi-active-arbs" style="color:var(--accent-emerald);">0</span>
             </div>
             <div class="kpi-icon">⚡</div>
         </div>
         <div class="kpi-card kpi-high">
-            <div>
-                <div class="kpi-label">Макс. спред сессии</div>
-                <div class="kpi-value mono" id="kpi-max-spread" style="color:var(--accent-amber);">0.00%</div>
-                <div class="kpi-sub" id="kpi-max-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;">-</div>
+            <div class="kpi-card-content">
+                <span class="kpi-label">Макс. спред:</span>
+                <span class="kpi-value mono" id="kpi-max-spread" style="color:var(--accent-amber);">0.00%</span>
+                <span id="kpi-max-title" style="font-size:9.5px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; max-width:110px;">-</span>
             </div>
             <div class="kpi-icon">🏆</div>
         </div>
         <div class="kpi-card kpi-sync">
-            <div>
-                <div class="kpi-label">Синхронность дат</div>
-                <div class="kpi-value mono" id="kpi-sync-ratio" style="color:var(--accent-purple);">100%</div>
-                <div class="kpi-sub">Без временного риска экспирации</div>
+            <div class="kpi-card-content">
+                <span class="kpi-label">Синхрон дат:</span>
+                <span class="kpi-value mono" id="kpi-sync-ratio" style="color:var(--accent-purple);">100%</span>
             </div>
             <div class="kpi-icon">⏱️</div>
         </div>
     </div>
 
-    <!-- ─── Bankroll Calculator & Settings Panel ─── -->
-    <div class="bankroll-panel">
-        <div class="bankroll-controls">
-            <span style="font-weight:700; font-size:13px; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
-                💰 Тестовый банк:
-            </span>
+    <!-- ─── Unified Command Toolbar (Search + Filters + Bankroll) ─── -->
+    <div class="unified-toolbar">
+        <div class="toolbar-left">
+            <div class="search-box-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="market-search" class="search-input" placeholder="Поиск монеты, страйка..." oninput="handleSearch(this.value)">
+            </div>
+
+            <div class="filter-chips">
+                <button id="chip-arb-only" class="chip-btn chip-arb" onclick="toggleFilter('arb_only')">
+                    ⚡ Только вилки
+                </button>
+                <button id="chip-sync-only" class="chip-btn" onclick="toggleFilter('sync_only')">
+                    ⏱️ Синхрон
+                </button>
+                <button id="chip-starred-only" class="chip-btn chip-star" onclick="toggleFilter('starred_only')">
+                    ⭐ Избранные
+                </button>
+
+                <!-- Min Spread Slider (in Test Mode) -->
+                <div id="min-spread-filter-wrap" style="display:none; align-items:center; gap:5px; background:rgba(255,255,255,0.04); border:1px solid var(--border-subtle); padding:2px 7px; border-radius:14px;">
+                    <span style="font-size:10px; font-weight:700; color:var(--accent-purple);">Спред ≥</span>
+                    <input type="range" id="min-spread-slider" min="0" max="5" step="0.1" value="0" oninput="handleMinSpreadChange(this.value)" style="width:55px; cursor:pointer;">
+                    <span id="min-spread-val" class="mono" style="font-size:10.5px; font-weight:700; color:var(--accent-cyan); width:30px;">0.0%</span>
+                </div>
+
+                <span class="toolbar-divider"></span>
+
+                <button class="chip-btn active" data-asset="all" onclick="filterAsset('all')">Все</button>
+                <button class="chip-btn" data-asset="BTC" onclick="filterAsset('BTC')">
+                    <img src="/media/logo/Bitcoin/Bitcoin_id_4h5jyQK_0.svg" alt="BTC" style="height:11px; vertical-align:middle;"> BTC
+                </button>
+                <button class="chip-btn" data-asset="ETH" onclick="filterAsset('ETH')">
+                    <img src="/media/logo/Ethereum/Ethereum_Icon_0.jpeg" alt="ETH" style="height:12px; width:12px; border-radius:50%; vertical-align:middle;"> ETH
+                </button>
+                <button class="chip-btn" data-asset="SOL" onclick="filterAsset('SOL')">◎ SOL</button>
+            </div>
+        </div>
+
+        <div class="toolbar-right">
+            <span style="font-weight:700; font-size:11.5px; color:var(--text-secondary);">Банк:</span>
             <div class="bankroll-input-wrap">
-                <span style="color:var(--text-muted); font-size:13px; margin-right:4px;">$</span>
+                <span style="color:var(--text-muted); font-size:12px; margin-right:3px;">$</span>
                 <input id="bankroll-input" class="bankroll-input" type="number" min="1" step="1" value="20" oninput="setBankroll(this.value)">
             </div>
             <div class="preset-group">
@@ -1186,70 +1239,24 @@
                 <button class="preset-btn" data-val="100" onclick="setBankroll(100)">$100</button>
                 <button class="preset-btn" data-val="250" onclick="setBankroll(250)">$250</button>
                 <button class="preset-btn" data-val="500" onclick="setBankroll(500)">$500</button>
-                <button class="preset-btn" data-val="1000" onclick="setBankroll(1000)">$1000</button>
             </div>
-        </div>
-
-        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-            <div style="font-size:11px; color:var(--text-muted);">
-                Мин. ордер бирж: <b style="color:var(--text-secondary);">$1.00</b>
-            </div>
-            <button class="preset-btn" onclick="testSound()" title="Проверить звучание аудио-сигнала">
-                🔊 Тест звука
-            </button>
         </div>
     </div>
 
-    <!-- ─── Top Opportunities Carousel ─── -->
+    <!-- ─── Collapsible Top Opportunities Carousel ─── -->
     <div class="top-section">
-        <div class="section-header">
-            <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-size:16px;">🏆</span>
-                <h3 style="margin:0; font-size:14px; font-weight:700; color:var(--accent-cyan);">Лучшие возможности сессии (Top Spreads)</h3>
+        <div class="section-header" onclick="toggleTopCarousel()">
+            <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:14px;">🏆</span>
+                <span style="font-size:12.5px; font-weight:700; color:var(--accent-cyan);">Лучшие возможности сессии (Top Spreads)</span>
             </div>
-            <span style="font-size:11px; color:var(--text-muted);">Кликните на карточку или ногу сделки для перехода ↗</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:10.5px; color:var(--text-muted);">Клик по ноге сделки для перехода ↗</span>
+                <span id="top-collapse-icon" style="font-size:10px; color:var(--text-muted); padding:2px 6px; background:rgba(255,255,255,0.05); border-radius:4px;">▲ Свернуть</span>
+            </div>
         </div>
         <div id="top-spreads-container" class="top-scroll-container">
-            <div style="color:var(--text-muted); font-size:12px; padding:10px 0;">Сбор данных...</div>
-        </div>
-    </div>
-
-    <!-- ─── Interactive Search & Filter Panel ─── -->
-    <div class="filter-panel">
-        <div class="search-box-wrap">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="market-search" class="search-input" placeholder="Поиск по монете (BTC, ETH, SOL) или страйку..." oninput="handleSearch(this.value)">
-        </div>
-
-        <div class="filter-chips">
-            <span style="font-size:11px; font-weight:700; color:var(--text-muted); margin-right:4px;">ФИЛЬТРЫ:</span>
-            <button id="chip-arb-only" class="chip-btn chip-arb" onclick="toggleFilter('arb_only')">
-                ⚡ Только вилки (>0%)
-            </button>
-            <button id="chip-sync-only" class="chip-btn" onclick="toggleFilter('sync_only')">
-                ⏱️ Только синхронные
-            </button>
-            <button id="chip-starred-only" class="chip-btn chip-star" onclick="toggleFilter('starred_only')">
-                ⭐ Избранные
-            </button>
-
-            <!-- Test Mode Feature: Min Spread Slider -->
-            <div id="min-spread-filter-wrap" style="display:none; align-items:center; gap:6px; background:rgba(255,255,255,0.04); border:1px solid var(--border-subtle); padding:3px 8px; border-radius:16px;">
-                <span style="font-size:10.5px; font-weight:700; color:var(--accent-purple);">Спред ≥</span>
-                <input type="range" id="min-spread-slider" min="0" max="5" step="0.1" value="0" oninput="handleMinSpreadChange(this.value)" style="width:65px; cursor:pointer;">
-                <span id="min-spread-val" class="mono" style="font-size:11px; font-weight:700; color:var(--accent-cyan); width:32px;">0.0%</span>
-            </div>
-
-            <span style="height:16px; width:1px; background:var(--border-subtle); margin:0 4px;"></span>
-
-            <button class="chip-btn active" data-asset="all" onclick="filterAsset('all')">Все активы</button>
-            <button class="chip-btn" data-asset="BTC" onclick="filterAsset('BTC')">
-                <img src="/media/logo/Bitcoin/Bitcoin_id_4h5jyQK_0.svg" alt="BTC" style="height:12px; vertical-align:middle;"> BTC
-            </button>
-            <button class="chip-btn" data-asset="ETH" onclick="filterAsset('ETH')">
-                <img src="/media/logo/Ethereum/Ethereum_Icon_0.jpeg" alt="ETH" style="height:14px; width:14px; border-radius:50%; vertical-align:middle;"> ETH
-            </button>
-            <button class="chip-btn" data-asset="SOL" onclick="filterAsset('SOL')">◎ SOL</button>
+            <div style="color:var(--text-muted); font-size:11.5px; padding:6px 0;">Сбор данных...</div>
         </div>
     </div>
 
@@ -1266,12 +1273,12 @@
                 💼 Демо-портфель (<span id="paper-badge-count">0</span>)
             </button>
             <button id="tab-btn-debug" class="tab-btn" onclick="switchTab('debug')">
-                🛠️ Дебаг (Сырой поток тиков)
+                🛠️ Дебаг (Тики)
             </button>
         </div>
 
-        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-            <span style="font-size:11px; color:var(--text-muted); font-weight:700;">СОРТИРОВКА:</span>
+        <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
+            <span style="font-size:10.5px; color:var(--text-muted); font-weight:700;">СОРТИРОВКА:</span>
             <button id="sort-btn-spread" class="preset-btn active" onclick="setSort('spread')">📈 По спреду <span id="sort-arrow-spread">▼</span></button>
             <button id="sort-btn-margin" class="preset-btn" onclick="setSort('margin')">🔥 По марже <span id="sort-arrow-margin"></span></button>
             <button id="sort-btn-time" class="preset-btn" onclick="setSort('time')">⏱ По времени <span id="sort-arrow-time"></span></button>
@@ -1284,25 +1291,24 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width:36px; text-align:center;">⭐</th>
+                        <th style="width:30px; text-align:center;">⭐</th>
                         <th onclick="setSort('title')" style="cursor:pointer;" title="Сортировать по названию">Событие (Страйк) <span id="sort-col-title"></span></th>
-                        <th>🎯 План сделки (Клик по ноге для перехода ↗)</th>
-                        <th>
-                            <div class="exchange-badge exchange-badge-bybit">
-                                <img src="/media/logo/Bybit/Bybit_Logo_2.svg" alt="Bybit" style="height:14px; width:auto; vertical-align:middle;">
+                        <th>🎯 План сделки (Клик по ноге ↗)</th>
+                        <th onclick="setSort('odds_a')" style="cursor:pointer;" title="Сортировать по Bybit">
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <img src="/media/logo/Bybit/Bybit_Logo_2.svg" alt="Bybit" style="height:12px; vertical-align:middle;">
+                                <span>Коэфф A</span>
+                                <span id="sort-col-odds_a"></span>
                             </div>
                         </th>
-                        <th>Prob A</th>
-                        <th onclick="setSort('odds_a')" style="cursor:pointer;" title="Сортировать по коэффициенту Bybit">Коэфф A <span id="sort-col-odds_a"></span></th>
                         <th style="text-align:center;" title="Визуальное сравнение вероятностей">Баланс</th>
-                        <th>
-                            <div class="exchange-badge exchange-badge-poly">
-                                <img src="/media/logo/Polymarket/Polymarket_icon-blue_2.png" alt="Poly" style="height:15px; width:15px; vertical-align:middle;">
-                                <span style="font-size:11px;">POLY</span>
+                        <th onclick="setSort('odds_b')" style="cursor:pointer;" title="Сортировать по Polymarket">
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <img src="/media/logo/Polymarket/Polymarket_icon-blue_2.png" alt="Poly" style="height:13px; vertical-align:middle;">
+                                <span>POLY</span>
+                                <span id="sort-col-odds_b"></span>
                             </div>
                         </th>
-                        <th>Prob B</th>
-                        <th onclick="setSort('odds_b')" style="cursor:pointer;" title="Сортировать по коэффициенту Poly">Коэфф B <span id="sort-col-odds_b"></span></th>
                         <th onclick="setSort('spread')" style="cursor:pointer; color:var(--accent-cyan);" title="Сортировать по спреду">Спред (net) <span id="sort-col-spread">▼</span></th>
                         <th class="th-sparkline" style="display:none; text-align:center;" title="Динамика спреда в реальном времени">Тренд</th>
                         <th>Экспирация</th>
@@ -1343,32 +1349,32 @@
 
     <!-- ─── Tab 4: Paper Trading Portfolio (Test Mode) ─── -->
     <div id="tab-paper" style="display: none;">
-        <div style="background:var(--bg-card); border:1px solid var(--accent-purple); border-radius:10px; padding:14px 18px; margin-bottom:14px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+        <div style="background:var(--bg-card); border:1px solid var(--accent-purple); border-radius:8px; padding:12px 16px; margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
                 <div>
-                    <h3 style="margin:0; font-size:15px; font-weight:700; color:#d8b4fe;">💼 Виртуальный демо-портфель (Paper Trading)</h3>
-                    <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Симуляция арбитражных сделок без риска реальных денег</div>
+                    <h3 style="margin:0; font-size:14px; font-weight:700; color:#d8b4fe;">💼 Виртуальный демо-портфель (Paper Trading)</h3>
+                    <div style="font-size:10.5px; color:var(--text-muted); margin-top:2px;">Симуляция арбитражных сделок без риска реальных денег</div>
                 </div>
                 <button class="btn-nav" onclick="clearPaperPortfolio()" style="color:var(--accent-rose); border-color:rgba(244,63,94,0.3);">
                     🗑️ Очистить портфель
                 </button>
             </div>
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px;">
-                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:8px; padding:10px 14px;">
-                    <div style="font-size:10.5px; color:var(--text-muted); text-transform:uppercase;">Всего позиций</div>
-                    <div id="paper-kpi-count" class="mono" style="font-size:18px; font-weight:700; color:var(--text-primary);">0</div>
+            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;">
+                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
+                    <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Всего позиций</div>
+                    <div id="paper-kpi-count" class="mono" style="font-size:16px; font-weight:700; color:var(--text-primary);">0</div>
                 </div>
-                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:8px; padding:10px 14px;">
-                    <div style="font-size:10.5px; color:var(--text-muted); text-transform:uppercase;">Инвестировано ($)</div>
-                    <div id="paper-kpi-invested" class="mono" style="font-size:18px; font-weight:700; color:var(--accent-cyan);">$0.00</div>
+                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
+                    <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Инвестировано</div>
+                    <div id="paper-kpi-invested" class="mono" style="font-size:16px; font-weight:700; color:var(--accent-cyan);">$0.00</div>
                 </div>
-                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:8px; padding:10px 14px;">
-                    <div style="font-size:10.5px; color:var(--text-muted); text-transform:uppercase;">Ожидаемая прибыль ($)</div>
-                    <div id="paper-kpi-profit" class="mono" style="font-size:18px; font-weight:700; color:var(--accent-emerald);">+$0.00</div>
+                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
+                    <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Прибыль</div>
+                    <div id="paper-kpi-profit" class="mono" style="font-size:16px; font-weight:700; color:var(--accent-emerald);">+$0.00</div>
                 </div>
-                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:8px; padding:10px 14px;">
-                    <div style="font-size:10.5px; color:var(--text-muted); text-transform:uppercase;">Средний ROI</div>
-                    <div id="paper-kpi-roi" class="mono" style="font-size:18px; font-weight:700; color:var(--accent-purple);">0.0%</div>
+                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
+                    <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Средний ROI</div>
+                    <div id="paper-kpi-roi" class="mono" style="font-size:16px; font-weight:700; color:var(--accent-purple);">0.0%</div>
                 </div>
             </div>
         </div>
@@ -1396,7 +1402,7 @@
 
     <!-- ─── Tab 3: Debug Raw Ticks Stream ─── -->
     <div id="tab-debug" style="display: none;">
-        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:10px; background:var(--bg-card); padding:10px 14px; border-radius:6px; border:1px solid var(--border-subtle);">
+        <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:8px; background:var(--bg-card); padding:8px 12px; border-radius:6px; border:1px solid var(--border-subtle);">
             🛠️ <b>Режим отладки:</b> Непрерывный хронологический лог тиков напрямую из базы данных (каждые 8-10 сек):
         </div>
         <div class="table-container">
@@ -1426,10 +1432,10 @@
         <div class="modal-box">
             <div class="modal-header">
                 <div>
-                    <h3 id="modal-title" style="font-size:15px; font-weight:700; color:var(--text-primary);">Калькулятор сделки</h3>
-                    <div id="modal-subtitle" style="font-size:11px; color:var(--text-muted); margin-top:2px;">Детализация арбитражной позиции</div>
+                    <h3 id="modal-title" style="font-size:14px; font-weight:700; color:var(--text-primary);">Калькулятор сделки</h3>
+                    <div id="modal-subtitle" style="font-size:10.5px; color:var(--text-muted); margin-top:2px;">Детализация арбитражной позиции</div>
                 </div>
-                <button class="btn-mini-tool" onclick="closeModal()" style="font-size:16px; padding:4px 8px;">✕</button>
+                <button class="btn-mini-tool" onclick="closeModal()" style="font-size:15px; padding:3px 7px;">✕</button>
             </div>
             <div class="modal-body" id="modal-body-content">
                 <!-- Content dynamically populated -->
@@ -1439,10 +1445,10 @@
                     ⚡ В портфель
                 </button>
                 <a id="modal-link-bybit" href="#" target="_blank" class="btn-nav" style="background:#f7a600; color:#0b0e14; font-weight:700; border:none; text-decoration:none;">
-                    <img src="/media/logo/Bybit/Bybit_Logo_2.svg" alt="Bybit" style="height:12px; filter:brightness(0); vertical-align:middle; margin-right:4px;"> Bybit ↗
+                    <img src="/media/logo/Bybit/Bybit_Logo_2.svg" alt="Bybit" style="height:11px; filter:brightness(0); vertical-align:middle; margin-right:4px;"> Bybit ↗
                 </a>
                 <a id="modal-link-poly" href="#" target="_blank" class="btn-nav" style="background:#2e5cff; color:#fff; font-weight:700; border:none; text-decoration:none;">
-                    <img src="/media/logo/Polymarket/Polymarket_icon-blue_2.png" alt="Poly" style="height:13px; vertical-align:middle; margin-right:4px;"> Poly ↗
+                    <img src="/media/logo/Polymarket/Polymarket_icon-blue_2.png" alt="Poly" style="height:12px; vertical-align:middle; margin-right:4px;"> Poly ↗
                 </a>
                 <button class="btn-nav" onclick="copyModalDeal()" style="color:var(--accent-cyan); border-color:var(--accent-cyan);">
                     📋 Скопировать
@@ -1466,6 +1472,8 @@
         let soundAlertsEnabled = localStorage.getItem('soundAlerts') === 'true';
         let denseModeEnabled = localStorage.getItem('denseMode') === 'true';
         let testModeEnabled = localStorage.getItem('testMode') === 'true';
+        let isTopCollapsed = localStorage.getItem('topCollapsed') === 'true';
+        let currentScale = localStorage.getItem('uiScale') || '100';
         let minSpreadFilterVal = 0.0;
 
         let autoRefreshEnabled = true;
@@ -1510,6 +1518,8 @@
             updateSortIndicators();
             applyDenseMode();
             applyTestModeUI();
+            applyScale(currentScale);
+            applyTopCollapseUI();
             updatePaperBadge();
 
             fetchSpreads();
@@ -1517,6 +1527,34 @@
 
             startRefreshLoops();
             setupHotkeys();
+        }
+
+        // ─── Scale Controller ───
+        function changeUiScale(val) {
+            currentScale = val;
+            localStorage.setItem('uiScale', val);
+            applyScale(val);
+        }
+
+        function applyScale(val) {
+            const select = document.getElementById('ui-scale-select');
+            if (select) select.value = val;
+            const factor = parseFloat(val) / 100.0;
+            document.body.style.zoom = factor;
+        }
+
+        // ─── Top Carousel Collapse ───
+        function toggleTopCarousel() {
+            isTopCollapsed = !isTopCollapsed;
+            localStorage.setItem('topCollapsed', isTopCollapsed);
+            applyTopCollapseUI();
+        }
+
+        function applyTopCollapseUI() {
+            const cont = document.getElementById('top-spreads-container');
+            const icon = document.getElementById('top-collapse-icon');
+            if (cont) cont.style.display = isTopCollapsed ? 'none' : 'flex';
+            if (icon) icon.innerText = isTopCollapsed ? '▼ Развернуть' : '▲ Свернуть';
         }
 
         function startRefreshLoops() {
@@ -1640,8 +1678,8 @@
             const min = Math.min(...hist);
             const max = Math.max(...hist);
             const range = (max - min) || 0.05;
-            const width = 42;
-            const height = 16;
+            const width = 38;
+            const height = 15;
             const points = hist.map((v, idx) => {
                 const x = (idx / (hist.length - 1)) * width;
                 const y = height - ((v - min) / range) * (height - 4) - 2;
@@ -1787,8 +1825,8 @@
                         <td class="mono" style="font-size:11px; color:var(--text-muted);">${time}</td>
                         <td><b>${t.title}</b></td>
                         <td class="mono font-bold" style="color:var(--accent-cyan);">$${t.bank}</td>
-                        <td><span style="font-size:11px; color:var(--bybit-color);">${t.action_a} ($${t.stake_a}) @ ${t.odds_a}x</span></td>
-                        <td><span style="font-size:11px; color:var(--poly-color);">${t.action_b} ($${t.stake_b}) @ ${t.odds_b}x</span></td>
+                        <td><span style="font-size:10.5px; color:var(--bybit-color);">${t.action_a} ($${t.stake_a}) @ ${t.odds_a}x</span></td>
+                        <td><span style="font-size:10.5px; color:var(--poly-color);">${t.action_b} ($${t.stake_b}) @ ${t.odds_b}x</span></td>
                         <td><span class="spread-positive">+${t.spread_pct}%</span></td>
                         <td class="mono font-bold">$${t.guaranteed_payout}</td>
                         <td class="mono" style="color:var(--accent-emerald); font-weight:700;">+$${t.net_profit}</td>
@@ -1859,10 +1897,6 @@
             }
         }
 
-        function testSound() {
-            playArbChime();
-        }
-
         function playArbChime() {
             try {
                 const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -1873,8 +1907,8 @@
                 const osc1 = ctx.createOscillator();
                 const gain1 = ctx.createGain();
                 osc1.type = 'sine';
-                osc1.frequency.setValueAtTime(587.33, now); // D5
-                osc1.frequency.exponentialRampToValueAtTime(880.00, now + 0.15); // A5
+                osc1.frequency.setValueAtTime(587.33, now);
+                osc1.frequency.exponentialRampToValueAtTime(880.00, now + 0.15);
                 gain1.gain.setValueAtTime(0.25, now);
                 gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
                 osc1.connect(gain1);
@@ -1885,7 +1919,7 @@
                 const osc2 = ctx.createOscillator();
                 const gain2 = ctx.createGain();
                 osc2.type = 'triangle';
-                osc2.frequency.setValueAtTime(1174.66, now + 0.12); // D6
+                osc2.frequency.setValueAtTime(1174.66, now + 0.12);
                 gain2.gain.setValueAtTime(0.2, now + 0.12);
                 gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
                 osc2.connect(gain2);
@@ -1906,14 +1940,14 @@
                 const btn = document.getElementById('btn-push-notify');
                 if (permission === "granted") {
                     btn.classList.add('active');
-                    btn.innerHTML = '🔔 Web Push: ВКЛ';
+                    btn.innerHTML = '🔔 Push: ВКЛ';
                     new Notification("ODDS PULSE Terminal", {
                         body: "Оповещения о вилках успешно включены!",
                         icon: LOGO_POLY
                     });
                 } else {
                     btn.classList.remove('active');
-                    btn.innerHTML = '🔕 Web Push: ВЫКЛ';
+                    btn.innerHTML = '🔕 Push: ВЫКЛ';
                 }
             });
         }
@@ -2137,7 +2171,7 @@
             });
 
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="14" style="text-align:center; color:var(--text-muted); padding:30px;">Ничего не найдено по заданным фильтрам</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:30px;">Ничего не найдено по заданным фильтрам</td></tr>';
                 return;
             }
 
@@ -2196,35 +2230,47 @@
                 const oddsA = row.odds_a ? row.odds_a.toFixed(3) + 'x' : '-';
                 const oddsB = row.odds_b ? row.odds_b.toFixed(3) + 'x' : '-';
                 const spread = (row.spread_after_fees * 100).toFixed(2) + '%';
-                const time = new Date(row.detected_at).toLocaleTimeString();
+                const time = new Date(row.detected_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
 
                 const probA_num = Math.max(5, Math.min(95, Math.round((row.prob_a || 0.5) * 100)));
                 const probB_num = 100 - probA_num;
 
                 const coinBadge = getCoinBadge(row.title);
-                const arbBadge = isTrueArb ? '<span class="badge badge-arb" style="margin-left:6px;">⚡ ВИЛКА</span>' : '';
+                const arbBadge = isTrueArb ? '<span class="badge badge-arb" style="margin-left:5px;">⚡ ВИЛКА</span>' : '';
                 const pinBadge = isSelected ? '<span class="pin-badge">📌 ВЫБРАНО</span>' : '';
                 const starClass = isStarred ? 'star-toggle starred' : 'star-toggle';
 
                 let expInfo = '-';
-                if (row.time_warning) {
-                    expInfo = `<span class="badge badge-gap">${row.time_warning}</span>`;
-                } else if (row.time_diff_hours !== undefined && row.time_diff_hours !== 0) {
-                    expInfo = `<span class="badge badge-gap">⚠️ ${Math.abs(row.time_diff_hours).toFixed(1)}ч разрыв</span>`;
+                const diffH = (row.time_diff_hours !== undefined && row.time_diff_hours !== null && row.time_diff_hours !== 0)
+                    ? Math.abs(row.time_diff_hours).toFixed(1)
+                    : null;
+                const fullWarn = (row.time_warning || (diffH ? `Разница экспирации: ${diffH}ч` : '')).replace(/⚠️\s*/g, '');
+
+                if (diffH && parseFloat(diffH) > 0.1) {
+                    expInfo = `<span class="badge badge-gap" title="${fullWarn}">⚠️ ${diffH}ч сдвиг</span>`;
+                } else if (row.time_warning) {
+                    expInfo = `<span class="badge badge-gap" title="${fullWarn}">⚠️ Сдвиг</span>`;
                 } else {
-                    expInfo = `<span class="badge badge-sync">✓ Синхрон</span>`;
+                    expInfo = `<span class="badge badge-sync">✓ 0ч</span>`;
                 }
 
                 const actionHtml = formatTradePlan(row);
 
-                // Clickable Bybit and Poly odds
-                const oddsALink = row.url_a 
-                    ? `<a href="${row.url_a}" target="_blank" class="platform-link-wrap" onclick="event.stopPropagation();" title="Открыть стакан Bybit ↗"><span class="odds">${oddsA}</span><span class="ext-arrow">↗</span></a>`
-                    : `<span class="odds">${oddsA}</span>`;
+                // Consolidated Bybit Cell (Odds + Prob + Link)
+                const bybitCellHtml = row.url_a 
+                    ? `<a href="${row.url_a}" target="_blank" class="exchange-box-cell" onclick="event.stopPropagation();" title="Открыть Bybit ↗">
+                         <div class="exchange-box-top"><span class="odds" style="color:var(--bybit-color);">${oddsA}</span><span style="font-size:9px; color:var(--text-muted);">↗</span></div>
+                         <span class="prob-val">${probA}</span>
+                       </a>`
+                    : `<div class="exchange-box-cell"><span class="odds" style="color:var(--bybit-color);">${oddsA}</span><span class="prob-val">${probA}</span></div>`;
 
-                const oddsBLink = row.url_b 
-                    ? `<a href="${row.url_b}" target="_blank" class="platform-link-wrap" onclick="event.stopPropagation();" title="Открыть стакан Poly ↗"><span class="odds">${oddsB}</span><span class="ext-arrow">↗</span></a>`
-                    : `<span class="odds">${oddsB}</span>`;
+                // Consolidated Poly Cell (Odds + Prob + Link)
+                const polyCellHtml = row.url_b 
+                    ? `<a href="${row.url_b}" target="_blank" class="exchange-box-cell" onclick="event.stopPropagation();" title="Открыть Poly ↗">
+                         <div class="exchange-box-top"><span class="odds" style="color:var(--poly-color);">${oddsB}</span><span style="font-size:9px; color:var(--text-muted);">↗</span></div>
+                         <span class="prob-val">${probB}</span>
+                       </a>`
+                    : `<div class="exchange-box-cell"><span class="odds" style="color:var(--poly-color);">${oddsB}</span><span class="prob-val">${probB}</span></div>`;
 
                 const sparklineTd = testModeEnabled 
                     ? `<td style="text-align:center;">${renderSparkline(rowKey, row.spread_after_fees || 0)}</td>` 
@@ -2236,36 +2282,24 @@
                         <div style="display:flex; align-items:center;">
                             ${coinBadge}
                             <div>
-                                <b style="color:var(--text-primary); font-size:12.5px;">${row.title || row.event_key}</b>
+                                <b style="color:var(--text-primary); font-size:12px;">${row.title || row.event_key}</b>
                                 ${pinBadge}
                             </div>
                         </div>
                     </td>
                     <td>${actionHtml}</td>
-                    <td>
-                        <div style="font-weight:700; color:var(--bybit-color); display:flex; align-items:center; gap:5px;">
-                            <img src="${LOGO_BYBIT}" alt="Bybit" style="height:13px; vertical-align:middle;">
-                        </div>
-                    </td>
-                    <td class="prob-val">${probA}</td>
-                    <td>${oddsALink}</td>
+                    <td>${bybitCellHtml}</td>
                     <td>
                         <div class="prob-bar-container" title="Bybit: ${probA} vs Poly: ${probB}">
                             <div class="prob-bar-fill-bybit" style="width:${probA_num}%"></div>
                             <div class="prob-bar-fill-poly" style="width:${probB_num}%"></div>
                         </div>
                     </td>
-                    <td>
-                        <div style="font-weight:700; color:var(--poly-color); display:flex; align-items:center; gap:4px;">
-                            <img src="${LOGO_POLY}" alt="Poly" style="height:14px; vertical-align:middle;"> Poly
-                        </div>
-                    </td>
-                    <td class="prob-val">${probB}</td>
-                    <td>${oddsBLink}</td>
+                    <td>${polyCellHtml}</td>
                     <td><span class="spread-positive">+${spread}</span>${arbBadge}</td>
                     ${sparklineTd}
                     <td>${expInfo}</td>
-                    <td class="timestamp mono" style="font-size:11px; color:var(--text-muted);">${time}</td>
+                    <td class="timestamp mono" style="font-size:10.5px; color:var(--text-muted);">${time}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -2306,7 +2340,7 @@
 
             let minWarnHtml = '';
             if (stakeA_num < 1.0 || stakeB_num < 1.0) {
-                minWarnHtml = `<div class="trade-min-warn">⚠️ Доля < $1.00 (лимит). Рек. банк: <b>$${recommendedBank}</b></div>`;
+                minWarnHtml = `<div class="trade-min-warn">⚠️ < $1.00. Рек. банк: <b>$${recommendedBank}</b></div>`;
             }
 
             const isTrueArb = (row.is_arb === 1 || row.is_arb === true) && (row.hedge_margin > 0);
@@ -2318,9 +2352,9 @@
                 const profitPct = ((1.0 / row.hedge_cost - 1.0) * 100).toFixed(1);
 
                 if (isTrueArb) {
-                    calcHtml = `<div class="trade-calc" style="background:rgba(16,185,129,0.15); border-color:var(--accent-emerald); color:var(--accent-emerald); font-weight:700;">🔥 ВИЛКА на $${bank}: Bybit $${stakeA_num.toFixed(2)} + Poly $${stakeB_num.toFixed(2)} ➔ Выплата $${payout} (+${profitPct}% / +$${profitVal})</div>`;
+                    calcHtml = `<div class="trade-calc" style="background:rgba(16,185,129,0.15); border-color:var(--accent-emerald); color:var(--accent-emerald); font-weight:700;">🔥 $${bank} ➔ $${payout} (+${profitPct}% / +$${profitVal})</div>`;
                 } else {
-                    calcHtml = `<div class="trade-calc">💡 На $${bank}: Bybit $${stakeA_num.toFixed(2)} + Poly $${stakeB_num.toFixed(2)} ➔ Баланс: $${payout}</div>`;
+                    calcHtml = `<div class="trade-calc">💡 $${bank} ➔ Баланс: $${payout}</div>`;
                 }
             }
 
@@ -2338,34 +2372,34 @@
 
             return `
                 <div class="trade-steps">
-                    <a href="${row.url_a || '#'}" target="_blank" class="trade-leg trade-leg-bybit" onclick="event.stopPropagation();" title="Открыть Bybit ↗">
-                        <span style="display:flex; align-items:center; gap:4px;">
-                            <img src="${LOGO_BYBIT}" alt="Bybit" style="height:10px; filter:brightness(0) invert(1);"> <b>${bybitActionText}</b>
-                        </span>
-                        <span style="display:flex; align-items:center; gap:3px;">
-                            <span class="mono" style="opacity:0.9; font-size:10.5px;">$${stakeA_num.toFixed(2)} (${splitA}%)</span>
-                            <span class="leg-arrow">↗</span>
-                        </span>
-                    </a>
-                    <a href="${row.url_b || '#'}" target="_blank" class="trade-leg trade-leg-poly" onclick="event.stopPropagation();" title="Открыть Poly ↗">
-                        <span style="display:flex; align-items:center; gap:4px;">
-                            <img src="${LOGO_POLY}" alt="Poly" style="height:11px;"> <b>${polyActionText}</b>
-                        </span>
-                        <span style="display:flex; align-items:center; gap:3px;">
-                            <span class="mono" style="opacity:0.9; font-size:10.5px;">$${stakeB_num.toFixed(2)} (${splitB}%)</span>
-                            <span class="leg-arrow">↗</span>
-                        </span>
-                    </a>
-                    ${calcHtml}
-                    ${minWarnHtml}
-                    <div class="action-btns-wrap">
-                        <button class="btn-mini-tool" onclick="copyDealToClipboard(this, '${copyText.replace(/'/g, "\\'")}')">
-                            📋 Копировать
-                        </button>
-                        <button class="btn-mini-tool" onclick="openDealModalByKey('${rowKey.replace(/'/g, "\\'")}')">
-                            🧮 Калькулятор
-                        </button>
-                        ${paperBtnHtml}
+                    <div class="trade-legs-pair">
+                        <a href="${row.url_a || '#'}" target="_blank" class="trade-leg trade-leg-bybit" onclick="event.stopPropagation();" title="Открыть Bybit (${bybitActionText}) ↗">
+                            <span style="display:flex; align-items:center; gap:3px;">
+                                <img src="${LOGO_BYBIT}" alt="Bybit" style="height:9px; filter:brightness(0) invert(1);"> <b>${bybitActionText}</b>
+                            </span>
+                            <span class="mono" style="opacity:0.9; font-size:9.5px;">$${stakeA_num.toFixed(2)}<span class="leg-arrow">↗</span></span>
+                        </a>
+                        <a href="${row.url_b || '#'}" target="_blank" class="trade-leg trade-leg-poly" onclick="event.stopPropagation();" title="Открыть Poly (${polyActionText}) ↗">
+                            <span style="display:flex; align-items:center; gap:3px;">
+                                <img src="${LOGO_POLY}" alt="Poly" style="height:9px;"> <b>${polyActionText}</b>
+                            </span>
+                            <span class="mono" style="opacity:0.9; font-size:9.5px;">$${stakeB_num.toFixed(2)}<span class="leg-arrow">↗</span></span>
+                        </a>
+                    </div>
+                    <div class="trade-meta-row">
+                        <div>
+                            ${calcHtml}
+                            ${minWarnHtml}
+                        </div>
+                        <div class="action-btns-wrap">
+                            <button class="btn-mini-tool" onclick="copyDealToClipboard(this, '${copyText.replace(/'/g, "\\'")}')" title="Скопировать детали">
+                                📋
+                            </button>
+                            <button class="btn-mini-tool" onclick="openDealModalByKey('${rowKey.replace(/'/g, "\\'")}')" title="Калькулятор">
+                                🧮 Расчет
+                            </button>
+                            ${paperBtnHtml}
+                        </div>
                     </div>
                 </div>
             `;
@@ -2377,7 +2411,7 @@
             if (!container) return;
 
             if (!data || data.length === 0) {
-                container.innerHTML = '<div style="color:var(--text-muted); font-size:12px;">Пока нет зафиксированных возможностей (>0%)</div>';
+                container.innerHTML = '<div style="color:var(--text-muted); font-size:11.5px;">Пока нет зафиксированных возможностей (>0%)</div>';
                 return;
             }
 
@@ -2398,30 +2432,20 @@
                 const time = new Date(item.detected_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 const isArb = (item.is_arb && item.hedge_margin > 0) ? ' <span class="badge badge-arb" style="font-size:9px;">ВИЛКА</span>' : '';
                 const gap = item.time_diff_hours ? ` (${Math.abs(item.time_diff_hours).toFixed(0)}ч)` : '';
-                const pinBadge = isSelected ? '<span class="pin-badge" style="font-size:9px; padding:1px 4px;">📌 ВЫБРАНО</span>' : '';
+                const pinBadge = isSelected ? '<span class="pin-badge" style="font-size:8.5px; padding:1px 3px;">📌 ВЫБРАНО</span>' : '';
                 const coinBadge = getCoinBadge(item.title);
 
                 const actionHtml = formatTradePlan(item);
 
                 card.innerHTML = `
-                    <div>
-                        <div style="font-size:11.5px; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; justify-content:space-between; align-items:center;" title="${item.title}">
-                            <span style="display:flex; align-items:center;">
-                                ${coinBadge}
-                                <b>${item.title}</b>
-                            </span>
-                            ${pinBadge}
-                        </div>
-                        <div style="font-size:18px; font-weight:800; color:var(--accent-emerald); margin: 5px 0;" class="mono">+${spreadPct}${isArb}</div>
-                        <div style="margin-bottom:6px;">${actionHtml}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+                        <span style="font-size:11px; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${item.title}">
+                            ${coinBadge} ${item.title} ${pinBadge}
+                        </span>
+                        <span class="mono" style="font-size:13px; font-weight:800; color:var(--accent-emerald); white-space:nowrap;">+${spreadPct}${isArb}</span>
                     </div>
-                    <div style="margin-top:6px; border-top: 1px solid var(--border-subtle); padding-top:6px;">
-                        <div style="font-size:10px; color:var(--accent-cyan); margin-bottom: 6px;">Bybit / Poly${gap} • <span style="color:var(--text-muted);">${time}</span></div>
-                        <div style="display:flex; gap:6px;">
-                            ${item.url_a ? `<a href="${item.url_a}" target="_blank" class="platform-link-wrap" style="flex:1; justify-content:center; background:rgba(247,166,0,0.12); color:#ffb726;" onclick="selectMarket('${itemKey}')"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:11px; filter:brightness(0) invert(1);"> Bybit ↗</a>` : ''}
-                            ${item.url_b ? `<a href="${item.url_b}" target="_blank" class="platform-link-wrap" style="flex:1; justify-content:center; background:rgba(46,92,255,0.14); color:#93c5fd;" onclick="selectMarket('${itemKey}')"><img src="${LOGO_POLY}" alt="Poly" style="height:12px;"> Poly ↗</a>` : ''}
-                        </div>
-                    </div>
+                    <div style="font-size:9.5px; color:var(--accent-cyan);">Bybit / Poly${gap} • <span style="color:var(--text-muted);">${time}</span></div>
+                    <div>${actionHtml}</div>
                 `;
                 container.appendChild(card);
             });
@@ -2482,54 +2506,54 @@
             const isArb = (row.is_arb === 1 || row.is_arb === true) && (row.hedge_margin > 0);
 
             bodyEl.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:8px; padding:10px 14px; margin-bottom:14px;">
-                    <span style="font-size:12px; color:var(--text-secondary);">Инвестиционный банк:</span>
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:8px; padding:8px 12px; margin-bottom:12px;">
+                    <span style="font-size:11.5px; color:var(--text-secondary);">Инвестиционный банк:</span>
                     <div class="bankroll-input-wrap">
-                        <span style="color:var(--text-muted); font-size:13px; margin-right:4px;">$</span>
+                        <span style="color:var(--text-muted); font-size:12px; margin-right:3px;">$</span>
                         <input class="bankroll-input" type="number" min="1" step="1" value="${bank}" onchange="setBankroll(this.value)">
                     </div>
                 </div>
 
                 <div class="modal-order-card" style="border-left:4px solid var(--bybit-color);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <span style="font-weight:700; color:var(--bybit-color); font-size:13px; display:flex; align-items:center; gap:5px;">
-                            <img src="${LOGO_BYBIT}" alt="Bybit" style="height:12px;"> Ордер 1: Bybit
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <span style="font-weight:700; color:var(--bybit-color); font-size:12.5px; display:flex; align-items:center; gap:5px;">
+                            <img src="${LOGO_BYBIT}" alt="Bybit" style="height:11px;"> Ордер 1: Bybit
                         </span>
-                        <span class="mono" style="font-size:12px; color:var(--text-muted);">${row.odds_a ? row.odds_a.toFixed(3) + 'x' : '-'}</span>
+                        <span class="mono" style="font-size:11.5px; color:var(--text-muted);">${row.odds_a ? row.odds_a.toFixed(3) + 'x' : '-'}</span>
                     </div>
-                    <div style="font-size:13px; color:var(--text-primary); margin-bottom:4px;">
+                    <div style="font-size:12px; color:var(--text-primary); margin-bottom:4px;">
                         Действие: <b>${row.action_a || 'ABOVE'}</b>
                     </div>
-                    <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-secondary);">
+                    <div style="display:flex; justify-content:space-between; font-size:11.5px; color:var(--text-secondary);">
                         <span>Сумма ордера: <b class="mono" style="color:var(--accent-cyan);">$${stakeA.toFixed(2)}</b> (${splitA}%)</span>
                         <span>Выплата при успехе: <b class="mono" style="color:var(--text-primary);">$${payoutA}</b></span>
                     </div>
                 </div>
 
                 <div class="modal-order-card" style="border-left:4px solid var(--poly-color);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <span style="font-weight:700; color:var(--poly-color); font-size:13px; display:flex; align-items:center; gap:5px;">
-                            <img src="${LOGO_POLY}" alt="Poly" style="height:13px;"> Ордер 2: Polymarket
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <span style="font-weight:700; color:var(--poly-color); font-size:12.5px; display:flex; align-items:center; gap:5px;">
+                            <img src="${LOGO_POLY}" alt="Poly" style="height:12px;"> Ордер 2: Polymarket
                         </span>
-                        <span class="mono" style="font-size:12px; color:var(--text-muted);">${row.odds_b ? row.odds_b.toFixed(3) + 'x' : '-'}</span>
+                        <span class="mono" style="font-size:11.5px; color:var(--text-muted);">${row.odds_b ? row.odds_b.toFixed(3) + 'x' : '-'}</span>
                     </div>
-                    <div style="font-size:13px; color:var(--text-primary); margin-bottom:4px;">
+                    <div style="font-size:12px; color:var(--text-primary); margin-bottom:4px;">
                         Действие: <b>${row.action_b || 'BUY YES'}</b>
                     </div>
-                    <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-secondary);">
+                    <div style="display:flex; justify-content:space-between; font-size:11.5px; color:var(--text-secondary);">
                         <span>Сумма ордера: <b class="mono" style="color:var(--accent-cyan);">$${stakeB.toFixed(2)}</b> (${splitB}%)</span>
                         <span>Выплата при успехе: <b class="mono" style="color:var(--text-primary);">$${payoutB}</b></span>
                     </div>
                 </div>
 
-                <div style="background:${isArb ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.03)'}; border:1px solid ${isArb ? 'rgba(16,185,129,0.3)' : 'var(--border-subtle)'}; border-radius:8px; padding:12px 14px; margin-top:14px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                        <span style="font-size:12px; color:var(--text-secondary);">Гарантированный возврат:</span>
-                        <span class="mono" style="font-size:15px; font-weight:700; color:var(--text-primary);">$${guaranteedPayout}</span>
+                <div style="background:${isArb ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.03)'}; border:1px solid ${isArb ? 'rgba(16,185,129,0.3)' : 'var(--border-subtle)'}; border-radius:8px; padding:10px 12px; margin-top:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+                        <span style="font-size:11.5px; color:var(--text-secondary);">Гарантированный возврат:</span>
+                        <span class="mono" style="font-size:14px; font-weight:700; color:var(--text-primary);">$${guaranteedPayout}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-size:12px; font-weight:700; color:${isArb ? 'var(--accent-emerald)' : 'var(--text-secondary)'};">Чистая прибыль:</span>
-                        <span class="mono" style="font-size:16px; font-weight:800; color:${isArb ? 'var(--accent-emerald)' : 'var(--text-muted)'};">
+                        <span style="font-size:11.5px; font-weight:700; color:${isArb ? 'var(--accent-emerald)' : 'var(--text-secondary)'};">Чистая прибыль:</span>
+                        <span class="mono" style="font-size:15px; font-weight:800; color:${isArb ? 'var(--accent-emerald)' : 'var(--text-muted)'};">
                             ${parseFloat(netProfitVal) >= 0 ? '+' : ''}$${netProfitVal} (${parseFloat(netProfitPct) >= 0 ? '+' : ''}${netProfitPct}%)
                         </span>
                     </div>
@@ -2564,7 +2588,7 @@
             tbody.innerHTML = '';
 
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="12" style="text-align:center; color:var(--text-muted); padding:24px;">Нет данных о комплементарных парах</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="12" style="text-align:center; color:var(--text-muted); padding:20px;">Нет данных о комплементарных парах</td></tr>';
                 return;
             }
 
@@ -2580,7 +2604,7 @@
                 const impliedCost = (row.implied_cost && row.implied_cost > 0) ? row.implied_cost.toFixed(4) : (row.prob_sum ? row.prob_sum.toFixed(4) : '-');
                 const margin = row.spread_after_fees ? (row.spread_after_fees * 100).toFixed(3) + '%' : '-';
                 const isArb = row.is_arb;
-                const time = new Date(row.detected_at).toLocaleTimeString();
+                const time = new Date(row.detected_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
 
                 const platA = row.url_a ? `<a href="${row.url_a}" target="_blank" style="color:var(--bybit-color); font-weight:600;"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:10px; vertical-align:middle;"> ${row.platform_a} ↗</a>` : row.platform_a;
                 const platB = row.url_b ? `<a href="${row.url_b}" target="_blank" style="color:var(--bybit-color); font-weight:600;"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:10px; vertical-align:middle;"> ${row.platform_b} ↗</a>` : row.platform_b;
@@ -2612,7 +2636,7 @@
             tbody.innerHTML = '';
 
             if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:24px;">Нет сырых записей в БД</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:20px;">Нет сырых записей в БД</td></tr>';
                 return;
             }
 
@@ -2623,14 +2647,14 @@
                 const oddsA = row.odds_a ? row.odds_a.toFixed(3) + 'x' : '-';
                 const oddsB = row.odds_b ? row.odds_b.toFixed(3) + 'x' : '-';
                 const spread = (row.spread_after_fees * 100).toFixed(2) + '%';
-                const time = new Date(row.detected_at).toLocaleTimeString();
+                const time = new Date(row.detected_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
 
                 const platA = row.url_a ? `<a href="${row.url_a}" target="_blank" style="color:var(--bybit-color);"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:9px; filter:brightness(0) invert(1); vertical-align:middle;"> ${row.platform_a} ↗</a>` : row.platform_a;
                 const platB = row.url_b ? `<a href="${row.url_b}" target="_blank" style="color:var(--poly-color);"><img src="${LOGO_POLY}" alt="Poly" style="height:10px; vertical-align:middle;"> ${row.platform_b} ↗</a>` : row.platform_b;
                 const actionHtml = row.action_summary ? `<span class="badge badge-arb">${row.action_summary}</span>` : '-';
 
                 tr.innerHTML = `
-                    <td class="timestamp mono" style="color:var(--text-muted); font-size:11px;">${time}</td>
+                    <td class="timestamp mono" style="color:var(--text-muted); font-size:10.5px;">${time}</td>
                     <td><span class="mono" style="font-size:11px; color:var(--text-secondary);">${row.title || row.event_key}</span></td>
                     <td>${actionHtml}</td>
                     <td>${platA}</td>
