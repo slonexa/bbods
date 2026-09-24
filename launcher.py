@@ -3,6 +3,12 @@ import sys
 import time
 import threading
 
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 def watch_process(name, proc, other_proc):
     """Watch a process and terminate the other if it dies."""
     proc.wait()

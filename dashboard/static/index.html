@@ -254,12 +254,12 @@
             color: var(--text-primary);
         }
 
-        /* ─── Compact KPI Stats Strip ─── */
+        /* ─── Compact KPI Stats Cards ─── */
         .kpi-strip {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-            margin-bottom: 5px;
+            gap: 10px;
+            margin-bottom: 8px;
         }
 
         @media (max-width: 900px) {
@@ -270,13 +270,21 @@
             background: var(--bg-card);
             backdrop-filter: blur(12px);
             border: 1px solid var(--border-subtle);
-            border-radius: 6px;
-            padding: 4px 10px;
+            border-radius: 8px;
+            padding: 8px 14px;
+            height: 52px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             position: relative;
             overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.15s ease;
+        }
+
+        .kpi-card:hover {
+            border-color: rgba(255, 255, 255, 0.18);
+            transform: translateY(-1px);
         }
 
         .kpi-card::after {
@@ -284,7 +292,7 @@
             position: absolute;
             top: 0;
             left: 0;
-            width: 3px;
+            width: 3.5px;
             height: 100%;
             background: var(--accent-blue);
         }
@@ -295,29 +303,33 @@
 
         .kpi-card-content {
             display: flex;
-            align-items: baseline;
-            gap: 5px;
+            flex-direction: column;
+            justify-content: center;
+            gap: 2px;
             overflow: hidden;
-            white-space: nowrap;
         }
 
         .kpi-label {
             font-size: 10px;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.4px;
+            letter-spacing: 0.6px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .kpi-value {
-            font-size: 14.5px;
-            font-weight: 700;
+            font-size: 17px;
+            font-weight: 800;
             color: var(--text-primary);
+            line-height: 1.1;
         }
 
         .kpi-icon {
-            font-size: 15px;
-            opacity: 0.6;
+            font-size: 20px;
+            opacity: 0.35;
         }
 
         /* ─── Unified Command Toolbar (Search + Filters + Bankroll) ─── */
@@ -598,26 +610,28 @@
         }
 
         th, td {
-            padding: 5px 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            font-size: 11.5px;
+            padding: 9px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 12px;
             vertical-align: middle;
         }
 
         body.mode-dense th, body.mode-dense td {
-            padding: 3px 6px;
-            font-size: 10.5px;
+            padding: 5px 8px;
+            font-size: 11px;
         }
 
         th {
-            background-color: rgba(14, 19, 28, 0.95);
+            background-color: rgba(13, 18, 28, 0.98);
             font-weight: 700;
             color: var(--text-muted);
             text-transform: uppercase;
             font-size: 10px;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.6px;
             white-space: nowrap;
             user-select: none;
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         tr {
@@ -625,8 +639,12 @@
             transition: background-color 0.12s ease;
         }
 
+        tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.015);
+        }
+
         tr:hover {
-            background-color: rgba(255, 255, 255, 0.035);
+            background-color: rgba(56, 189, 248, 0.05) !important;
         }
 
         tr.row-selected {
@@ -635,7 +653,7 @@
         }
 
         tr.row-arb-highlight {
-            background-color: rgba(16, 185, 129, 0.04);
+            background-color: rgba(16, 185, 129, 0.06) !important;
         }
 
         .spread-positive {
@@ -774,108 +792,204 @@
             height: 100%;
         }
 
-        /* ─── Trade Steps Compact Layout ─── */
-        .trade-steps {
+        /* ─── Dedicated Column & Leg Pill Styles ─── */
+        .event-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .event-info {
             display: flex;
             flex-direction: column;
             gap: 2px;
-            min-width: 250px;
         }
 
-        .trade-legs-pair {
+        .event-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 0.1px;
+            white-space: nowrap;
+        }
+
+        .event-meta {
             display: flex;
-            gap: 4px;
             align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-muted);
         }
 
-        .trade-leg {
+        .exchange-col-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 155px;
+        }
+
+        .exchange-odds-row {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+
+        .odds-val {
+            font-size: 14.5px;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .odds-bybit {
+            color: var(--bybit-color);
+        }
+
+        .odds-poly {
+            color: var(--poly-color);
+        }
+
+        .prob-tag {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .leg-pill {
             display: inline-flex;
             align-items: center;
             justify-content: space-between;
-            gap: 4px;
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 600;
-            white-space: nowrap;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 700;
             text-decoration: none;
-            cursor: pointer;
+            white-space: nowrap;
             transition: all 0.15s ease;
-            flex: 1;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+            width: fit-content;
         }
 
-        .trade-leg:hover {
+        .leg-pill:hover {
             transform: translateY(-1px);
-            filter: brightness(1.15);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+            filter: brightness(1.2);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
         }
 
-        .leg-arrow {
-            font-size: 9px;
-            opacity: 0.6;
-            margin-left: 2px;
-        }
-
-        .trade-leg:hover .leg-arrow {
-            opacity: 1;
-            transform: translate(1px, -1px);
-        }
-
-        .trade-leg-bybit {
+        .leg-pill-bybit {
             background: rgba(247, 166, 0, 0.14);
-            border: 1px solid rgba(247, 166, 0, 0.4);
+            border: 1px solid rgba(247, 166, 0, 0.45);
             color: #ffb726;
         }
 
-        .trade-leg-poly {
+        .leg-pill-bybit:hover {
+            border-color: #f7a600;
+            background: rgba(247, 166, 0, 0.24);
+        }
+
+        .leg-pill-poly {
             background: rgba(46, 92, 255, 0.16);
             border: 1px solid rgba(46, 92, 255, 0.45);
             color: #93c5fd;
         }
 
-        .trade-meta-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 4px;
+        .leg-pill-poly:hover {
+            border-color: #38bdf8;
+            background: rgba(46, 92, 255, 0.26);
         }
 
-        .trade-calc {
-            font-size: 9.5px;
-            color: #93c5fd;
-            background: #090d14;
+        .leg-stake {
+            background: rgba(0, 0, 0, 0.35);
             padding: 1px 5px;
             border-radius: 3px;
-            border: 1px dashed rgba(255, 255, 255, 0.12);
-            display: inline-flex;
-            align-items: center;
+            font-size: 10px;
             font-family: 'JetBrains Mono', monospace;
-            white-space: nowrap;
+        }
+
+        .split-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 85px;
+            max-width: 110px;
+        }
+
+        .split-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .spread-col-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 140px;
+        }
+
+        .spread-primary {
+            font-size: 15px;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-emerald);
+        }
+
+        .profit-preview {
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-secondary);
         }
 
         .trade-min-warn {
-            font-size: 9px;
+            font-size: 9.5px;
             color: #e3b341;
             background: rgba(227, 179, 65, 0.1);
             padding: 1px 4px;
             border-radius: 3px;
             border: 1px solid rgba(227, 179, 65, 0.3);
             display: inline-block;
+            margin-top: 2px;
         }
 
         .action-btns-wrap {
             display: flex;
             align-items: center;
-            gap: 3px;
+            gap: 4px;
+            justify-content: flex-end;
+        }
+
+        .btn-action-calc {
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            color: var(--accent-cyan);
+            border-radius: 5px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-action-calc:hover {
+            background: rgba(56, 189, 248, 0.22);
+            border-color: var(--accent-cyan);
+            color: #fff;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
         }
 
         .btn-mini-tool {
-            background: rgba(255, 255, 255, 0.04);
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border-subtle);
             color: var(--text-secondary);
-            font-size: 9px;
-            padding: 1px 5px;
-            border-radius: 3px;
+            font-size: 10px;
+            padding: 3px 6px;
+            border-radius: 4px;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
@@ -885,21 +999,15 @@
         }
 
         .btn-mini-tool:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.12);
             color: #fff;
             border-color: rgba(255, 255, 255, 0.25);
         }
 
-        body.mode-dense .trade-steps {
-            gap: 1px;
-            min-width: 210px;
-        }
-        body.mode-dense .trade-leg {
-            padding: 1px 4px;
-            font-size: 9px;
-        }
-        body.mode-dense .trade-calc {
-            font-size: 8.5px;
+        body.mode-dense .event-title { font-size: 12px; }
+        body.mode-dense .odds-val { font-size: 13px; }
+        body.mode-dense .leg-pill { padding: 2px 6px; font-size: 10px; }
+        body.mode-dense .spread-primary { font-size: 13.5px; }
             padding: 1px 3px;
         }
         body.mode-dense .btn-mini-tool {
@@ -1154,33 +1262,35 @@
         </div>
     </div>
 
-    <!-- ─── Compact KPI Stats Strip ─── -->
+    <!-- ─── Compact KPI Stats Cards ─── -->
     <div class="kpi-strip">
         <div class="kpi-card">
             <div class="kpi-card-content">
-                <span class="kpi-label">Рынков:</span>
+                <span class="kpi-label"><span class="pulse-dot" style="width:6px; height:6px;"></span> Рынков онлайн</span>
                 <span class="kpi-value mono" id="kpi-total-markets">0</span>
             </div>
             <div class="kpi-icon">📊</div>
         </div>
         <div class="kpi-card kpi-arbs">
             <div class="kpi-card-content">
-                <span class="kpi-label">Вилок прямо сейчас:</span>
+                <span class="kpi-label">⚡ Вилок сейчас</span>
                 <span class="kpi-value mono" id="kpi-active-arbs" style="color:var(--accent-emerald);">0</span>
             </div>
             <div class="kpi-icon">⚡</div>
         </div>
         <div class="kpi-card kpi-high">
             <div class="kpi-card-content">
-                <span class="kpi-label">Макс. спред:</span>
-                <span class="kpi-value mono" id="kpi-max-spread" style="color:var(--accent-amber);">0.00%</span>
-                <span id="kpi-max-title" style="font-size:9.5px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; max-width:110px;">-</span>
+                <span class="kpi-label">📈 Макс. спред</span>
+                <div style="display:flex; align-items:baseline; gap:6px;">
+                    <span class="kpi-value mono" id="kpi-max-spread" style="color:var(--accent-amber);">0.00%</span>
+                    <span id="kpi-max-title" style="font-size:10px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; max-width:130px; white-space:nowrap;">-</span>
+                </div>
             </div>
             <div class="kpi-icon">🏆</div>
         </div>
         <div class="kpi-card kpi-sync">
             <div class="kpi-card-content">
-                <span class="kpi-label">Синхрон дат:</span>
+                <span class="kpi-label">⏱️ Синхрон дат</span>
                 <span class="kpi-value mono" id="kpi-sync-ratio" style="color:var(--accent-purple);">100%</span>
             </div>
             <div class="kpi-icon">⏱️</div>
@@ -1291,28 +1401,30 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width:30px; text-align:center;">⭐</th>
-                        <th onclick="setSort('title')" style="cursor:pointer;" title="Сортировать по названию">Событие (Страйк) <span id="sort-col-title"></span></th>
-                        <th>🎯 План сделки (Клик по ноге ↗)</th>
+                        <th style="width:34px; text-align:center;">⭐</th>
+                        <th onclick="setSort('title')" style="cursor:pointer;" title="Сортировать по названию">
+                            Событие (Рынок) <span id="sort-col-title"></span>
+                        </th>
                         <th onclick="setSort('odds_a')" style="cursor:pointer;" title="Сортировать по Bybit">
-                            <div style="display:flex; align-items:center; gap:4px;">
-                                <img src="/media/logo/Bybit/Bybit_Logo_2.svg" alt="Bybit" style="height:12px; vertical-align:middle;">
-                                <span>Коэфф A</span>
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <img src="/media/logo/Bybit/Bybit_Logo_2.svg" alt="Bybit" style="height:12px;">
+                                <span>(Нога 1)</span>
                                 <span id="sort-col-odds_a"></span>
                             </div>
                         </th>
-                        <th style="text-align:center;" title="Визуальное сравнение вероятностей">Баланс</th>
                         <th onclick="setSort('odds_b')" style="cursor:pointer;" title="Сортировать по Polymarket">
-                            <div style="display:flex; align-items:center; gap:4px;">
-                                <img src="/media/logo/Polymarket/Polymarket_icon-blue_2.png" alt="Poly" style="height:13px; vertical-align:middle;">
-                                <span>POLY</span>
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <img src="/media/logo/Polymarket/Polymarket_icon-blue_2.png" alt="Poly" style="height:13px;">
+                                <span>Polymarket (Нога 2)</span>
                                 <span id="sort-col-odds_b"></span>
                             </div>
                         </th>
-                        <th onclick="setSort('spread')" style="cursor:pointer; color:var(--accent-cyan);" title="Сортировать по спреду">Спред (net) <span id="sort-col-spread">▼</span></th>
-                        <th class="th-sparkline" style="display:none; text-align:center;" title="Динамика спреда в реальном времени">Тренд</th>
-                        <th>Экспирация</th>
-                        <th onclick="setSort('time')" style="cursor:pointer;" title="Сортировать по времени">Время <span id="sort-col-time"></span></th>
+                        <th style="text-align:center; width:110px;" title="Распределение капитала (Сплит)">Сплит</th>
+                        <th onclick="setSort('spread')" style="cursor:pointer; color:var(--accent-cyan);" title="Сортировать по спреду">
+                            Спред & Профит <span id="sort-col-spread">▼</span>
+                        </th>
+                        <th class="th-sparkline" style="display:none; text-align:center; width:60px;" title="Динамика спреда в реальном времени">Тренд</th>
+                        <th style="text-align:right; width:130px;">Действия</th>
                     </tr>
                 </thead>
                 <tbody id="cross-body">
@@ -2234,15 +2346,12 @@
                 const spread = (row.spread_after_fees * 100).toFixed(2) + '%';
                 const time = new Date(row.detected_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
 
-                const probA_num = Math.max(5, Math.min(95, Math.round((row.prob_a || 0.5) * 100)));
-                const probB_num = 100 - probA_num;
-
                 const coinBadge = getCoinBadge(row.title);
                 let arbBadge = '';
                 if (isTrueArb) {
-                    arbBadge = '<span class="badge badge-arb" style="margin-left:5px;">⚡ ВИЛКА</span>';
+                    arbBadge = '<span class="badge badge-arb" style="margin-left:4px;">⚡ ВИЛКА</span>';
                 } else if (isTimeRisky) {
-                    arbBadge = '<span class="badge badge-gap" style="margin-left:5px;" title="Хедж > 0%, но разница экспираций > 0.5ч">⚠️ РИСК ВРЕМЕНИ</span>';
+                    arbBadge = '<span class="badge badge-gap" style="margin-left:4px;" title="Хедж > 0%, но разница экспираций > 0.5ч">⚠️ РИСК ВРЕМЕНИ</span>';
                 }
                 const pinBadge = isSelected ? '<span class="pin-badge">📌 ВЫБРАНО</span>' : '';
                 const starClass = isStarred ? 'star-toggle starred' : 'star-toggle';
@@ -2261,53 +2370,145 @@
                     expInfo = `<span class="badge badge-sync">✓ 0ч</span>`;
                 }
 
-                const actionHtml = formatTradePlan(row);
+                // Leg actions & stakes calculation
+                const isBybitAbove = (row.action_summary && row.action_summary.includes('Bybit: ABOVE')) || (row.action_a && row.action_a.includes('ABOVE'));
+                const bybitActionText = row.action_a ? row.action_a.replace('Bybit: ', '') : (isBybitAbove ? 'Взять ABOVE' : 'Взять BELOW');
 
-                // Consolidated Bybit Cell (Odds + Prob + Link)
-                const bybitCellHtml = row.url_a 
-                    ? `<a href="${row.url_a}" target="_blank" class="exchange-box-cell" onclick="event.stopPropagation();" title="Открыть Bybit ↗">
-                         <div class="exchange-box-top"><span class="odds" style="color:var(--bybit-color);">${oddsA}</span><span style="font-size:9px; color:var(--text-muted);">↗</span></div>
-                         <span class="prob-val">${probA}</span>
-                       </a>`
-                    : `<div class="exchange-box-cell"><span class="odds" style="color:var(--bybit-color);">${oddsA}</span><span class="prob-val">${probA}</span></div>`;
+                const isPolyYes = (row.action_summary && row.action_summary.includes('Poly: YES')) || (row.action_b && row.action_b.includes('YES'));
+                const polyActionText = row.action_b ? row.action_b.replace('Poly: ', '') : (isPolyYes ? 'Купить YES' : 'Купить NO');
 
-                const synthBadge = isSynthetic ? '<span style="font-size:8.5px; color:var(--accent-amber);" title="Синтетическая цена (1 - P)">~синтет</span>' : '';
-                // Consolidated Poly Cell (Odds + Prob + Link)
-                const polyCellHtml = row.url_b 
-                    ? `<a href="${row.url_b}" target="_blank" class="exchange-box-cell" onclick="event.stopPropagation();" title="Открыть Poly ↗">
-                         <div class="exchange-box-top"><span class="odds" style="color:var(--poly-color);">${oddsB}</span><span style="font-size:9px; color:var(--text-muted);">↗</span> ${synthBadge}</div>
-                         <span class="prob-val">${probB}</span>
-                       </a>`
-                    : `<div class="exchange-box-cell"><div class="exchange-box-top"><span class="odds" style="color:var(--poly-color);">${oddsB}</span> ${synthBadge}</div><span class="prob-val">${probB}</span></div>`;
+                let splitA = row.stake_a ? Math.round(row.stake_a * 100) : null;
+                let splitB = row.stake_b ? Math.round(row.stake_b * 100) : null;
+                if (!splitA || !splitB || (splitA === 0 && splitB === 0)) {
+                    if (row.odds_a > 0 && row.odds_b > 0) {
+                        const invA = 1.0 / row.odds_a;
+                        const invB = 1.0 / row.odds_b;
+                        const tot = invA + invB;
+                        splitA = Math.round((invA / tot) * 100);
+                        splitB = 100 - splitA;
+                    } else {
+                        splitA = 50;
+                        splitB = 50;
+                    }
+                } else {
+                    splitB = 100 - splitA;
+                }
+
+                const bank = currentBankroll;
+                const stakeA_num = Math.max(0.01, Math.round((bank * (splitA / 100)) * 100) / 100);
+                const stakeB_num = Math.max(0.01, Math.round((bank - stakeA_num) * 100) / 100);
+
+                const minPct = Math.min(splitA, splitB) / 100.0;
+                const recommendedBank = minPct > 0 ? Math.ceil(1.0 / minPct) : 20;
+                const minWarnHtml = (stakeA_num < 1.0 || stakeB_num < 1.0) ? `<div class="trade-min-warn">⚠️ мин $${recommendedBank}</div>` : '';
+
+                let profitHtml = '';
+                if (row.hedge_cost && row.hedge_cost > 0) {
+                    const payout = (bank / row.hedge_cost).toFixed(2);
+                    const profitVal = (payout - bank).toFixed(2);
+                    const profitPct = ((1.0 / row.hedge_cost - 1.0) * 100).toFixed(1);
+                    if (isTrueArb) {
+                        profitHtml = `<span class="profit-preview mono" style="color:var(--accent-emerald); font-weight:700;">+$${profitVal} (+${profitPct}%)</span>`;
+                    } else if (isTimeRisky) {
+                        profitHtml = `<span class="profit-preview mono" style="color:var(--accent-amber);" title="Риск несовпадения экспираций: $${bank} ➔ $${payout}">⚠️ ~$${payout} (+${profitPct}%)</span>`;
+                    } else {
+                        profitHtml = `<span class="profit-preview mono" style="color:var(--text-muted);">$${bank} ➔ $${payout}</span>`;
+                    }
+                }
+
+                const synthBadge = isSynthetic ? '<span style="font-size:9px; color:var(--accent-amber); margin-left:3px;" title="Синтетическая цена (1 - P)">~синтет</span>' : '';
+
+                const copyText = `${row.title || row.event_key} | Bybit: ${bybitActionText} $${stakeA_num.toFixed(2)} | Poly: ${polyActionText} $${stakeB_num.toFixed(2)}`;
+                const rowKeySafe = rowKey.replace(/'/g, "\\'");
+                const copyTextSafe = copyText.replace(/'/g, "\\'");
+
+                window.__row_cache = window.__row_cache || {};
+                window.__row_cache[rowKey] = row;
+
+                const paperBtnHtml = testModeEnabled 
+                    ? `<button class="btn-mini-tool btn-mini-paper" onclick="addToPaperPortfolio(window.__row_cache['${rowKeySafe}'])" title="Взять сделку в демо-портфель">⚡</button>`
+                    : '';
 
                 const sparklineTd = testModeEnabled 
                     ? `<td style="text-align:center;">${renderSparkline(rowKey, row.spread_after_fees || 0)}</td>` 
                     : '';
 
                 tr.innerHTML = `
-                    <td style="text-align:center;"><span class="${starClass}" onclick="toggleStar(event, '${rowKey}')">★</span></td>
+                    <td style="text-align:center;"><span class="${starClass}" onclick="toggleStar(event, '${rowKeySafe}')">★</span></td>
                     <td>
-                        <div style="display:flex; align-items:center;">
+                        <div class="event-cell">
                             ${coinBadge}
-                            <div>
-                                <b style="color:var(--text-primary); font-size:12px;">${row.title || row.event_key}</b>
-                                ${pinBadge}
+                            <div class="event-info">
+                                <div style="display:flex; align-items:center; gap:5px;">
+                                    <span class="event-title">${row.title || row.event_key}</span>
+                                    ${pinBadge}
+                                </div>
+                                <div class="event-meta">
+                                    <span class="mono">${time}</span>
+                                    ${expInfo}
+                                </div>
                             </div>
                         </div>
                     </td>
-                    <td>${actionHtml}</td>
-                    <td>${bybitCellHtml}</td>
                     <td>
-                        <div class="prob-bar-container" title="Bybit: ${probA} vs Poly: ${probB}">
-                            <div class="prob-bar-fill-bybit" style="width:${probA_num}%"></div>
-                            <div class="prob-bar-fill-poly" style="width:${probB_num}%"></div>
+                        <div class="exchange-col-cell">
+                            <div class="exchange-odds-row">
+                                <span class="odds-val odds-bybit">${oddsA}</span>
+                                <span class="prob-tag">(${probA})</span>
+                            </div>
+                            <a href="${row.url_a || '#'}" target="_blank" class="leg-pill leg-pill-bybit" onclick="event.stopPropagation();" title="Открыть Bybit (${bybitActionText}) ↗">
+                                <span>🟡 ${bybitActionText}</span>
+                                <span class="leg-stake">$${stakeA_num.toFixed(2)} ↗</span>
+                            </a>
                         </div>
                     </td>
-                    <td>${polyCellHtml}</td>
-                    <td><span class="spread-positive">+${spread}</span>${arbBadge}</td>
+                    <td>
+                        <div class="exchange-col-cell">
+                            <div class="exchange-odds-row">
+                                <span class="odds-val odds-poly">${oddsB}</span>
+                                <span class="prob-tag">(${probB})</span>
+                                ${synthBadge}
+                            </div>
+                            <a href="${row.url_b || '#'}" target="_blank" class="leg-pill leg-pill-poly" onclick="event.stopPropagation();" title="Открыть Polymarket (${polyActionText}) ↗">
+                                <span>🔵 ${polyActionText}</span>
+                                <span class="leg-stake">$${stakeB_num.toFixed(2)} ↗</span>
+                            </a>
+                        </div>
+                    </td>
+                    <td style="text-align:center;">
+                        <div class="split-cell" style="margin:0 auto;">
+                            <div class="split-labels mono">
+                                <span style="color:var(--bybit-color);">${splitA}%</span>
+                                <span style="color:var(--poly-color);">${splitB}%</span>
+                            </div>
+                            <div class="prob-bar-container" style="height:6px; border-radius:3px;" title="Bybit: ${splitA}% vs Poly: ${splitB}%">
+                                <div class="prob-bar-fill-bybit" style="width:${splitA}%"></div>
+                                <div class="prob-bar-fill-poly" style="width:${splitB}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="spread-col-cell">
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <span class="spread-primary">+${spread}</span>
+                                ${arbBadge}
+                            </div>
+                            ${profitHtml}
+                            ${minWarnHtml}
+                        </div>
+                    </td>
                     ${sparklineTd}
-                    <td>${expInfo}</td>
-                    <td class="timestamp mono" style="font-size:10.5px; color:var(--text-muted);">${time}</td>
+                    <td>
+                        <div class="action-btns-wrap">
+                            <button class="btn-action-calc" onclick="openDealModalByKey('${rowKeySafe}')" title="Открыть калькулятор сделки">
+                                🧮 Расчет
+                            </button>
+                            <button class="btn-mini-tool" onclick="copyDealToClipboard(this, '${copyTextSafe}')" title="Скопировать детали сделки">
+                                📋
+                            </button>
+                            ${paperBtnHtml}
+                        </div>
+                    </td>
                 `;
                 tbody.appendChild(tr);
             });
