@@ -12,7 +12,7 @@ class BybitOddsCollector(BaseCollector):
     # Bybit Odds page base URL (used for deep links)
     BASE_URL = "https://www.bybit.com/ru-RU/trade/odds"
 
-    def __init__(self, coins=["BTC", "ETH"], contract_types=["UpDown", "Target", "Range", "InOut", "OneTouch"]):
+    def __init__(self, coins=["BTC", "ETH", "SOL"], contract_types=["UpDown", "Target", "Range", "InOut", "OneTouch"]):
         # Keep track of latest ticker data and contract definitions
         self.tickers = {}  # symbol -> { wp, pr, ... }
         self.contracts = {} # symbol -> { settleTime, targetPrice, upperBound, lowerBound, ... }
@@ -21,8 +21,12 @@ class BybitOddsCollector(BaseCollector):
         self.coins = coins
         self.contract_types = contract_types
         
+        # Persistent HTTP session with connection pooling for sub-100ms live ticker fetches
+        self.session = requests.Session()
+        
         # Seed initial ticker data via REST
-        self._seed_tickers()
+        self._refresh_tickers_from_rest()
+        print(f"[{self.platform_name}] Seeded {len(self.tickers)} symbols.")
         
         self.ws_url = "wss://stream.bybit.com/v5/public/event"
         self.ws = None
@@ -31,29 +35,33 @@ class BybitOddsCollector(BaseCollector):
         
         self._connect_ws()
 
-    def _seed_tickers(self):
-        """Seed the initial state using the REST endpoint without broken baseCoin filter."""
-        print(f"[{self.platform_name}] Seeding initial tickers via REST...")
+    def _refresh_tickers_from_rest(self):
+        """Fetch live ticker prices and odds directly from Bybit REST API."""
         endpoint = "https://www.bybit.com/x-api/option/event/webapi/public/ticker_all"
         try:
-            r = requests.get(
+            r = self.session.get(
                 endpoint,
                 impersonate="chrome",
-                timeout=10
+                timeout=6
             )
             data = r.json()
             if data.get("ret_code") == 0:
                 items = data.get("result", [])
+                now_ts = time.time()
+                new_tickers = {}
+                for item in items:
+                    symbol = item.get("symbol")
+                    if symbol:
+                        item["_fetched_at"] = now_ts
+                        new_tickers[symbol] = item
                 with self._lock:
-                    for item in items:
-                        symbol = item.get("symbol")
-                        if symbol:
-                            self.tickers[symbol] = item
-                print(f"[{self.platform_name}] Seeded {len(self.tickers)} symbols (BTC, ETH).")
+                    self.tickers = new_tickers
+                return True
             else:
-                print(f"[{self.platform_name}] REST seed error: {data.get('ret_msg')}")
+                print(f"[{self.platform_name}] REST error: {data.get('ret_msg')}")
         except Exception as e:
-            print(f"[{self.platform_name}] REST seed error: {e}")
+            print(f"[{self.platform_name}] REST request error: {e}")
+        return False
 
     def _connect_ws(self):
         self.ws = websocket.WebSocketApp(
@@ -218,7 +226,11 @@ class BybitOddsCollector(BaseCollector):
         return ""
 
     def fetch(self):
+        # Refresh live tickers from Bybit REST on each cycle (connection pooling takes ~80-120ms)
+        self._refresh_tickers_from_rest()
+
         results = []
+        now_ts = time.time()
         
         # Take a snapshot under lock to avoid concurrent modification
         with self._lock:
@@ -226,6 +238,10 @@ class BybitOddsCollector(BaseCollector):
             contracts_snapshot = dict(self.contracts)
         
         for symbol, ticker in tickers_snapshot.items():
+            # Discard stale tickers older than 180s if a contract expired/disappeared
+            if now_ts - ticker.get("_fetched_at", now_ts) > 180:
+                continue
+
             wp_str = ticker.get("wp", "0")
             wp = float(wp_str) if wp_str else 0.0
             if wp <= 0:
@@ -240,6 +256,8 @@ class BybitOddsCollector(BaseCollector):
             # Extract payout ratio (odds/coefficient) from Bybit
             pr_str = ticker.get("pr", "")
             pr = float(pr_str) if pr_str else 0.0
+            if pr <= 0 and wp > 0:
+                pr = round(1.0 / wp, 4)
             
             # Parse date from expiry_tag if Target or Range
             expiry_tag = info.get("expiry_tag", "")
@@ -261,6 +279,12 @@ class BybitOddsCollector(BaseCollector):
             
             strike_price = float(info.get("target_price", 0)) if info.get("target_price") else None
             
+            # Extract volume if present
+            try:
+                vol = float(ticker.get("v24") or ticker.get("turnover24h") or ticker.get("v") or 0.0)
+            except Exception:
+                vol = 0.0
+
             results.append(self._format_event(
                 market_id=symbol,
                 raw_title=title,
@@ -271,11 +295,13 @@ class BybitOddsCollector(BaseCollector):
                 odds=pr,  # Use Bybit's own payout ratio as odds
                 asset=info.get("coin", ""),
                 contract_type=info.get("type", ""),
+                timeframe=info.get("timeframe", ""),
                 strike_price=strike_price,
                 direction=direction,
                 settle_date=settle_date,
                 settle_time=expiry,
-                expiry_tag=expiry_tag
+                expiry_tag=expiry_tag,
+                volume=vol
             ))
             
         return results

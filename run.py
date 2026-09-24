@@ -1,5 +1,7 @@
 import sys
 import time
+import os
+from datetime import datetime, timezone
 
 if hasattr(sys.stdout, "reconfigure"):
     try:
@@ -12,25 +14,32 @@ from collectors.bybit import BybitOddsCollector
 from normalizer.mapper import Normalizer
 from engine.spread import SpreadEngine
 from engine.db import Database
+from engine.alerts import AlertManager
 
 def main():
     print("Initializing collectors...")
     poly_collector = PolymarketCollector()
     bybit_collector = BybitOddsCollector()
     
-    print("Initializing normalizer and engine...")
+    print("Initializing normalizer, engine, and alerts...")
     normalizer = Normalizer()
     # Bybit Odds: ~0 explicit fee (built into odds), Polymarket: 0 fees
     # Slippage estimate: 0.1%
     engine = SpreadEngine(fee_a=0.0, fee_b=0.0, slippage=0.001)
     db = Database()
+    alert_manager = AlertManager()
     
     poll_interval = 10  # seconds
     
-    print("Running initial DB cleanup (retention: 48h)...")
-    db.cleanup_old_records(hours=48)
+    print("Running initial DB cleanup & archiving (retention: 24h spreads, 12h ticks)...")
+    db.cleanup_old_records(hours_spreads=24, hours_history=12)
     cycle_count = 0
     
+    # Cache to deduplicate static price ticks (saves ~90% disk space)
+    # market_id -> (prob, odds, last_recorded_time)
+    last_price_cache = {}
+    health_file = os.path.join(os.path.dirname(__file__), "engine", ".health.json")
+
     print("Starting data collection loop. Press Ctrl+C to stop.\n")
     
     try:
@@ -38,8 +47,10 @@ def main():
             try:
                 cycle_count += 1
                 if cycle_count % 300 == 0:
-                    print("[DB] Running periodic cleanup of records older than 48h...")
-                    db.cleanup_old_records(hours=48)
+                    print("[DB] Running periodic cleanup & vacuum...")
+                    db.cleanup_old_records(hours_spreads=24, hours_history=12)
+                    vac_res = db.vacuum_db()
+                    print(f"[DB] Vacuum result: {vac_res}")
                 
                 start_time = time.time()
                 
@@ -93,22 +104,55 @@ def main():
                         print(f"   {xr['title']}: spread={xr['spread_after_fees']*100:.2f}% (Bybit={xr['prob_a']*100:.1f}%, Poly={xr['prob_b']*100:.1f}%){time_info}{synth_info}{arb_status}")
                     all_spreads.extend(cross_results)
                 
-                # 3. Save all to DB
+                # 3. Save all to DB and check alerts
                 if all_spreads:
                     db.save_spreads(all_spreads)
                     print(f"\n[OK] Saved {len(all_spreads)} entries to DB.")
+                    alert_manager.process_spreads(all_spreads)
                 else:
                     print("\n[!] No spreads to save this cycle.")
                     
-                # 4. Save raw outcomes for V2 statistical analysis (momentum)
-                history_data = list(bybit_data)
+                # 4. Save raw outcomes for V2 statistical analysis with delta-deduplication
+                now_ts = time.time()
+                raw_pool = list(bybit_data)
                 if poly_data:
-                    poly_targets = [p for p in poly_data if p.get("contract_type") == "Target"]
-                    history_data.extend(poly_targets)
+                    poly_targets = [p for p in poly_data if p.get("contract_type") in ("Target", "UpDown")]
+                    raw_pool.extend(poly_targets)
+                
+                history_data = []
+                for item in raw_pool:
+                    mid = item.get("market_id")
+                    cur_prob = item.get("implied_probability", 0.0)
+                    cur_odds = item.get("odds", 0.0)
+                    
+                    cached = last_price_cache.get(mid)
+                    # Save if new, or price/odds shifted, or 5-minute heartbeat elapsed
+                    if not cached or abs(cur_prob - cached[0]) >= 0.001 or cur_odds != cached[1] or (now_ts - cached[2]) >= 300:
+                        history_data.append(item)
+                        last_price_cache[mid] = (cur_prob, cur_odds, now_ts)
+                
                 if history_data:
                     db.save_price_history(history_data)
-                    
+                    print(f"[DB] Logged {len(history_data)} dynamic price ticks (deduplicated from {len(raw_pool)}).")
+                
+                # 5. Write health metrics
                 elapsed = time.time() - start_time
+                try:
+                    import json
+                    with open(health_file, "w", encoding="utf-8") as hf:
+                        json.dump({
+                            "status": "healthy",
+                            "cycle_count": cycle_count,
+                            "last_cycle_time": datetime.now(timezone.utc).isoformat(),
+                            "cycle_duration_sec": round(elapsed, 2),
+                            "bybit_count": len(bybit_data),
+                            "poly_count": len(poly_data),
+                            "spreads_count": len(all_spreads),
+                            "cached_tickers_tracked": len(last_price_cache)
+                        }, hf, indent=2)
+                except Exception:
+                    pass
+
                 sleep_time = max(0, poll_interval - elapsed)
                 print(f"-- Sleeping for {sleep_time:.1f}s...\n{'-'*50}\n")
                 time.sleep(sleep_time)

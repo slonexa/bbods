@@ -165,7 +165,10 @@ class SpreadEngine:
                     odds_poly = round(1.0 / prob_poly, 4)
 
                 poly_out = poly_ev.get("outcome", outcome_b).upper()
-                opp_poly_out = "NO" if poly_out == "YES" else "YES"
+                if poly_out in ("UP", "DOWN"):
+                    opp_poly_out = "DOWN" if poly_out == "UP" else "UP"
+                else:
+                    opp_poly_out = "NO" if poly_out == "YES" else "YES"
 
                 opp_item = None
                 poly_market_id = str(poly_ev.get("market_id", ""))
@@ -201,8 +204,12 @@ class SpreadEngine:
                 stake_poly_pct = round(cost_poly_opp / real_hedge_cost, 4) if real_hedge_cost > 0 else 0.5
 
                 # --- 5. Human-readable action descriptions ---
-                bybit_desc = "Выше" if bybit_dir == "ABOVE" else "Ниже"
-                poly_desc = "Ниже" if opp_poly_out == "NO" else "Выше"
+                if bybit_dir in ("UP", "DOWN"):
+                    bybit_desc = "Вверх" if bybit_dir == "UP" else "Вниз"
+                    poly_desc = "Вверх" if opp_poly_out == "UP" else "Вниз"
+                else:
+                    bybit_desc = "Выше" if bybit_dir == "ABOVE" else "Ниже"
+                    poly_desc = "Ниже" if opp_poly_out == "NO" else "Выше"
 
                 action_a = f"Bybit: Взять {bybit_dir} ({bybit_desc}) @ {odds_bybit:.2f}x"
                 action_b = f"Poly: Купить {opp_poly_out} ({poly_desc}) @ ${cost_poly_opp:.2f}"
@@ -237,7 +244,16 @@ class SpreadEngine:
                     "action_b": action_b,
                     "action_summary": action_summary,
                     "stake_pos_pct": stake_a,
-                    "stake_neg_pct": stake_b
+                    "stake_neg_pct": stake_b,
+                    "volume_a": ea.get("volume", 0.0),
+                    "volume_b": eb.get("volume", 0.0),
+                    "liquidity_b": eb.get("liquidity", 0.0) if is_a_bybit else ea.get("liquidity", 0.0),
+                    "url_bybit": bybit_ev.get("url", ""),
+                    "url_poly": poly_ev.get("url", ""),
+                    "odds_bybit": odds_bybit,
+                    "odds_poly": odds_poly,
+                    "prob_bybit": prob_bybit,
+                    "prob_poly": prob_poly
                 })
         return results
 

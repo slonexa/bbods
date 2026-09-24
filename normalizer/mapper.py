@@ -144,6 +144,38 @@ class Normalizer:
                 eb_copy["time_warning"] = time_warning
                 
                 matched.append((ea_copy, eb_copy))
+
+        # Also match 5MIN and 15MIN Up/Down contracts across platforms (Bybit UpDown ↔ Polymarket UpDown)
+        import time
+        now_int = int(time.time())
+        updown_a = [e for e in events_a if e.get("contract_type") == "UpDown"]
+        updown_b = [e for e in events_b if e.get("contract_type") == "UpDown"]
+
+        for ea in updown_a:
+            for eb in updown_b:
+                if ea.get("asset") != eb.get("asset") or not ea.get("asset"):
+                    continue
+                tf_a = ea.get("timeframe", "")
+                tf_b = eb.get("timeframe", "")
+                if not tf_a or tf_a != tf_b:
+                    continue
+                dir_a = (ea.get("direction") or ea.get("outcome") or "").upper()
+                dir_b = (eb.get("direction") or eb.get("outcome") or "").upper()
+                if not dir_a or dir_a != dir_b:
+                    continue
+
+                dur_sec = 300 if tf_a == "5MIN" else 900
+                sec_into_win = now_int % dur_sec
+                diff_hours = round(sec_into_win / 3600.0, 4)
+                time_warning = f"⚡ Синхр. {tf_a} (+{sec_into_win}с от старта окна)"
+
+                ea_copy = dict(ea)
+                eb_copy = dict(eb)
+                ea_copy["time_diff_hours"] = diff_hours
+                eb_copy["time_diff_hours"] = diff_hours
+                ea_copy["time_warning"] = time_warning
+                eb_copy["time_warning"] = time_warning
+                matched.append((ea_copy, eb_copy))
                 
         return matched
 

@@ -1253,9 +1253,9 @@
             <div>
                 <div class="brand-title">
                     ODDS PULSE
-                    <span class="badge-live">
-                        <span class="pulse-dot"></span>
-                        LIVE
+                    <span id="badge-live-status" class="badge-live">
+                        <span id="pulse-dot-status" class="pulse-dot"></span>
+                        <span id="live-text-status">LIVE</span>
                     </span>
                 </div>
                 <div class="brand-sub">Crypto Arbitrage Terminal • Bybit vs Polymarket</div>
@@ -1307,6 +1307,16 @@
             <button id="sound-toggle-btn" class="btn-nav" onclick="toggleSoundAlerts()" title="Звук при нахождении вилки">
                 🔕 Звук
             </button>
+
+            <!-- Telegram Bot Alerts -->
+            <button id="btn-tg-alerts" class="btn-nav" onclick="openAlertsSettingsModal()" title="Настройки Telegram-бота и умных алертов" style="border-color:rgba(56,189,248,0.4); color:#38bdf8;">
+                ✈️ Telegram
+            </button>
+
+            <!-- 1s HFT Ticker Badge -->
+            <div id="hft-ticker-badge" class="btn-nav" style="border-color:rgba(168,85,247,0.35); color:#d8b4fe; font-size:10.5px; cursor:default;" title="Секундный сбор котировок Bybit (Индекс, Спот, Фьючерс) в ticks.db">
+                ⏱️ HFT: <span id="hft-count">0</span>
+            </div>
 
             <!-- Export to CSV -->
             <button class="btn-nav" onclick="exportToCSV()" title="Скачать CSV для Excel">
@@ -1447,8 +1457,11 @@
             <button id="tab-btn-comp" class="tab-btn" onclick="switchTab('comp')">
                 🔄 Внутри биржи (Bybit Dutch Book)
             </button>
-            <button id="tab-btn-paper" class="tab-btn" onclick="switchTab('paper')" style="display:none; color:var(--accent-purple);">
-                💼 Демо-портфель (<span id="paper-badge-count">0</span>)
+            <button id="tab-btn-paper" class="tab-btn" onclick="switchTab('paper')">
+                📊 P&L и Портфель (<span id="paper-badge-count">0</span>)
+            </button>
+            <button id="tab-btn-fast" class="tab-btn" onclick="switchTab('fast')" style="border-color:rgba(56,189,248,0.35);">
+                ⚡ 5/15m Полигон (<span id="fast-badge-count">0</span>)
             </button>
             <button id="tab-btn-debug" class="tab-btn" onclick="switchTab('debug')">
                 🛠️ Дебаг (Тики)
@@ -1527,38 +1540,96 @@
         </div>
     </div>
 
-    <!-- ─── Tab 4: Paper Trading Portfolio (Test Mode) ─── -->
+    <!-- ─── Tab: P&L Analytics & Paper Portfolio (Daily / Target Markets Only) ─── -->
     <div id="tab-paper" style="display: none;">
-        <div style="background:var(--bg-card); border:1px solid var(--accent-purple); border-radius:8px; padding:12px 16px; margin-bottom:12px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
-                <div>
-                    <h3 style="margin:0; font-size:14px; font-weight:700; color:#d8b4fe;">💼 Виртуальный демо-портфель (Paper Trading)</h3>
-                    <div style="font-size:10.5px; color:var(--text-muted); margin-top:2px;">Симуляция арбитражных сделок без риска реальных денег</div>
+        <!-- Top Toolbar & Overview Card -->
+        <div style="background:var(--bg-card); border:1px solid rgba(168,85,247,0.3); border-radius:8px; padding:14px 16px; margin-bottom:12px; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:22px; filter:drop-shadow(0 0 8px rgba(168,85,247,0.5));">📊</span>
+                    <div>
+                        <h3 style="margin:0; font-size:15px; font-weight:800; color:#f3e8ff;">P&L Аналитика & Основной Демо-портфель</h3>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Симуляция классических кросс-биржевых вилок (без 5/15-минуток — они вынесены в отдельный полигон)</div>
+                    </div>
                 </div>
-                <button class="btn-nav" onclick="clearPaperPortfolio()" style="color:var(--accent-rose); border-color:rgba(244,63,94,0.3);">
-                    🗑️ Очистить портфель
-                </button>
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <button id="btn-auto-paper" class="btn-nav active" onclick="toggleAutoPaperTrader()" style="color:#d8b4fe; border-color:rgba(168,85,247,0.5); font-size:11px; font-weight:700;" title="Автоматический вход в демо-сделки и авто-расчет при экспирации">
+                        🤖 Авто-сделки: <span id="auto-paper-status">ВКЛ</span>
+                    </button>
+                    <button class="btn-nav" onclick="addSamplePaperTrade()" style="color:var(--accent-cyan); border-color:rgba(56,189,248,0.35); font-size:11px;">
+                        🧪 + Тестовая сделка ($20)
+                    </button>
+                    <button class="btn-nav" onclick="exportPaperTradesToCSV()" style="color:var(--accent-emerald); border-color:rgba(16,185,129,0.35); font-size:11px;">
+                        📥 Экспорт P&L (CSV)
+                    </button>
+                    <button class="btn-nav" onclick="clearPaperPortfolio()" style="color:var(--accent-rose); border-color:rgba(244,63,94,0.35); font-size:11px;">
+                        🗑️ Очистить
+                    </button>
+                </div>
             </div>
-            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;">
+
+            <!-- 6 KPI Strip -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px;">
                 <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
-                    <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Всего позиций</div>
-                    <div id="paper-kpi-count" class="mono" style="font-size:16px; font-weight:700; color:var(--text-primary);">0</div>
+                    <div style="font-size:9.5px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Позиций / Статус</div>
+                    <div style="display:flex; align-items:baseline; gap:4px; margin-top:3px;">
+                        <span id="paper-kpi-count" class="mono font-bold" style="font-size:17px; color:var(--text-primary);">0</span>
+                        <span id="paper-kpi-status-ratio" style="font-size:10.5px; color:var(--text-muted);">(0 акт. / 0 закр.)</span>
+                    </div>
                 </div>
                 <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
-                    <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Инвестировано</div>
-                    <div id="paper-kpi-invested" class="mono" style="font-size:16px; font-weight:700; color:var(--accent-cyan);">$0.00</div>
+                    <div style="font-size:9.5px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Всего оборот</div>
+                    <div id="paper-kpi-invested" class="mono font-bold" style="font-size:17px; color:var(--accent-cyan); margin-top:3px;">$0.00</div>
                 </div>
                 <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
-                    <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Прибыль</div>
-                    <div id="paper-kpi-profit" class="mono" style="font-size:16px; font-weight:700; color:var(--accent-emerald);">+$0.00</div>
+                    <div style="font-size:9.5px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Зафиксир. P&L</div>
+                    <div id="paper-kpi-profit" class="mono font-bold" style="font-size:17px; color:var(--accent-emerald); margin-top:3px;">+$0.00</div>
                 </div>
                 <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
-                    <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Средний ROI</div>
-                    <div id="paper-kpi-roi" class="mono" style="font-size:16px; font-weight:700; color:var(--accent-purple);">0.0%</div>
+                    <div style="font-size:9.5px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Win Rate</div>
+                    <div id="paper-kpi-winrate" class="mono font-bold" style="font-size:17px; color:#a78bfa; margin-top:3px;">100%</div>
+                </div>
+                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
+                    <div style="font-size:9.5px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Средний ROI</div>
+                    <div id="paper-kpi-roi" class="mono font-bold" style="font-size:17px; color:var(--accent-amber); margin-top:3px;">0.0%</div>
+                </div>
+                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
+                    <div style="font-size:9.5px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Текущий капитал</div>
+                    <div id="paper-kpi-balance" class="mono font-bold" style="font-size:17px; color:#38bdf8; margin-top:3px;">$100.00</div>
                 </div>
             </div>
         </div>
-        <div class="table-container">
+
+        <!-- Equity Curve Chart Card -->
+        <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:8px; padding:12px 16px; margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:14px;">📈</span>
+                    <span style="font-size:12px; font-weight:700; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.5px;">Динамика капитала (Virtual Equity Curve)</span>
+                </div>
+                <div id="equity-asset-breakdown" style="display:flex; align-items:center; gap:6px; font-size:10.5px;">
+                    <!-- Filled dynamically with BTC/ETH pills -->
+                </div>
+            </div>
+            
+            <div id="paper-equity-chart" style="width:100%; min-height:160px; position:relative; background:#070b12; border:1px solid rgba(255,255,255,0.04); border-radius:6px; overflow:hidden;">
+                <!-- SVG Chart injected here -->
+            </div>
+        </div>
+
+        <!-- Paper Trades Table Card -->
+        <div class="table-container" style="margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--bg-card); border-bottom:1px solid var(--border-subtle); flex-wrap:wrap; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:13px; font-weight:700; color:var(--text-primary);">История сделок основного портфеля</span>
+                    <span id="paper-table-count" class="badge" style="background:rgba(255,255,255,0.08); color:var(--text-muted); font-size:10px;">0 сделок</span>
+                </div>
+                <div style="display:flex; gap:4px;">
+                    <button class="preset-btn active" id="paper-filter-all" onclick="setPaperFilter('all')">Все</button>
+                    <button class="preset-btn" id="paper-filter-open" onclick="setPaperFilter('open')">⚡ Активные</button>
+                    <button class="preset-btn" id="paper-filter-won" onclick="setPaperFilter('won')">✓ Закрытые</button>
+                </div>
+            </div>
             <table>
                 <thead>
                     <tr>
@@ -1577,6 +1648,193 @@
                 <tbody id="paper-body">
                 </tbody>
             </table>
+        </div>
+
+        <!-- Historical Surebets from DB Section -->
+        <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:8px; padding:12px 14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:14px;">🏛️</span>
+                    <span style="font-size:12px; font-weight:700; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.5px;">Архив зафиксированных вилок (Surebets & Top Spreads)</span>
+                    <span id="archive-arbs-tag" class="badge badge-arb" style="font-size:10px;">0 записей</span>
+                </div>
+                <button class="btn-mini-tool" onclick="loadArchivedArbsTable()" style="font-size:10.5px; padding:2px 8px;">🔄 Обновить архив</button>
+            </div>
+            <div style="font-size:10.5px; color:var(--text-muted); margin-bottom:10px;">
+                Реальные гарантированные вилки и максимальные спреды (без 5/15-минуток). Нажмите «⚡ В симулятор» чтобы протестировать сделку в портфеле.
+            </div>
+            <div class="table-container" style="max-height:260px; overflow-y:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Время</th>
+                            <th>Страйк / Событие</th>
+                            <th>🟡 Bybit цена</th>
+                            <th>🔵 Poly цена</th>
+                            <th>Спред</th>
+                            <th>Гарант. маржа</th>
+                            <th>Тип</th>
+                            <th>Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody id="archived-arbs-body">
+                        <tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:20px;">Загрузка архива вилок...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── Tab: 5/15m Polygon & Isolated Test Portfolio ─── -->
+    <div id="tab-fast" style="display: none;">
+        <!-- Header & Strategy Explanation Card -->
+        <div style="background:var(--bg-card); border:1px solid rgba(56,189,248,0.35); border-radius:8px; padding:14px 16px; margin-bottom:12px; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:22px;">⚡</span>
+                    <div>
+                        <h3 style="margin:0; font-size:15px; font-weight:800; color:#e0f2fe;">Полигон 5/15-минуток: Безрисковый 2-шаговый Хедж & Синхронный Старт (Тест)</h3>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
+                            🔕 <b>Telegram-уведомления отключены</b> • Изолированный демо-портфель • Поиск точки идеального безрискового перекрытия (Lock-in Hedge)
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <button class="btn-nav" onclick="fetchUpdownSpreads(); syncFastPaperTrades();" style="color:var(--accent-cyan); border-color:rgba(56,189,248,0.4); font-size:11px;">
+                        🔄 Обновить 5/15m
+                    </button>
+                    <button class="btn-nav" onclick="clearFastPortfolio()" style="color:var(--accent-rose); border-color:rgba(244,63,94,0.35); font-size:11px;">
+                        🗑️ Очистить тест-портфель
+                    </button>
+                </div>
+            </div>
+
+            <!-- Explanation of True Risk-Free 5m/15m Mechanics -->
+            <div style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.2); border-radius:6px; padding:8px 12px; font-size:11px; color:var(--text-secondary); margin-bottom:10px; line-height:1.45;">
+                💡 <b>Почему обычный вход при 10x за 1 минуту до конца — ловушка, и как работает настоящий безрисковый хедж:</b><br>
+                На Polymarket окно фиксировано по часам (например, <code>12:00–12:05</code> со страйком <code>S₀</code> в <code>12:00</code>), а на Bybit 5m контракт скользящий (ровно +5 минут от секунды клика). Чтобы исключить риск расхождения страйков и времени экспирации, бот тестирует <b>2 безрисковые механики внутри одного и того же окна (S₀ и T_end)</b>:<br>
+                <b>1) 🔒 2-Шаговый Lock-In Хедж (Dynamic Straddle):</b> На старте окна (<code>0..30с</code>, когда страйки и таймеры совпадают) фиксируется Нога 1 (~1.82x). Когда внутри 5-минутки происходит импульс и обратный исход на Polymarket дешевеет до <code>≤ $0.38</code> (коэфф <code>≥ 2.63x</code>), докупается Нога 2 для <b>этого же окна и страйка S₀</b>. Суммарная стоимость обеих сторон падает <code>&lt; $0.92</code> — профит гарантирован при любой финальной цене!<br>
+                <b>2) 🎯 Синхронный Старт (0..25с):</b> Одновременный вход на первых секундах нового окна, когда таймеры и страйки обеих бирж совпадают 1-в-1.
+            </div>
+
+            <!-- 5 KPI Cards for Isolated 5/15m Portfolio -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(135px, 1fr)); gap:8px;">
+                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
+                    <div style="font-size:9.5px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Сделок 5/15m</div>
+                    <div style="display:flex; align-items:baseline; gap:4px; margin-top:3px;">
+                        <span id="fast-kpi-count" class="mono font-bold" style="font-size:17px; color:var(--text-primary);">0</span>
+                        <span id="fast-kpi-status" style="font-size:10.5px; color:var(--text-muted);">(0 акт. / 0 закр.)</span>
+                    </div>
+                </div>
+                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
+                    <div style="font-size:9.5px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Безрисковых Хеджей</div>
+                    <div id="fast-kpi-hedges" class="mono font-bold" style="font-size:17px; color:var(--accent-cyan); margin-top:3px;">0</div>
+                </div>
+                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
+                    <div style="font-size:9.5px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Тест P&L (5/15m)</div>
+                    <div id="fast-kpi-pnl" class="mono font-bold" style="font-size:17px; color:var(--accent-emerald); margin-top:3px;">+$0.00</div>
+                </div>
+                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
+                    <div style="font-size:9.5px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Win Rate (5/15m)</div>
+                    <div id="fast-kpi-winrate" class="mono font-bold" style="font-size:17px; color:#a78bfa; margin-top:3px;">100%</div>
+                </div>
+                <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
+                    <div style="font-size:9.5px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Задержка TWAP60</div>
+                    <div id="fast-kpi-lag" class="mono font-bold" style="font-size:17px; color:var(--accent-amber); margin-top:3px;">47–51с</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live 5m/15m HFT & Polymarket Window Radar -->
+        <div style="background:var(--bg-card); border:1px solid rgba(56,189,248,0.3); border-radius:8px; padding:12px 14px; margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:14px;">📡</span>
+                    <span style="font-size:12px; font-weight:800; color:var(--accent-cyan); text-transform:uppercase;">Секундный Радар Окон: Bybit Index vs Polymarket CLOB + Chainlink TWAP60</span>
+                </div>
+                <span id="hft-window-timer-badge" class="badge" style="background:rgba(56,189,248,0.12); color:var(--accent-cyan); border:1px solid rgba(56,189,248,0.3); font-family:'JetBrains Mono',monospace; font-size:10.5px;">Окно 5M: --с от старта</span>
+            </div>
+            <div id="hft-live-windows-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:8px;">
+                <div style="font-size:11px; color:var(--text-muted); padding:6px;">Ожидание секундного фида sec_logger...</div>
+            </div>
+        </div>
+
+        <!-- Live 5/15m Cross-Platform Table -->
+        <div class="table-container" style="margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--bg-card); border-bottom:1px solid var(--border-subtle); flex-wrap:wrap; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:13px; font-weight:700; color:var(--text-primary);">⚡ Live Котировки 5m / 15m (Bybit ⇄ Polymarket CLOB)</span>
+                    <span id="updown-spreads-count" class="badge" style="background:rgba(56,189,248,0.12); color:var(--accent-cyan); font-size:10px;">0 пар</span>
+                </div>
+                <span style="font-size:10.5px; color:var(--text-muted);">Синхронный старт без риска: первые <b>0–25 сек</b> каждого 5/15-минутного окна</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Окно / Монета</th>
+                        <th>🟡 Bybit (Нога 1)</th>
+                        <th>🔵 Polymarket CLOB (Нога 2)</th>
+                        <th>Хедж Cost</th>
+                        <th>Спред / Маржа</th>
+                        <th>Статус синхрона</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody id="updown-spreads-body">
+                    <tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:20px;">Загрузка 5/15m котировок...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Isolated 5/15m Simulated Portfolio Table -->
+        <div class="table-container" style="margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--bg-card); border-bottom:1px solid var(--border-subtle); flex-wrap:wrap; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:13px; font-weight:700; color:var(--text-primary);">🧪 Тестовый портфель 5/15m (2-Step Lock-In Hedge & Лаг-симулятор)</span>
+                    <span id="fast-table-count" class="badge" style="background:rgba(255,255,255,0.08); color:var(--text-muted); font-size:10px;">0 сделок</span>
+                </div>
+                <span style="font-size:10.5px; color:var(--text-muted);">Авто-расчет по реальному индексу Bybit в секунду экспирации окна</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Время входа</th>
+                        <th>Стратегия / Тип</th>
+                        <th>Контракт & Страйк S₀</th>
+                        <th>Нога 1</th>
+                        <th>Нога 2 (Хедж / Механика)</th>
+                        <th>Банк</th>
+                        <th>Ожид. ROI</th>
+                        <th>Факт P&L</th>
+                        <th>Статус</th>
+                    </tr>
+                </thead>
+                <tbody id="fast-paper-body">
+                    <tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:24px;">Ожидание 5/15m сделок (2-шаговый хедж, синхронный старт или импульс 47–51с)...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Quick Manual Attempt & Slippage Logger (manual_trades_log.csv) -->
+        <div style="background:var(--bg-card); border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:12px 14px; margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:14px;">📝</span>
+                    <span style="font-size:12px; font-weight:800; color:var(--accent-amber); text-transform:uppercase;">Лог ручных попыток и проскальзываний (manual_trades_log.csv)</span>
+                </div>
+                <span style="font-size:10.5px; color:var(--text-muted);">Авто-захват текущей секунды окна (47–51с) и цены индекса</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+                <input id="mlog-req-odds" type="number" step="0.01" value="1.80" placeholder="Ожид. коэф" style="width:82px; background:#090d14; border:1px solid var(--border-subtle); color:#fff; border-radius:4px; padding:4px 6px; font-size:11px;" title="Ожидаемый коэфф (requested_odds)">
+                <input id="mlog-fill-odds" type="number" step="0.01" value="1.80" placeholder="Факт. коэф" style="width:82px; background:#090d14; border:1px solid var(--border-subtle); color:#fff; border-radius:4px; padding:4px 6px; font-size:11px;" title="Фактический коэфф (filled_odds)">
+                <input id="mlog-pnl" type="number" step="0.5" value="0" placeholder="PnL ($)" style="width:75px; background:#090d14; border:1px solid var(--border-subtle); color:#fff; border-radius:4px; padding:4px 6px; font-size:11px;" title="Результат в $ (pnl)">
+                <input id="mlog-note" type="text" placeholder="Заметка (напр. Poly 5m задержка 49с, коэф прыгнул...)" style="flex:1; min-width:180px; background:#090d14; border:1px solid var(--border-subtle); color:#fff; border-radius:4px; padding:4px 8px; font-size:11px;">
+                <button class="btn-mini-tool" onclick="submitManualLog('win')" style="color:var(--accent-emerald); border-color:rgba(16,185,129,0.4); font-weight:700;">✅ Win</button>
+                <button class="btn-mini-tool" onclick="submitManualLog('loss')" style="color:var(--accent-rose); border-color:rgba(244,63,94,0.4); font-weight:700;">❌ Loss</button>
+                <button class="btn-mini-tool" onclick="submitManualLog('missed_timing')" style="color:var(--accent-amber); border-color:rgba(245,158,11,0.4); font-weight:700;">⏱️ Не успел</button>
+                <button class="btn-mini-tool" onclick="submitManualLog('odds_moved_before_fill')" style="color:#d8b4fe; border-color:rgba(168,85,247,0.4); font-weight:700;">⚠️ Коэф обманул</button>
+            </div>
+            <div id="manual-logs-mini-list" style="font-size:10.5px; font-family:'JetBrains Mono',monospace; color:var(--text-secondary); max-height:95px; overflow-y:auto;"></div>
         </div>
     </div>
 
@@ -1636,6 +1894,97 @@
                 <button class="btn-nav" onclick="closeModal()">
                     Закрыть
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── Telegram & Alerts Settings Modal ─── -->
+    <div id="alerts-modal" class="modal-backdrop" onclick="closeAlertsModalOnBackdrop(event)">
+        <div class="modal-box" style="max-width:540px;">
+            <div class="modal-header">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:18px;">✈️</span>
+                    <div>
+                        <h3 style="font-size:14px; font-weight:700; color:var(--text-primary);">Telegram-бот & Умные алерты</h3>
+                        <div style="font-size:10.5px; color:var(--text-muted); margin-top:2px;">Мгновенные пуш-уведомления о вилках на телефон</div>
+                    </div>
+                </div>
+                <button class="btn-mini-tool" onclick="closeAlertsModal()" style="font-size:15px; padding:3px 7px;">✕</button>
+            </div>
+            <div class="modal-body" style="padding:14px 16px;">
+                <!-- Main Toggle -->
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:10px 12px; margin-bottom:12px;">
+                    <div>
+                        <div style="font-size:12px; font-weight:700; color:var(--accent-cyan);">Включить отправку в Telegram</div>
+                        <div style="font-size:10.5px; color:var(--text-muted);">Бот будет слать сигналы при появлении возможностей</div>
+                    </div>
+                    <input type="checkbox" id="cfg-tg-enabled" style="width:18px; height:18px; accent-color:var(--accent-cyan); cursor:pointer;">
+                </div>
+
+                <!-- Bot Token & Chat ID -->
+                <div style="display:grid; gap:10px; margin-bottom:14px;">
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:600; color:var(--text-secondary); margin-bottom:4px;">
+                            Telegram Bot Token <span style="font-size:10px; color:var(--text-muted);">(от @BotFather)</span>:
+                        </label>
+                        <input id="cfg-tg-token" type="password" placeholder="1234567890:ABCdefGhIJKlmNoPQRsTUVwxyZ" class="bankroll-input" style="width:100%; text-align:left; padding:7px 10px; font-family:'JetBrains Mono'; font-size:11px;">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:600; color:var(--text-secondary); margin-bottom:4px;">
+                            Telegram Chat ID <span style="font-size:10px; color:var(--text-muted);">(узнать у @userinfobot)</span>:
+                        </label>
+                        <input id="cfg-tg-chatid" type="text" placeholder="Например: 123456789 или @my_channel" class="bankroll-input" style="width:100%; text-align:left; padding:7px 10px; font-family:'JetBrains Mono'; font-size:11px;">
+                    </div>
+                </div>
+
+                <!-- Filter Thresholds -->
+                <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border-subtle); border-radius:8px; padding:10px 12px; margin-bottom:12px;">
+                    <div style="font-size:11.5px; font-weight:700; color:var(--text-primary); margin-bottom:8px;">Условия срабатывания алертов:</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                        <div>
+                            <span style="font-size:10.5px; color:var(--text-muted); display:block; margin-bottom:3px;">Мин. спред для алерта:</span>
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <input id="cfg-min-spread" type="number" step="0.5" min="0" value="10.0" class="bankroll-input" style="width:70px; padding:4px 6px; font-size:11px;">
+                                <span class="mono" style="font-size:11px; color:var(--text-muted);">%</span>
+                            </div>
+                        </div>
+                        <div>
+                            <span style="font-size:10.5px; color:var(--text-muted); display:block; margin-bottom:3px;">Кулдаун на рынок:</span>
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <input id="cfg-cooldown" type="number" step="1" min="1" value="10" class="bankroll-input" style="width:70px; padding:4px 6px; font-size:11px;">
+                                <span class="mono" style="font-size:11px; color:var(--text-muted);">мин</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top:8px; display:flex; align-items:center; gap:6px;">
+                        <input type="checkbox" id="cfg-only-surebet" checked style="accent-color:var(--accent-emerald);">
+                        <label for="cfg-only-surebet" style="font-size:11px; color:var(--text-secondary); cursor:pointer;">Всегда присылать гарантированные вилки (Surebets) с любой маржой</label>
+                    </div>
+                </div>
+
+                <!-- Test status message box -->
+                <div id="tg-test-status" style="display:none; padding:8px 12px; border-radius:6px; font-size:11px; margin-bottom:10px;"></div>
+
+                <!-- Action buttons inside modal -->
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                    <button class="btn-nav" onclick="testTelegramMessage()" style="color:var(--accent-cyan); border-color:var(--accent-cyan); font-size:11px;">
+                        🔔 Отправить тест
+                    </button>
+                    <button class="btn-nav" onclick="saveAlertsConfig()" style="background:var(--accent-cyan); color:#090d14; font-weight:700; border:none; font-size:11px;">
+                        💾 Сохранить
+                    </button>
+                </div>
+
+                <!-- Recent Alerts Feed -->
+                <div style="margin-top:14px; border-top:1px solid rgba(255,255,255,0.06); padding-top:10px;">
+                    <div style="font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; display:flex; justify-content:space-between;">
+                        <span>Журнал последних алертов (Log)</span>
+                        <span id="alerts-count-tag" class="mono" style="font-size:9.5px;">0 записей</span>
+                    </div>
+                    <div id="alerts-history-list" class="mono" style="max-height:100px; overflow-y:auto; font-size:10px; color:var(--text-secondary); background:#06090e; border:1px solid var(--border-subtle); border-radius:6px; padding:6px 8px; line-height:1.5;">
+                        <div style="color:var(--text-muted); text-align:center; padding:10px 0;">Алерты пока не срабатывали</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1751,9 +2100,19 @@
                 updateCircleProgress();
             }, 1000);
 
+            fetchTicksStats();
+            syncServerPaperTrades();
+            syncFastPaperTrades();
+            fetchUpdownSpreads();
+            loadPaperBotConfig();
+
             refreshIntervalTimer = setInterval(() => {
                 if (!autoRefreshEnabled) return;
                 fetchSpreads();
+                fetchTicksStats();
+                syncServerPaperTrades();
+                syncFastPaperTrades();
+                if (currentTab === 'fast') fetchUpdownSpreads();
                 if (currentTab === 'debug') fetchRawSpreads();
             }, 5000);
 
@@ -1824,13 +2183,8 @@
             if (btn) btn.classList.toggle('active', testModeEnabled);
             if (status) status.innerText = testModeEnabled ? 'ВКЛ' : 'ВЫКЛ';
 
-            if (paperTab) paperTab.style.display = testModeEnabled ? 'inline-flex' : 'none';
             if (minSpreadWrap) minSpreadWrap.style.display = testModeEnabled ? 'inline-flex' : 'none';
             if (thSpark) thSpark.style.display = testModeEnabled ? 'table-cell' : 'none';
-
-            if (!testModeEnabled && currentTab === 'paper') {
-                switchTab('cross');
-            }
         }
 
         function handleMinSpreadChange(val) {
@@ -1892,7 +2246,18 @@
             }, 2500);
         }
 
-        // ─── Paper Trading Implementation ───
+        // ─── Paper Trading & P&L Analytics Implementation ───
+        let paperFilter = 'all';
+
+        function setPaperFilter(filter) {
+            paperFilter = filter;
+            ['all', 'open', 'won'].forEach(f => {
+                const btn = document.getElementById(`paper-filter-${f}`);
+                if (btn) btn.classList.toggle('active', f === filter);
+            });
+            renderPaperPortfolio();
+        }
+
         function addToPaperPortfolio(row) {
             if (!row) return;
             const bank = currentBankroll;
@@ -1914,15 +2279,24 @@
             if (row.hedge_cost && row.hedge_cost > 0) {
                 guaranteedPayout = bank / row.hedge_cost;
                 netProfit = guaranteedPayout - bank;
+            } else if (row.hedge_margin && row.hedge_margin > 0) {
+                netProfit = bank * row.hedge_margin;
+                guaranteedPayout = bank + netProfit;
+            } else if (row.spread_after_fees && row.spread_after_fees > 0) {
+                netProfit = bank * row.spread_after_fees;
+                guaranteedPayout = bank + netProfit;
+            } else {
+                netProfit = bank * 0.02;
+                guaranteedPayout = bank + netProfit;
             }
 
             const trade = {
                 id: Date.now(),
                 title: row.title || row.event_key,
                 event_key: row.event_key,
-                bank: bank,
-                stake_a: stakeA,
-                stake_b: stakeB,
+                bank: bank.toFixed(2),
+                stake_a: stakeA.toFixed(2),
+                stake_b: stakeB.toFixed(2),
                 action_a: row.action_a || 'Bybit ABOVE',
                 action_b: row.action_b || 'Poly NO',
                 odds_a: row.odds_a || 0,
@@ -1947,14 +2321,160 @@
             }
         }
 
-        function closePaperTrade(id) {
+        function addSamplePaperTrade() {
+            const bank = currentBankroll || 20;
+            const samplePresets = [
+                {
+                    title: 'ETH $2,800 [BELOW] (2026-09-24)',
+                    event_key: 'sample-eth-2800',
+                    action_a: 'Bybit BELOW ($19.30) @ 1.04x',
+                    action_b: 'Poly YES ($0.70) @ 29.4x',
+                    odds_a: 1.04,
+                    odds_b: 29.40,
+                    spread_pct: '4.30',
+                    margin: 0.043
+                },
+                {
+                    title: 'BTC $84,000 [ABOVE] (2026-09-25)',
+                    event_key: 'sample-btc-84000',
+                    action_a: 'Bybit ABOVE ($9.80) @ 2.05x',
+                    action_b: 'Poly NO ($10.20) @ 1.98x',
+                    odds_a: 2.05,
+                    odds_b: 1.98,
+                    spread_pct: '6.85',
+                    margin: 0.0685
+                },
+                {
+                    title: 'SOL $140 [BELOW] (2026-09-26)',
+                    event_key: 'sample-sol-140',
+                    action_a: 'Bybit BELOW ($12.50) @ 1.62x',
+                    action_b: 'Poly YES ($7.50) @ 2.70x',
+                    odds_a: 1.62,
+                    odds_b: 2.70,
+                    spread_pct: '5.20',
+                    margin: 0.052
+                }
+            ];
+
+            const pick = samplePresets[paperTrades.length % samplePresets.length];
+            const netProfit = (bank * pick.margin).toFixed(2);
+            const guaranteedPayout = (bank + parseFloat(netProfit)).toFixed(2);
+            const stakeA = (bank * 0.6).toFixed(2);
+            const stakeB = (bank - stakeA).toFixed(2);
+
+            const trade = {
+                id: Date.now(),
+                title: pick.title,
+                event_key: pick.event_key,
+                bank: bank.toFixed(2),
+                stake_a: stakeA,
+                stake_b: stakeB,
+                action_a: pick.action_a,
+                action_b: pick.action_b,
+                odds_a: pick.odds_a,
+                odds_b: pick.odds_b,
+                spread_pct: pick.spread_pct,
+                guaranteed_payout: guaranteedPayout,
+                net_profit: netProfit,
+                created_at: new Date(Date.now() - ((paperTrades.length + 1) * 20 * 60 * 1000)).toISOString(),
+                status: (paperTrades.length > 0) ? 'WON' : 'OPEN'
+            };
+
+            paperTrades.unshift(trade);
+            localStorage.setItem('paperTrades', JSON.stringify(paperTrades));
+            updatePaperBadge();
+            renderPaperPortfolio();
+            showToast(`🧪 Добавлена тестовая сделка "${trade.title}" на $${bank}!`);
+        }
+
+        function addArchivedToPaper(row) {
+            const bank = currentBankroll || 20;
+            const margin = Math.abs(parseFloat(row.hedge_margin || row.spread_after_fees || 0.025));
+            const netProfit = (bank * margin).toFixed(2);
+            const guaranteedPayout = (bank + parseFloat(netProfit)).toFixed(2);
+            const stakeA = (bank * 0.55).toFixed(2);
+            const stakeB = (bank - stakeA).toFixed(2);
+
+            const trade = {
+                id: Date.now(),
+                title: row.title || row.event_key,
+                event_key: row.event_key,
+                bank: bank.toFixed(2),
+                stake_a: stakeA,
+                stake_b: stakeB,
+                action_a: row.action_a || 'Bybit',
+                action_b: row.action_b || 'Polymarket',
+                odds_a: row.odds_a || 0,
+                odds_b: row.odds_b || 0,
+                spread_pct: ((row.spread_after_fees || 0) * 100).toFixed(2),
+                guaranteed_payout: guaranteedPayout,
+                net_profit: netProfit,
+                created_at: row.detected_at || new Date().toISOString(),
+                status: 'OPEN'
+            };
+
+            paperTrades.unshift(trade);
+            localStorage.setItem('paperTrades', JSON.stringify(paperTrades));
+            updatePaperBadge();
+            renderPaperPortfolio();
+            showToast(`🏛️ Вилка из архива "${trade.title}" добавлена в портфель!`);
+        }
+
+        async function loadArchivedArbsTable() {
+            const tbody = document.getElementById('archived-arbs-body');
+            const tag = document.getElementById('archive-arbs-tag');
+            if (!tbody) return;
+            try {
+                const res = await fetch('/api/archived_arbs?limit=30');
+                const json = await res.json();
+                const arbs = json.data || [];
+                if (tag) tag.innerText = `${arbs.length} записей`;
+                if (arbs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:16px;">В архиве пока нет записей</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = arbs.map(a => {
+                    const time = new Date(a.detected_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                    const spreadPct = ((a.spread_after_fees || 0) * 100).toFixed(2);
+                    const marginPct = ((a.hedge_margin || 0) * 100).toFixed(2);
+                    const isArb = (a.is_arb === 1 || a.is_arb === true || parseFloat(a.hedge_margin) > 0);
+                    const badgeType = isArb ? '<span class="badge badge-arb">⚡ SUREBET</span>' : '<span class="badge badge-sync">SPREAD</span>';
+                    const safeRow = JSON.stringify(a).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+                    return `
+                        <tr>
+                            <td class="mono" style="font-size:10.5px; color:var(--text-muted);">${time}</td>
+                            <td style="font-size:11.5px; font-weight:600; color:var(--text-primary);">${a.title}</td>
+                            <td class="mono" style="font-size:11px; color:var(--bybit-color);">${((a.prob_a||0)*100).toFixed(1)}% (${a.odds_a}x)</td>
+                            <td class="mono" style="font-size:11px; color:var(--poly-color);">${((a.prob_b||0)*100).toFixed(1)}% (${a.odds_b}x)</td>
+                            <td><span class="spread-positive font-bold">+${spreadPct}%</span></td>
+                            <td class="mono font-bold" style="color:var(--accent-emerald);">+${marginPct}%</td>
+                            <td>${badgeType}</td>
+                            <td>
+                                <button class="btn-mini-tool" onclick='addArchivedToPaper(${safeRow})' style="color:var(--accent-cyan); font-size:10px; padding:2px 7px;" title="Добавить эту историческую вилку в демо-портфель">
+                                    ⚡ В симулятор
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (e) {
+                console.error("Error loading archived arbs:", e);
+                if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--accent-rose); padding:16px;">Ошибка загрузки архива</td></tr>';
+            }
+        }
+
+        function closePaperTrade(id, isWon = true) {
             paperTrades = paperTrades.map(t => {
-                if (t.id === id) t.status = 'WON';
+                if (t.id === id) {
+                    t.status = isWon ? 'WON' : 'CANCELLED';
+                    if (!isWon) t.net_profit = '0.00';
+                }
                 return t;
             });
             localStorage.setItem('paperTrades', JSON.stringify(paperTrades));
             renderPaperPortfolio();
-            showToast('💰 Сделка зафиксирована с прибылью!');
+            updatePaperBadge();
+            showToast(isWon ? '💰 Сделка зафиксирована с прибылью!' : 'Сделка отменена');
         }
 
         function removePaperTrade(id) {
@@ -1964,12 +2484,393 @@
             renderPaperPortfolio();
         }
 
-        function clearPaperPortfolio() {
-            if (confirm('Очистить все сделки из демо-портфеля?')) {
+        async function clearPaperPortfolio() {
+            if (confirm('Очистить все сделки из основного демо-портфеля?')) {
                 paperTrades = [];
                 localStorage.removeItem('paperTrades');
+                try {
+                    await fetch('/api/paper/clear?mode=main', { method: 'POST' });
+                } catch (e) {}
                 updatePaperBadge();
                 renderPaperPortfolio();
+                showToast('Основной портфель очищен');
+            }
+        }
+
+        async function clearFastPortfolio() {
+            if (confirm('Очистить тестовый портфель 5/15-минуток?')) {
+                try {
+                    await fetch('/api/paper/clear?mode=fast', { method: 'POST' });
+                } catch (e) {}
+                await syncFastPaperTrades();
+                showToast('Тест-портфель 5/15m очищен');
+            }
+        }
+
+        async function fetchUpdownSpreads() {
+            const tbody = document.getElementById('updown-spreads-body');
+            const countBadge = document.getElementById('updown-spreads-count');
+            if (!tbody) return;
+            try {
+                const res = await fetch('/api/updown_spreads');
+                const json = await res.json();
+                const rows = json.data || [];
+                if (countBadge) countBadge.innerText = `${rows.length} пар`;
+                if (rows.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:20px;">Ожидание свежих 5m/15m пар Bybit ⇄ Polymarket CLOB...</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = rows.map(r => {
+                    const spreadPct = ((r.spread_after_fees || 0) * 100).toFixed(2);
+                    const cost = r.hedge_cost ? r.hedge_cost.toFixed(3) : '—';
+                    const isArb = r.hedge_cost && r.hedge_cost < 1.0;
+                    const secNow = Math.floor(Date.now() / 1000);
+                    const is15m = (r.event_key || '').includes('15MIN');
+                    const winLen = is15m ? 900 : 300;
+                    const secFromStart = secNow % winLen;
+                    const isSyncStart = secFromStart <= 25;
+
+                    const syncBadge = isSyncStart
+                        ? `<span class="badge badge-arb">🎯 СИНХРОН СТАРТ (${secFromStart}с)</span>`
+                        : `<span class="badge badge-gap" title="Bybit дает +${is15m?15:5}м от клика, а Poly закрывается по часам. Без риска только 2-шаговый хедж в одном окне!">⏱️ +${secFromStart}с (Только 2-шаг хедж)</span>`;
+
+                    const rowKey = r.title || r.event_key;
+                    window.__row_cache = window.__row_cache || {};
+                    window.__row_cache[rowKey] = r;
+                    const rowKeySafe = rowKey.replace(/'/g, "\\'");
+
+                    return `
+                        <tr>
+                            <td>
+                                <div style="font-weight:700; color:var(--text-primary); font-size:11.5px;">${r.title || r.event_key}</div>
+                                <div class="mono" style="font-size:10px; color:var(--text-muted);">${r.event_key}</div>
+                            </td>
+                            <td>
+                                <a href="${r.url_bybit || r.url_a || '#'}" target="_blank" style="color:var(--bybit-color); font-weight:700; text-decoration:none;">
+                                    ${r.odds_a ? r.odds_a.toFixed(2) + 'x' : '—'} (${((r.prob_a||0)*100).toFixed(1)}%) ↗
+                                </a>
+                                <div style="font-size:10px; color:var(--text-muted);">${r.action_a || 'Bybit'}</div>
+                            </td>
+                            <td>
+                                <a href="${r.url_poly || r.url_b || '#'}" target="_blank" style="color:#93c5fd; font-weight:700; text-decoration:none;">
+                                    ${r.odds_b ? r.odds_b.toFixed(2) + 'x' : '—'} (${((r.prob_b||0)*100).toFixed(1)}%) ↗
+                                </a>
+                                <div style="font-size:10px; color:var(--text-muted);">${r.action_b || 'Polymarket'}</div>
+                            </td>
+                            <td class="mono font-bold" style="color:${isArb ? 'var(--accent-emerald)' : 'var(--text-secondary)'};">
+                                ${cost} ${isArb ? '🔥' : ''}
+                            </td>
+                            <td>
+                                <span class="${parseFloat(spreadPct) > 0 ? 'spread-positive' : 'spread-negative'} font-bold">+${spreadPct}%</span>
+                            </td>
+                            <td>${syncBadge}</td>
+                            <td>
+                                <button class="btn-action-calc" style="font-size:10.5px; padding:3px 8px;" onclick="openDealModalByKey('${rowKeySafe}')">
+                                    🧮 Расчет
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (e) {}
+        }
+
+        async function syncFastPaperTrades() {
+            const tbody = document.getElementById('fast-paper-body');
+            if (!tbody) return;
+            try {
+                const res = await fetch('/api/paper/trades?limit=60&mode=fast');
+                const json = await res.json();
+                const trades = json.data || [];
+
+                const badgeEl = document.getElementById('fast-badge-count');
+                const tableCountEl = document.getElementById('fast-table-count');
+                const openCount = trades.filter(t => t.status === 'OPEN').length;
+                const closedCount = trades.length - openCount;
+                if (badgeEl) badgeEl.innerText = trades.length;
+                if (tableCountEl) tableCountEl.innerText = `${trades.length} сделок`;
+
+                let totalPnl = 0;
+                let wonCount = 0;
+                let hedgeCount = 0;
+
+                trades.forEach(t => {
+                    if (t.status !== 'OPEN') {
+                        const p = parseFloat(t.net_profit) || 0;
+                        totalPnl += p;
+                        if (t.status === 'WON' && p >= 0) wonCount++;
+                    }
+                    if (t.deal_type === 'two_step_hedge' || t.deal_type === 'sync_start_arb') {
+                        hedgeCount++;
+                    }
+                });
+
+                const kpiCount = document.getElementById('fast-kpi-count');
+                const kpiStatus = document.getElementById('fast-kpi-status');
+                const kpiHedges = document.getElementById('fast-kpi-hedges');
+                const kpiPnl = document.getElementById('fast-kpi-pnl');
+                const kpiWinrate = document.getElementById('fast-kpi-winrate');
+
+                if (kpiCount) kpiCount.innerText = trades.length;
+                if (kpiStatus) kpiStatus.innerText = `(${openCount} акт. / ${closedCount} закр.)`;
+                if (kpiHedges) kpiHedges.innerText = hedgeCount;
+                if (kpiPnl) {
+                    kpiPnl.innerText = (totalPnl >= 0 ? '+' : '') + `$${totalPnl.toFixed(2)}`;
+                    kpiPnl.style.color = totalPnl >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)';
+                }
+                if (kpiWinrate) {
+                    kpiWinrate.innerText = closedCount > 0 ? `${Math.round((wonCount / closedCount) * 100)}%` : '100%';
+                }
+
+                if (trades.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:24px;">Ожидание 5/15m сделок (2-шаговый Lock-In хедж, синхронный старт 0–25с или импульс 47–51с)...</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = trades.map(t => {
+                    const time = new Date(t.entry_time || Date.now()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+                    let typeBadge = '<span class="badge badge-sync">⚡ 5M ТЕСТ</span>';
+                    if (t.deal_type === 'two_step_hedge') {
+                        typeBadge = '<span class="badge badge-arb">🔒 2-ШАГ ХЕДЖ (S₀)</span>';
+                    } else if (t.deal_type === 'sync_start_arb') {
+                        typeBadge = '<span class="badge badge-arb">🎯 СИНХРОН 0-25с</span>';
+                    } else if (t.deal_type === 'poly_48s_lag') {
+                        typeBadge = '<span class="badge" style="background:rgba(56,189,248,0.15); color:var(--accent-cyan); border:1px solid rgba(56,189,248,0.3);">⏱️ ЛАГ TWAP 48с</span>';
+                    }
+
+                    const isWon = t.status === 'WON';
+                    const isLost = t.status === 'LOST';
+                    let statusBadge = '<span class="badge badge-sync">⏳ В ИГРЕ</span>';
+                    if (isWon) statusBadge = `<span class="badge badge-arb">✓ WIN (${t.resolution_note || ''})</span>`;
+                    else if (isLost) statusBadge = `<span class="badge" style="background:rgba(244,63,94,0.15); color:var(--accent-rose); border:1px solid rgba(244,63,94,0.3);">✕ LOSS (${t.resolution_note || ''})</span>`;
+
+                    const pnlVal = parseFloat(t.net_profit) || 0;
+                    const pnlStr = t.status === 'OPEN' ? 'ожид.' : (pnlVal >= 0 ? `+$${pnlVal.toFixed(2)}` : `-$${Math.abs(pnlVal).toFixed(2)}`);
+                    const pnlColor = t.status === 'OPEN' ? 'var(--text-muted)' : (pnlVal >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)');
+
+                    return `
+                        <tr>
+                            <td class="mono" style="font-size:10.5px; color:var(--text-muted);">${time}</td>
+                            <td>${typeBadge}</td>
+                            <td>
+                                <div style="font-size:11.5px; font-weight:700; color:var(--text-primary);">${t.title || t.event_key}</div>
+                                <div class="mono" style="font-size:10px; color:var(--text-muted);">Strike S₀: $${(t.strike_price || t.entry_price || 0).toLocaleString()}</div>
+                            </td>
+                            <td><span style="font-size:10.5px; color:var(--bybit-color);">${t.action_a || '—'} ($${(t.stake_a||0).toFixed(2)}) @ ${t.odds_a || 0}x</span></td>
+                            <td><span style="font-size:10.5px; color:#93c5fd;">${t.action_b || '—'} ${t.stake_b ? `($${t.stake_b.toFixed(2)})` : ''} ${t.odds_b ? `@ ${t.odds_b}x` : ''}</span></td>
+                            <td class="mono font-bold" style="color:var(--accent-cyan);">$${(t.total_stake || 20).toFixed(2)}</td>
+                            <td class="mono font-bold" style="color:var(--accent-emerald);">+${(t.roi_pct || 0).toFixed(1)}%</td>
+                            <td class="mono font-bold" style="color:${pnlColor};">${pnlStr}</td>
+                            <td>${statusBadge}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (e) {}
+        }
+
+        async function fetchTicksStats() {
+            try {
+                const res = await fetch('/api/ticks_stats');
+                const data = await res.json();
+                const countEl = document.getElementById('hft-count');
+                const badgeEl = document.getElementById('hft-ticker-badge');
+                if (countEl && data.total_ticks !== undefined) {
+                    countEl.innerText = data.total_ticks.toLocaleString();
+                }
+                if (badgeEl && data.prices && data.prices.BTC) {
+                    const btc = data.prices.BTC;
+                    badgeEl.title = `BTC: Index $${(btc.index||0).toFixed(1)} | Spot $${(btc.spot||0).toFixed(1)} | Fut $${(btc.futures||0).toFixed(1)} • Тиков в ticks.db: ${data.total_ticks}`;
+                }
+
+                const gridEl = document.getElementById('hft-live-windows-grid');
+                const timerBadge = document.getElementById('hft-window-timer-badge');
+                if (gridEl && data.windows && data.windows.length > 0) {
+                    const w5 = data.windows.find(w => w.window_type === '5MIN');
+                    if (timerBadge && w5) {
+                        const sec = Math.round(w5.sec_from_start || 0);
+                        const isSyncStart = (sec <= 25);
+                        const isHotWindow = (sec >= 44 && sec <= 55);
+                        timerBadge.innerText = isSyncStart
+                            ? `🎯 СИНХРОННЫЙ СТАРТ (0–25с): +${sec}с`
+                            : (isHotWindow
+                                ? `🔥 ОКНО ЛАГА 47–51с АКТИВНО! (+${sec}с)`
+                                : `Окно 5M: +${sec}с от старта (ост. ${Math.round(w5.seconds_to_expiry||0)}с)`);
+                        timerBadge.style.background = (isSyncStart || isHotWindow) ? 'rgba(16,185,129,0.22)' : 'rgba(56,189,248,0.12)';
+                        timerBadge.style.color = (isSyncStart || isHotWindow) ? 'var(--accent-emerald)' : 'var(--accent-cyan)';
+                        timerBadge.style.borderColor = (isSyncStart || isHotWindow) ? 'var(--accent-emerald)' : 'rgba(56,189,248,0.3)';
+                    }
+
+                    gridEl.innerHTML = data.windows.map(w => {
+                        const delta = (w.index_delta_pct || 0);
+                        const dColor = delta >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)';
+                        const pUp = w.poly_up_ask ? `$${w.poly_up_ask.toFixed(2)} (${w.poly_odds_up.toFixed(2)}x)` : '—';
+                        const pDown = w.poly_down_ask ? `$${w.poly_down_ask.toFixed(2)} (${w.poly_odds_down.toFixed(2)}x)` : '—';
+                        const hCost = w.cross_hedge_cost || 0;
+                        const isArb = hCost > 0 && hCost < 1.0;
+                        const hBadge = hCost > 0
+                            ? `<span style="color:${isArb ? 'var(--accent-emerald)' : 'var(--text-muted)'}; font-weight:700;">Cost: ${hCost.toFixed(3)} ${isArb ? '🔥 ВИЛКА' : ''}</span>`
+                            : `<span style="color:var(--text-muted);">CLOB ожидание</span>`;
+
+                        return `
+                            <div style="background:#090d14; border:1px solid ${isArb ? 'var(--accent-emerald)' : 'var(--border-subtle)'}; border-radius:6px; padding:8px 10px; font-size:10.5px; font-family:'JetBrains Mono',monospace;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                    <span style="font-weight:800; color:var(--text-primary);">${w.symbol}</span>
+                                    <span style="color:${dColor}; font-weight:700;">Δ ${delta >= 0 ? '+' : ''}${delta.toFixed(3)}%</span>
+                                </div>
+                                <div style="color:var(--text-secondary); margin-bottom:3px;">
+                                    Idx: <b>$${(w.index_price||0).toLocaleString()}</b> | TWAP60: $${(w.twap_60s||0).toLocaleString()}
+                                </div>
+                                <div style="color:#93c5fd; margin-bottom:3px;">
+                                    Poly 🔼 ${pUp} | 🔽 ${pDown}
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.05); padding-top:3px;">
+                                    <span style="color:var(--bybit-color);">BB: ${w.odds_up}x / ${w.odds_down}x</span>
+                                    ${hBadge}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (e) {}
+        }
+
+        async function loadManualLogs() {
+            const el = document.getElementById('manual-logs-mini-list');
+            if (!el) return;
+            try {
+                const res = await fetch('/api/manual_logs');
+                const json = await res.json();
+                const rows = json.data || [];
+                if (rows.length === 0) {
+                    el.innerHTML = '<div style="color:var(--text-muted);">Пока нет ручных записей. Нажмите кнопку выше после попытки входа.</div>';
+                    return;
+                }
+                el.innerHTML = rows.slice(0, 8).map(r => {
+                    const outColor = r.outcome === 'win' ? 'var(--accent-emerald)' : (r.outcome === 'loss' ? 'var(--accent-rose)' : 'var(--accent-amber)');
+                    return `<div style="padding:2px 0; border-bottom:1px solid rgba(255,255,255,0.04);">
+                        [${r.timestamp.slice(11,19)} | <b>+${r.sec_from_start}с</b>]
+                        <span style="color:${outColor}; font-weight:700;">${r.outcome.toUpperCase()}</span>
+                        • Ожид: ${r.requested_odds}x ➔ Факт: ${r.filled_odds}x
+                        • PnL: $${r.pnl} • Idx: $${r.bybit_index_price}
+                        ${r.note ? `• <i>${r.note}</i>` : ''}
+                    </div>`;
+                }).join('');
+            } catch (e) {}
+        }
+
+        async function submitManualLog(outcome) {
+            const reqOdds = parseFloat(document.getElementById('mlog-req-odds')?.value) || 1.80;
+            const fillOdds = parseFloat(document.getElementById('mlog-fill-odds')?.value) || 0.0;
+            const pnl = parseFloat(document.getElementById('mlog-pnl')?.value) || 0.0;
+            const noteEl = document.getElementById('mlog-note');
+            const note = noteEl ? noteEl.value.trim() : '';
+            try {
+                await fetch('/api/manual_logs', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        platform_a: 'bybit_odds',
+                        platform_b: 'polymarket',
+                        requested_odds: reqOdds,
+                        filled_odds: fillOdds,
+                        outcome: outcome,
+                        pnl: pnl,
+                        note: note
+                    })
+                });
+                if (noteEl) noteEl.value = '';
+                await loadManualLogs();
+                showToast(`📝 Записано в manual_trades_log.csv: ${outcome.toUpperCase()}`);
+            } catch (e) {
+                showToast('Ошибка записи лога');
+            }
+        }
+
+        async function syncServerPaperTrades() {
+            loadManualLogs();
+            try {
+                // First, purge any 5m/15m entries that were previously stored in localStorage.paperTrades
+                const beforeLen = paperTrades.length;
+                paperTrades = paperTrades.filter(t => {
+                    const titleU = (t.title || '').toUpperCase();
+                    const keyU = (t.event_key || '').toUpperCase();
+                    const isFast = titleU.includes('5M') || titleU.includes('15M') || titleU.includes('UP/DOWN') || keyU.includes('5MIN') || keyU.includes('15MIN');
+                    return !isFast;
+                });
+                let changed = (paperTrades.length !== beforeLen);
+
+                const res = await fetch('/api/paper/trades?limit=60&mode=main');
+                const json = await res.json();
+                const serverTrades = json.data || [];
+
+                serverTrades.forEach(st => {
+                    const serverKey = `auto_${st.id}_${st.event_key}`;
+                    const existingIdx = paperTrades.findIndex(lt => lt.server_key === serverKey || lt.event_key === st.event_key);
+                    const formatted = {
+                        id: st.id + 1000000,
+                        server_key: serverKey,
+                        title: st.title || st.event_key,
+                        event_key: st.event_key,
+                        bank: (st.total_stake || 20).toFixed(2),
+                        stake_a: (st.stake_a || 10).toFixed(2),
+                        stake_b: (st.stake_b || 10).toFixed(2),
+                        action_a: st.action_a || 'Bybit',
+                        action_b: st.action_b || 'Polymarket',
+                        odds_a: st.odds_a || 0,
+                        odds_b: st.odds_b || 0,
+                        spread_pct: st.roi_pct ? st.roi_pct.toFixed(2) : '3.50',
+                        guaranteed_payout: (st.payout || ((st.total_stake || 20) * 1.035)).toFixed(2),
+                        net_profit: (st.status === 'OPEN' ? ((st.total_stake || 20) * 0.035) : (st.net_profit || 0)).toFixed(2),
+                        created_at: st.entry_time || new Date().toISOString(),
+                        status: st.status || 'OPEN'
+                    };
+
+                    if (existingIdx !== -1) {
+                        if (paperTrades[existingIdx].status !== formatted.status || paperTrades[existingIdx].net_profit !== formatted.net_profit) {
+                            paperTrades[existingIdx] = formatted;
+                            changed = true;
+                        }
+                    } else {
+                        paperTrades.unshift(formatted);
+                        changed = true;
+                    }
+                });
+
+                if (changed) {
+                    localStorage.setItem('paperTrades', JSON.stringify(paperTrades));
+                    updatePaperBadge();
+                    renderPaperPortfolio();
+                }
+            } catch (e) {}
+        }
+
+        async function loadPaperBotConfig() {
+            try {
+                const res = await fetch('/api/paper/config');
+                const cfg = await res.json();
+                const statusEl = document.getElementById('auto-paper-status');
+                const btn = document.getElementById('btn-auto-paper');
+                if (statusEl && btn) {
+                    statusEl.innerText = cfg.enabled ? 'ВКЛ' : 'ВЫКЛ';
+                    btn.classList.toggle('active', !!cfg.enabled);
+                }
+            } catch (e) {}
+        }
+
+        async function toggleAutoPaperTrader() {
+            try {
+                const res = await fetch('/api/paper/config');
+                const cfg = await res.json();
+                const newEnabled = !cfg.enabled;
+                await fetch('/api/paper/config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({enabled: newEnabled})
+                });
+                await loadPaperBotConfig();
+                showToast(newEnabled ? '🤖 Авто-демо сделки ВКЛЮЧЕНЫ' : '⏸️ Авто-демо сделки ПРИОСТАНОВЛЕНЫ');
+            } catch (e) {
+                showToast('Ошибка переключения авто-бота');
             }
         }
 
@@ -1979,6 +2880,186 @@
             if (countEl) countEl.innerText = openCount;
         }
 
+        function exportPaperTradesToCSV() {
+            if (!paperTrades || paperTrades.length === 0) {
+                alert('Портфель пуст. Нет сделок для экспорта.');
+                return;
+            }
+            const headers = ['ID', 'Date', 'Title', 'Event Key', 'Bank ($)', 'Stake Bybit ($)', 'Stake Poly ($)', 'Action Bybit', 'Action Poly', 'Odds Bybit', 'Odds Poly', 'Spread %', 'Guaranteed Payout ($)', 'Net Profit ($)', 'Status'];
+            const rows = paperTrades.map(t => [
+                t.id,
+                `"${t.created_at}"`,
+                `"${(t.title || '').replace(/"/g, '""')}"`,
+                `"${(t.event_key || '').replace(/"/g, '""')}"`,
+                t.bank,
+                t.stake_a,
+                t.stake_b,
+                `"${t.action_a || ''}"`,
+                `"${t.action_b || ''}"`,
+                t.odds_a,
+                t.odds_b,
+                t.spread_pct,
+                t.guaranteed_payout,
+                t.net_profit,
+                t.status
+            ]);
+            const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `odds_pulse_paper_portfolio_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('📥 История сделок экспортирована в CSV!');
+        }
+
+        function renderPaperEquityChart(trades) {
+            const container = document.getElementById('paper-equity-chart');
+            if (!container) return;
+
+            if (!trades || trades.length === 0) {
+                container.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:160px; text-align:center; padding:15px;">
+                        <div style="font-size:26px; margin-bottom:6px; opacity:0.85;">📈</div>
+                        <div style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:3px;">Кривая капитала (Equity Curve) пока пуста</div>
+                        <div style="font-size:11px; color:var(--text-muted); max-width:440px; margin-bottom:10px;">
+                            Добавьте вилку в портфель нажатием «⚡ В портфель» в таблице, либо создайте тестовую сделку:
+                        </div>
+                        <button class="btn-nav" onclick="addSamplePaperTrade()" style="color:var(--accent-cyan); border-color:var(--accent-cyan); font-size:11px;">
+                            🧪 + Создать тестовую сделку ($20)
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const startBank = currentBankroll || 100;
+            const sortedTrades = [...trades].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+            let currentBal = startBank;
+            const points = [];
+            const firstTime = new Date(sortedTrades[0].created_at).getTime() - 1000 * 60 * 30;
+            points.push({
+                time: new Date(firstTime).toISOString(),
+                equity: startBank,
+                profit: 0,
+                title: 'Стартовый баланс',
+                status: 'BASE'
+            });
+
+            sortedTrades.forEach(t => {
+                const profit = parseFloat(t.net_profit) || 0;
+                currentBal += profit;
+                points.push({
+                    time: t.created_at,
+                    equity: currentBal,
+                    profit: profit,
+                    title: t.title,
+                    status: t.status
+                });
+            });
+
+            const equities = points.map(p => p.equity);
+            const minVal = Math.min(...equities, startBank * 0.98);
+            const maxVal = Math.max(...equities, startBank * 1.02);
+            const valRange = (maxVal - minVal) || 1;
+
+            const width = 740;
+            const height = 150;
+            const padLeft = 60;
+            const padRight = 30;
+            const padTop = 15;
+            const padBottom = 25;
+            const chartW = width - padLeft - padRight;
+            const chartH = height - padTop - padBottom;
+
+            const coords = points.map((p, idx) => {
+                const x = padLeft + (idx / (points.length - 1 || 1)) * chartW;
+                const y = padTop + chartH - ((p.equity - minVal) / valRange) * chartH;
+                return { x, y, p };
+            });
+
+            const baseLineY = padTop + chartH - ((startBank - minVal) / valRange) * chartH;
+            const lineD = coords.reduce((acc, c, idx) => idx === 0 ? `M ${c.x} ${c.y}` : `${acc} L ${c.x} ${c.y}`, '');
+            const firstPt = coords[0];
+            const lastPt = coords[coords.length - 1];
+            const areaD = `${lineD} L ${lastPt.x} ${padTop + chartH} L ${firstPt.x} ${padTop + chartH} Z`;
+
+            const dots = coords.slice(1).map(c => `
+                <circle cx="${c.x}" cy="${c.y}" r="3.5" fill="#10b981" stroke="#090d14" stroke-width="1.5" />
+            `).join('');
+
+            const yTopLabel = `$${maxVal.toFixed(2)}`;
+            const yMidLabel = `$${((maxVal + minVal) / 2).toFixed(2)}`;
+            const yBotLabel = `$${minVal.toFixed(2)}`;
+
+            container.innerHTML = `
+                <svg id="equity-svg-el" viewBox="0 0 ${width} ${height}" style="width:100%; height:160px; display:block; cursor:crosshair;">
+                    <defs>
+                        <linearGradient id="equityGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#10b981" stop-opacity="0.32" />
+                            <stop offset="100%" stop-color="#10b981" stop-opacity="0.01" />
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Grid & Baseline -->
+                    <line x1="${padLeft}" y1="${padTop}" x2="${width - padRight}" y2="${padTop}" stroke="rgba(255,255,255,0.05)" stroke-dasharray="2 2" />
+                    <line x1="${padLeft}" y1="${padTop + chartH / 2}" x2="${width - padRight}" y2="${padTop + chartH / 2}" stroke="rgba(255,255,255,0.05)" stroke-dasharray="2 2" />
+                    <line x1="${padLeft}" y1="${padTop + chartH}" x2="${width - padRight}" y2="${padTop + chartH}" stroke="rgba(255,255,255,0.08)" />
+
+                    <!-- Starting Bankroll Dotted Line -->
+                    <line x1="${padLeft}" y1="${baseLineY}" x2="${width - padRight}" y2="${baseLineY}" stroke="#64748b" stroke-dasharray="4 3" stroke-width="1" />
+                    <text x="${padLeft + 4}" y="${baseLineY - 4}" fill="#64748b" font-size="9" font-family="'JetBrains Mono', monospace">Старт: $${startBank.toFixed(2)}</text>
+
+                    <!-- Y Axis Labels -->
+                    <text x="${padLeft - 6}" y="${padTop + 9}" fill="#64748b" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="end">${yTopLabel}</text>
+                    <text x="${padLeft - 6}" y="${padTop + chartH / 2 + 3}" fill="#64748b" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="end">${yMidLabel}</text>
+                    <text x="${padLeft - 6}" y="${padTop + chartH - 2}" fill="#64748b" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="end">${yBotLabel}</text>
+
+                    <!-- Curve and Area -->
+                    <path d="${areaD}" fill="url(#equityGrad)" />
+                    <path d="${lineD}" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                    ${dots}
+                </svg>
+                <div id="equity-tooltip" style="display:none; position:absolute; pointer-events:none; background:#0f172a; border:1px solid #10b981; border-radius:6px; padding:6px 10px; font-size:11px; font-family:'JetBrains Mono', monospace; color:#fff; z-index:20; white-space:nowrap; transform:translate(-50%, -125%); box-shadow:0 6px 16px rgba(0,0,0,0.6);"></div>
+            `;
+
+            const svgEl = document.getElementById('equity-svg-el');
+            const tip = document.getElementById('equity-tooltip');
+            if (svgEl && tip) {
+                svgEl.onmousemove = (e) => {
+                    const rect = svgEl.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const normX = (mouseX / rect.width) * width;
+                    if (normX >= padLeft && normX <= width - padRight) {
+                        const ratio = (normX - padLeft) / chartW;
+                        const idx = Math.min(coords.length - 1, Math.max(0, Math.round(ratio * (coords.length - 1))));
+                        const pt = coords[idx];
+                        const screenX = (pt.x / width) * rect.width;
+                        const screenY = (pt.y / height) * rect.height;
+
+                        tip.style.display = 'block';
+                        tip.style.left = screenX + 'px';
+                        tip.style.top = screenY + 'px';
+
+                        const timeStr = new Date(pt.p.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                        const profitStr = pt.p.profit > 0 ? `+$${pt.p.profit.toFixed(2)}` : (pt.p.profit === 0 ? '$0.00' : `-$${Math.abs(pt.p.profit).toFixed(2)}`);
+                        const profitColor = pt.p.profit >= 0 ? '#10b981' : '#f43f5e';
+                        
+                        tip.innerHTML = `
+                            <div style="font-weight:700; color:#38bdf8; font-size:12px;">Капитал: $${pt.p.equity.toFixed(2)}</div>
+                            <div style="font-size:10px; color:${profitColor}; margin:1px 0;">Профит: ${profitStr}</div>
+                            <div style="font-size:9.5px; color:#94a3b8;">${pt.p.title} • ${timeStr}</div>
+                        `;
+                    }
+                };
+                svgEl.onmouseleave = () => { tip.style.display = 'none'; };
+            }
+        }
+
         function renderPaperPortfolio() {
             const tbody = document.getElementById('paper-body');
             if (!tbody) return;
@@ -1986,35 +3067,90 @@
 
             let totalInvested = 0;
             let totalProfit = 0;
+            let openCount = 0;
+            let closedCount = 0;
+            let wonCount = 0;
 
-            if (paperTrades.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:30px;">В демо-портфеле пока нет открытых сделок. Нажмите «⚡ В портфель» у любой вилки!</td></tr>';
+            const assetStats = {
+                BTC: { count: 0, profit: 0 },
+                ETH: { count: 0, profit: 0 },
+                SOL: { count: 0, profit: 0 },
+                OTHER: { count: 0, profit: 0 }
+            };
+
+            paperTrades.forEach(t => {
+                const b = parseFloat(t.bank) || 0;
+                const p = parseFloat(t.net_profit) || 0;
+                totalInvested += b;
+                totalProfit += p;
+
+                if (t.status === 'OPEN') {
+                    openCount++;
+                } else {
+                    closedCount++;
+                    if (t.status === 'WON' && p > 0) wonCount++;
+                }
+
+                const titleUpper = (t.title || '').toUpperCase();
+                if (titleUpper.includes('BTC')) {
+                    assetStats.BTC.count++;
+                    assetStats.BTC.profit += p;
+                } else if (titleUpper.includes('ETH')) {
+                    assetStats.ETH.count++;
+                    assetStats.ETH.profit += p;
+                } else if (titleUpper.includes('SOL')) {
+                    assetStats.SOL.count++;
+                    assetStats.SOL.profit += p;
+                } else {
+                    assetStats.OTHER.count++;
+                    assetStats.OTHER.profit += p;
+                }
+            });
+
+            const filteredTrades = paperTrades.filter(t => {
+                if (paperFilter === 'open') return t.status === 'OPEN';
+                if (paperFilter === 'won') return t.status === 'WON';
+                return true;
+            });
+
+            const countTag = document.getElementById('paper-table-count');
+            if (countTag) countTag.innerText = `${filteredTrades.length} из ${paperTrades.length} сделок`;
+
+            if (filteredTrades.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:30px;">В выбранной категории нет сделок. Нажмите «⚡ В портфель» у любой вилки или «🧪 + Тестовая сделка»!</td></tr>';
             } else {
-                paperTrades.forEach(t => {
-                    totalInvested += parseFloat(t.bank) || 0;
-                    totalProfit += parseFloat(t.net_profit) || 0;
-
+                filteredTrades.forEach(t => {
                     const tr = document.createElement('tr');
                     const time = new Date(t.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
                     const isWon = t.status === 'WON';
-                    const statusBadge = isWon 
-                        ? '<span class="badge badge-arb">✓ ЗАКРЫТА (+$$)</span>' 
-                        : '<span class="badge badge-sync">⚡ АКТИВНА</span>';
+                    const isLost = t.status === 'LOST';
+                    const isCancelled = t.status === 'CANCELLED';
+                    let statusBadge = '<span class="badge badge-sync">⚡ АКТИВНА</span>';
+                    if (isWon) statusBadge = '<span class="badge badge-arb">✓ ЗАКРЫТА (+$$)</span>';
+                    else if (isLost) statusBadge = '<span class="badge" style="background:rgba(244,63,94,0.15); color:var(--accent-rose); border:1px solid rgba(244,63,94,0.3);">✕ УБЫТОК</span>';
+                    else if (isCancelled) statusBadge = '<span class="badge" style="background:rgba(255,255,255,0.06); color:var(--text-muted);">✕ ОТМЕНЕНА</span>';
+
+                    const pnlVal = parseFloat(t.net_profit) || 0;
+                    const pnlStr = pnlVal >= 0 ? `+$${pnlVal.toFixed(2)}` : `-$${Math.abs(pnlVal).toFixed(2)}`;
+                    const pnlColor = pnlVal >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)';
 
                     tr.innerHTML = `
                         <td class="mono" style="font-size:11px; color:var(--text-muted);">${time}</td>
-                        <td><b>${t.title}</b></td>
+                        <td style="font-size:11.5px; font-weight:600; color:var(--text-primary);">${t.title}</td>
                         <td class="mono font-bold" style="color:var(--accent-cyan);">$${t.bank}</td>
                         <td><span style="font-size:10.5px; color:var(--bybit-color);">${t.action_a} ($${t.stake_a}) @ ${t.odds_a}x</span></td>
                         <td><span style="font-size:10.5px; color:var(--poly-color);">${t.action_b} ($${t.stake_b}) @ ${t.odds_b}x</span></td>
-                        <td><span class="spread-positive">+${t.spread_pct}%</span></td>
+                        <td><span class="${pnlVal >= 0 ? 'spread-positive' : 'spread-negative'} font-bold">${pnlVal >= 0 ? '+' : ''}${t.spread_pct}%</span></td>
                         <td class="mono font-bold">$${t.guaranteed_payout}</td>
-                        <td class="mono" style="color:var(--accent-emerald); font-weight:700;">+$${t.net_profit}</td>
+                        <td class="mono font-bold" style="color:${pnlColor};">${pnlStr}</td>
                         <td>${statusBadge}</td>
                         <td>
                             <div style="display:flex; gap:4px;">
-                                ${!isWon ? `<button class="btn-mini-tool" onclick="closePaperTrade(${t.id})" title="Зафиксировать прибыль">💰 Закрыть</button>` : ''}
-                                <button class="btn-mini-tool" onclick="removePaperTrade(${t.id})" style="color:var(--accent-rose);" title="Удалить">✕</button>
+                                ${!isWon && !isLost && !isCancelled ? `
+                                    <button class="btn-mini-tool" onclick="closePaperTrade(${t.id}, true)" title="Зафиксировать гарантированную прибыль" style="color:var(--accent-emerald);">💰 Зафиксировать</button>
+                                    <button class="btn-mini-tool" onclick="closePaperTrade(${t.id}, false)" title="Отменить сделку" style="color:var(--text-muted);">✕</button>
+                                ` : ''}
+                                <button class="btn-mini-tool" onclick="removePaperTrade(${t.id})" style="color:var(--accent-rose);" title="Удалить из истории">🗑️</button>
                             </div>
                         </td>
                     `;
@@ -2022,16 +3158,46 @@
                 });
             }
 
+            const startBank = currentBankroll || 100;
+            const currentBalance = startBank + totalProfit;
+            const winRate = closedCount > 0 ? ((wonCount / closedCount) * 100).toFixed(0) + '%' : '100%';
+            const avgRoi = totalInvested > 0 ? ((totalProfit / totalInvested) * 100).toFixed(1) : '0.0';
+
             const kpiCount = document.getElementById('paper-kpi-count');
+            const kpiRatio = document.getElementById('paper-kpi-status-ratio');
             const kpiInvested = document.getElementById('paper-kpi-invested');
             const kpiProfit = document.getElementById('paper-kpi-profit');
+            const kpiWinrate = document.getElementById('paper-kpi-winrate');
             const kpiRoi = document.getElementById('paper-kpi-roi');
+            const kpiBalance = document.getElementById('paper-kpi-balance');
 
             if (kpiCount) kpiCount.innerText = paperTrades.length;
+            if (kpiRatio) kpiRatio.innerText = `(${openCount} акт. / ${closedCount} закр.)`;
             if (kpiInvested) kpiInvested.innerText = `$${totalInvested.toFixed(2)}`;
-            if (kpiProfit) kpiProfit.innerText = `+$${totalProfit.toFixed(2)}`;
-            const avgRoi = totalInvested > 0 ? ((totalProfit / totalInvested) * 100).toFixed(1) : '0.0';
+            if (kpiProfit) {
+                kpiProfit.innerText = (totalProfit >= 0 ? '+' : '') + `$${totalProfit.toFixed(2)}`;
+                kpiProfit.style.color = totalProfit >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)';
+            }
+            if (kpiWinrate) kpiWinrate.innerText = winRate;
             if (kpiRoi) kpiRoi.innerText = `+${avgRoi}%`;
+            if (kpiBalance) kpiBalance.innerText = `$${currentBalance.toFixed(2)}`;
+
+            const assetContainer = document.getElementById('equity-asset-breakdown');
+            if (assetContainer) {
+                const pills = [];
+                if (assetStats.BTC.count > 0) {
+                    pills.push(`<span class="badge" style="background:rgba(247,147,26,0.15); color:#f7931a; border:1px solid rgba(247,147,26,0.3);">BTC: ${assetStats.BTC.count} (+$${assetStats.BTC.profit.toFixed(2)})</span>`);
+                }
+                if (assetStats.ETH.count > 0) {
+                    pills.push(`<span class="badge" style="background:rgba(98,126,234,0.15); color:#818cf8; border:1px solid rgba(98,126,234,0.3);">ETH: ${assetStats.ETH.count} (+$${assetStats.ETH.profit.toFixed(2)})</span>`);
+                }
+                if (assetStats.SOL.count > 0) {
+                    pills.push(`<span class="badge" style="background:rgba(20,241,149,0.15); color:#14f195; border:1px solid rgba(20,241,149,0.3);">SOL: ${assetStats.SOL.count} (+$${assetStats.SOL.profit.toFixed(2)})</span>`);
+                }
+                assetContainer.innerHTML = pills.join(' ');
+            }
+
+            renderPaperEquityChart(paperTrades);
         }
 
         // ─── Bankroll UI ───
@@ -2135,6 +3301,9 @@
         // ─── Data Fetching ───
         async function fetchSpreads() {
             const statusEl = document.getElementById('status');
+            const liveBadge = document.getElementById('badge-live-status');
+            const liveText = document.getElementById('live-text-status');
+            const liveDot = document.getElementById('pulse-dot-status');
             statusEl.innerText = 'Обновление...';
             try {
                 const response = await fetch('/api/spreads');
@@ -2143,6 +3312,34 @@
                 renderTables(cachedData);
                 updateKPIMetrics(cachedData);
                 updateTickerTape(cachedData);
+
+                // Freshness check: find most recent detected_at
+                let newestTs = 0;
+                cachedData.forEach(r => {
+                    if (r.detected_at) {
+                        const t = new Date(r.detected_at).getTime();
+                        if (t > newestTs) newestTs = t;
+                    }
+                });
+
+                if (newestTs > 0 && liveBadge && liveText) {
+                    const ageSec = Math.round((Date.now() - newestTs) / 1000);
+                    if (ageSec > 50) {
+                        liveBadge.style.background = 'rgba(244, 63, 94, 0.16)';
+                        liveBadge.style.borderColor = 'rgba(244, 63, 94, 0.4)';
+                        liveBadge.style.color = 'var(--accent-rose)';
+                        if (liveDot) liveDot.style.backgroundColor = 'var(--accent-rose)';
+                        liveText.innerText = `⚠️ ${ageSec}с назад`;
+                        liveBadge.title = `Внимание: парсер не обновлял котировки ${ageSec} сек`;
+                    } else {
+                        liveBadge.style.background = 'rgba(16, 185, 129, 0.12)';
+                        liveBadge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                        liveBadge.style.color = 'var(--accent-emerald)';
+                        if (liveDot) liveDot.style.backgroundColor = 'var(--accent-emerald)';
+                        liveText.innerText = 'LIVE';
+                        liveBadge.title = `Парсер активен, задержка данных: ${ageSec}с`;
+                    }
+                }
 
                 const trueArbs = cachedData.filter(r => (r.is_arb === 1 || r.is_arb === true) && (r.hedge_margin > 0));
                 if (trueArbs.length > lastArbCount) {
@@ -2164,6 +3361,11 @@
                 console.error("Error fetching spreads", error);
                 statusEl.innerText = '❌ Ошибка сети';
                 statusEl.style.color = 'var(--accent-rose)';
+                if (liveBadge && liveText) {
+                    liveBadge.style.background = 'rgba(244, 63, 94, 0.2)';
+                    liveBadge.style.color = 'var(--accent-rose)';
+                    liveText.innerText = '🔴 СЕРВЕР OFFLINE';
+                }
             }
         }
 
@@ -2486,6 +3688,13 @@
 
                 const synthBadge = isSynthetic ? '<span style="font-size:9px; color:var(--accent-amber); margin-left:3px;" title="Синтетическая цена (1 - P)">~синтет</span>' : '';
 
+                const liqBVal = parseFloat(row.liquidity_b) || 0;
+                let liqBadge = '';
+                if (liqBVal > 0) {
+                    const liqFmt = liqBVal >= 1000 ? '$' + (liqBVal / 1000).toFixed(1) + 'k' : '$' + Math.round(liqBVal);
+                    liqBadge = `<span style="font-size:9px; font-weight:700; color:var(--accent-cyan); background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.3); border-radius:3px; padding:1px 4px; margin-left:4px;" title="Ликвидность Polymarket: $${liqBVal.toLocaleString()}">💧 ${liqFmt}</span>`;
+                }
+
                 const copyText = `${row.title || row.event_key} | Bybit: ${bybitActionText} $${stakeA_num.toFixed(2)} | Poly: ${polyActionText} $${stakeB_num.toFixed(2)}`;
                 const rowKeySafe = rowKey.replace(/'/g, "\\'");
                 const copyTextSafe = copyText.replace(/'/g, "\\'");
@@ -2524,7 +3733,7 @@
                                 <span class="odds-val odds-bybit">${oddsA}</span>
                                 <span class="prob-tag">(${probA})</span>
                             </div>
-                            <a href="${row.url_a || '#'}" target="_blank" class="leg-pill leg-pill-bybit" onclick="event.stopPropagation();" title="Открыть Bybit (${bybitActionText}) ↗">
+                            <a href="${row.url_bybit || (row.platform_a === 'bybit_odds' ? row.url_a : row.url_b) || '#'}" target="_blank" class="leg-pill leg-pill-bybit" onclick="event.stopPropagation();" title="Открыть Bybit (${bybitActionText}) ↗">
                                 <span>🟡 ${bybitActionText}</span>
                                 <span class="leg-stake">$${stakeA_num.toFixed(2)} ↗</span>
                             </a>
@@ -2536,8 +3745,9 @@
                                 <span class="odds-val odds-poly">${oddsB}</span>
                                 <span class="prob-tag">(${probB})</span>
                                 ${synthBadge}
+                                ${liqBadge}
                             </div>
-                            <a href="${row.url_b || '#'}" target="_blank" class="leg-pill leg-pill-poly" onclick="event.stopPropagation();" title="Открыть Polymarket (${polyActionText}) ↗">
+                            <a href="${row.url_poly || (row.platform_b === 'polymarket' ? row.url_b : row.url_a) || '#'}" target="_blank" class="leg-pill leg-pill-poly" onclick="event.stopPropagation();" title="Открыть Polymarket (${polyActionText}) ↗">
                                 <span>🔵 ${polyActionText}</span>
                                 <span class="leg-stake">$${stakeB_num.toFixed(2)} ↗</span>
                             </a>
@@ -2653,13 +3863,13 @@
             return `
                 <div class="trade-steps">
                     <div class="trade-legs-pair">
-                        <a href="${row.url_a || '#'}" target="_blank" class="trade-leg trade-leg-bybit" onclick="event.stopPropagation();" title="Открыть Bybit (${bybitActionText}) ↗">
+                        <a href="${row.url_bybit || (row.platform_a === 'bybit_odds' ? row.url_a : row.url_b) || '#'}" target="_blank" class="trade-leg trade-leg-bybit" onclick="event.stopPropagation();" title="Открыть Bybit (${bybitActionText}) ↗">
                             <span style="display:flex; align-items:center; gap:3px;">
                                 <img src="${LOGO_BYBIT}" alt="Bybit" style="height:9px; filter:brightness(0) invert(1);"> <b>${bybitActionText}</b>
                             </span>
                             <span class="mono" style="opacity:0.9; font-size:9.5px;">$${stakeA_num.toFixed(2)}<span class="leg-arrow">↗</span></span>
                         </a>
-                        <a href="${row.url_b || '#'}" target="_blank" class="trade-leg trade-leg-poly" onclick="event.stopPropagation();" title="Открыть Poly (${polyActionText}) ↗">
+                        <a href="${row.url_poly || (row.platform_b === 'polymarket' ? row.url_b : row.url_a) || '#'}" target="_blank" class="trade-leg trade-leg-poly" onclick="event.stopPropagation();" title="Открыть Poly (${polyActionText}) ↗">
                             <span style="display:flex; align-items:center; gap:3px;">
                                 <img src="${LOGO_POLY}" alt="Poly" style="height:9px;"> <b>${polyActionText}</b>
                             </span>
@@ -2843,7 +4053,7 @@
                                 <b style="color:#ffb726; font-size:11px; white-space:nowrap;">${bybitActionText}</b>
                                 <span class="mono" style="color:var(--text-muted); font-size:10px;">@ ${oddsA_str}</span>
                             </div>
-                            <a href="${item.url_a || '#'}" target="_blank" class="top-leg-link top-leg-bybit" onclick="event.stopPropagation();" title="Открыть сделку на Bybit ↗">
+                            <a href="${item.url_bybit || (item.platform_a === 'bybit_odds' ? item.url_a : item.url_b) || '#'}" target="_blank" class="top-leg-link top-leg-bybit" onclick="event.stopPropagation();" title="Открыть сделку на Bybit ↗">
                                 $${stakeA_num.toFixed(2)} ↗
                             </a>
                         </div>
@@ -2854,7 +4064,7 @@
                                 <b style="color:#93c5fd; font-size:11px; white-space:nowrap;">${polyActionText}</b>
                                 <span class="mono" style="color:var(--text-muted); font-size:10px;">@ ${oddsB_str}</span>
                             </div>
-                            <a href="${item.url_b || '#'}" target="_blank" class="top-leg-link top-leg-poly" onclick="event.stopPropagation();" title="Открыть сделку на Polymarket ↗">
+                            <a href="${item.url_poly || (item.platform_b === 'polymarket' ? item.url_b : item.url_a) || '#'}" target="_blank" class="top-leg-link top-leg-poly" onclick="event.stopPropagation();" title="Открыть сделку на Polymarket ↗">
                                 $${stakeB_num.toFixed(2)} ↗
                             </a>
                         </div>
@@ -2897,8 +4107,8 @@
             titleEl.innerText = row.title || row.event_key;
             subtitleEl.innerText = `Страйк: ${row.event_key} • Обнаружено: ${new Date(row.detected_at).toLocaleTimeString()}`;
 
-            if (linkBybit) linkBybit.href = row.url_a || '#';
-            if (linkPoly) linkPoly.href = row.url_b || '#';
+            if (linkBybit) linkBybit.href = row.url_bybit || (row.platform_a === 'bybit_odds' ? row.url_a : row.url_b) || '#';
+            if (linkPoly) linkPoly.href = row.url_poly || (row.platform_b === 'polymarket' ? row.url_b : row.url_a) || '#';
 
             let splitA = row.stake_a ? Math.round(row.stake_a * 100) : 50;
             let splitB = 100 - splitA;
@@ -2934,6 +4144,29 @@
             const isArb = (row.is_arb === 1 || row.is_arb === true) && (row.hedge_margin > 0);
 
             bodyEl.innerHTML = `
+                <!-- ─── Spread History Area Chart ─── -->
+                <div class="modal-chart-wrap" style="background:#090d14; border:1px solid var(--border-subtle); border-radius:8px; padding:10px 12px; margin-bottom:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:12px; font-weight:700; color:var(--accent-cyan);">📈 Динамика спреда</span>
+                            <span id="modal-chart-meta" class="mono" style="font-size:10px; color:var(--text-muted);">Загрузка истории...</span>
+                        </div>
+                        <div class="timeframe-buttons" style="display:flex; gap:3px;">
+                            <button id="tf-1" class="btn-mini-tool" onclick="changeChartTimeframe(1)">1ч</button>
+                            <button id="tf-6" class="btn-mini-tool" onclick="changeChartTimeframe(6)">6ч</button>
+                            <button id="tf-12" class="btn-mini-tool active" onclick="changeChartTimeframe(12)">12ч</button>
+                            <button id="tf-24" class="btn-mini-tool" onclick="changeChartTimeframe(24)">24ч</button>
+                        </div>
+                    </div>
+                    <div id="modal-svg-chart" style="position:relative; width:100%; height:110px; overflow:hidden;">
+                        <div style="color:var(--text-muted); font-size:11px; padding:35px 0; text-align:center;">Загрузка графика истории...</div>
+                    </div>
+                    <div id="modal-chart-stats" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-top:6px; border-top:1px solid rgba(255,255,255,0.06); padding-top:6px; font-size:10px;">
+                        <!-- Min, Max, Avg, Max Margin -->
+                    </div>
+                </div>
+
+                <!-- ─── Bankroll & Leg Calculation ─── -->
                 <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:8px; padding:8px 12px; margin-bottom:12px;">
                     <span style="font-size:11.5px; color:var(--text-secondary);">Инвестиционный банк:</span>
                     <div class="bankroll-input-wrap">
@@ -2989,6 +4222,128 @@
             `;
 
             modal.classList.add('show');
+            loadModalChart(row.event_key, row.title, currentChartHours);
+        }
+
+        // ─── Modal Chart History Engine ───
+        let currentChartHours = 12;
+
+        async function loadModalChart(eventKey, title, hours) {
+            currentChartHours = hours || 12;
+            [1, 6, 12, 24].forEach(h => {
+                const btn = document.getElementById(`tf-${h}`);
+                if (btn) btn.classList.toggle('active', h === currentChartHours);
+            });
+
+            const chartBox = document.getElementById('modal-svg-chart');
+            const metaEl = document.getElementById('modal-chart-meta');
+            const statsEl = document.getElementById('modal-chart-stats');
+            if (!chartBox) return;
+
+            try {
+                const res = await fetch(`/api/spread_history?event_key=${encodeURIComponent(eventKey)}&title=${encodeURIComponent(title || '')}&hours=${currentChartHours}`);
+                const data = await res.json();
+                const points = data.points || [];
+                const stats = data.stats || {};
+
+                if (points.length < 2) {
+                    chartBox.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:35px 0; text-align:center;">Недостаточно тиков за выбранный период</div>';
+                    if (metaEl) metaEl.innerText = `${points.length} точек`;
+                    if (statsEl) statsEl.innerHTML = '';
+                    return;
+                }
+
+                if (metaEl) metaEl.innerText = `${stats.count} тиков (${currentChartHours}ч)`;
+
+                const width = chartBox.clientWidth || 510;
+                const height = 110;
+                const padX = 40;
+                const padY = 16;
+                const innerW = width - padX;
+                const innerH = height - padY * 2;
+
+                const spreads = points.map(p => p.spread);
+                let minVal = Math.min(...spreads, 0);
+                let maxVal = Math.max(...spreads, 0.1);
+                if (maxVal === minVal) maxVal += 0.5;
+
+                const coords = points.map((p, i) => {
+                    const x = padX + (i / (points.length - 1)) * innerW;
+                    const y = height - padY - ((p.spread - minVal) / (maxVal - minVal)) * innerH;
+                    return { x, y, p };
+                });
+
+                const lineD = 'M ' + coords.map(c => `${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' L ');
+                const zeroY = height - padY - ((0 - minVal) / (maxVal - minVal)) * innerH;
+                const areaD = lineD + ` L ${coords[coords.length - 1].x.toFixed(1)} ${zeroY.toFixed(1)} L ${coords[0].x.toFixed(1)} ${zeroY.toFixed(1)} Z`;
+
+                const arbDots = coords.filter(c => c.p.is_arb === 1).map(c => `
+                    <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="3.5" fill="#10b981" stroke="#fff" stroke-width="1.2">
+                        <title>⚡ ВИЛКА: +${c.p.spread}% (Маржа: +${c.p.margin}%)</title>
+                    </circle>
+                `).join('');
+
+                chartBox.innerHTML = `
+                    <svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" style="overflow:visible;" id="svg-chart-el">
+                        <defs>
+                            <linearGradient id="area-grad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.30" />
+                                <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.0" />
+                            </linearGradient>
+                        </defs>
+                        <!-- Grid lines -->
+                        <line x1="${padX}" y1="${zeroY.toFixed(1)}" x2="${width}" y2="${zeroY.toFixed(1)}" stroke="rgba(255,255,255,0.12)" stroke-dasharray="3 3" />
+                        <text x="${padX - 5}" y="${(zeroY + 3).toFixed(1)}" fill="var(--text-muted)" font-size="8.5" text-anchor="end" font-family="JetBrains Mono">0%</text>
+
+                        <line x1="${padX}" y1="${padY}" x2="${width}" y2="${padY}" stroke="rgba(255,255,255,0.06)" />
+                        <text x="${padX - 5}" y="${padY + 3}" fill="var(--text-muted)" font-size="8.5" text-anchor="end" font-family="JetBrains Mono">${maxVal.toFixed(1)}%</text>
+
+                        <!-- Area & Line -->
+                        <path d="${areaD}" fill="url(#area-grad)" />
+                        <path d="${lineD}" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        ${arbDots}
+                    </svg>
+                    <div id="svg-chart-tooltip" style="display:none; position:absolute; pointer-events:none; background:#1e293b; border:1px solid var(--accent-cyan); border-radius:4px; padding:3px 7px; font-size:10px; font-family:'JetBrains Mono'; color:#fff; z-index:10; white-space:nowrap; transform:translate(-50%, -120%);"></div>
+                `;
+
+                const svgEl = document.getElementById('svg-chart-el');
+                const tip = document.getElementById('svg-chart-tooltip');
+                if (svgEl && tip) {
+                    svgEl.onmousemove = (e) => {
+                        const rect = svgEl.getBoundingClientRect();
+                        const mouseX = e.clientX - rect.left;
+                        if (mouseX >= padX && mouseX <= width) {
+                            const ratio = (mouseX - padX) / innerW;
+                            const idx = Math.min(coords.length - 1, Math.max(0, Math.round(ratio * (coords.length - 1))));
+                            const pt = coords[idx];
+                            tip.style.display = 'block';
+                            tip.style.left = pt.x + 'px';
+                            tip.style.top = pt.y + 'px';
+                            const timeStr = new Date(pt.p.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                            tip.innerHTML = `<b>+${pt.p.spread}%</b> • ${timeStr}${pt.p.is_arb ? ' <span style="color:#10b981;">⚡ ВИЛКА</span>' : ''}`;
+                        }
+                    };
+                    svgEl.onmouseleave = () => { tip.style.display = 'none'; };
+                }
+
+                if (statsEl) {
+                    statsEl.innerHTML = `
+                        <div><span style="color:var(--text-muted);">Мин:</span> <b class="mono" style="color:var(--text-secondary);">+${stats.min_spread}%</b></div>
+                        <div><span style="color:var(--text-muted);">Макс:</span> <b class="mono" style="color:var(--accent-amber);">+${stats.max_spread}%</b></div>
+                        <div><span style="color:var(--text-muted);">Средний:</span> <b class="mono" style="color:var(--accent-cyan);">+${stats.avg_spread}%</b></div>
+                        <div><span style="color:var(--text-muted);">Маржа:</span> <b class="mono" style="color:var(--accent-emerald);">${stats.max_margin >= 0 ? '+' : ''}${stats.max_margin}%</b></div>
+                    `;
+                }
+            } catch (e) {
+                console.error("Error loading chart history:", e);
+                if (chartBox) chartBox.innerHTML = '<div style="color:var(--accent-rose); font-size:11px; padding:35px 0; text-align:center;">Ошибка загрузки истории спреда</div>';
+            }
+        }
+
+        function changeChartTimeframe(hours) {
+            if (activeModalRow) {
+                loadModalChart(activeModalRow.event_key, activeModalRow.title, hours);
+            }
         }
 
         function closeModal() {
@@ -3100,14 +4455,22 @@
         // ─── Tabs & Sorting Controls ───
         function switchTab(tab) {
             currentTab = tab;
-            ['cross', 'comp', 'paper', 'debug'].forEach(t => {
+            ['cross', 'comp', 'paper', 'fast', 'debug'].forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 const btn = document.getElementById(`tab-btn-${t}`);
                 if (el) el.style.display = (tab === t) ? 'block' : 'none';
                 if (btn) btn.classList.toggle('tab-btn-active', tab === t);
             });
             if (tab === 'debug') fetchRawSpreads();
-            if (tab === 'paper') renderPaperPortfolio();
+            if (tab === 'paper') {
+                renderPaperPortfolio();
+                loadArchivedArbsTable();
+            }
+            if (tab === 'fast') {
+                fetchUpdownSpreads();
+                syncFastPaperTrades();
+                fetchTicksStats();
+            }
         }
 
         function setSort(field) {
@@ -3234,6 +4597,165 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+        }
+
+        // ─── Telegram & Smart Alerts Controller ───
+        async function openAlertsSettingsModal() {
+            const modal = document.getElementById('alerts-modal');
+            const statusBox = document.getElementById('tg-test-status');
+            if (statusBox) statusBox.style.display = 'none';
+            if (modal) modal.classList.add('show');
+            await loadAlertsConfig();
+            await refreshAlertsLog();
+        }
+
+        function closeAlertsModal() {
+            const modal = document.getElementById('alerts-modal');
+            if (modal) modal.classList.remove('show');
+        }
+
+        function closeAlertsModalOnBackdrop(e) {
+            if (e.target.id === 'alerts-modal') closeAlertsModal();
+        }
+
+        async function loadAlertsConfig() {
+            try {
+                const res = await fetch('/api/alerts/config');
+                const cfg = await res.json();
+                const chk = document.getElementById('cfg-tg-enabled');
+                const tokenInp = document.getElementById('cfg-tg-token');
+                const chatInp = document.getElementById('cfg-tg-chatid');
+                const minSpInp = document.getElementById('cfg-min-spread');
+                const cdInp = document.getElementById('cfg-cooldown');
+                const onlyArbChk = document.getElementById('cfg-only-surebet');
+
+                if (chk) chk.checked = !!cfg.telegram_enabled;
+                if (tokenInp && cfg.telegram_bot_token) tokenInp.value = cfg.telegram_bot_token;
+                if (chatInp && cfg.telegram_chat_id) chatInp.value = cfg.telegram_chat_id;
+                if (minSpInp) minSpInp.value = cfg.min_spread_alert_pct || 10.0;
+                if (cdInp) cdInp.value = cfg.cooldown_minutes || 10;
+                if (onlyArbChk) onlyArbChk.checked = cfg.notify_on_surebet !== false;
+            } catch (e) {
+                console.error("Error loading alert config:", e);
+            }
+        }
+
+        async function saveAlertsConfig() {
+            const chk = document.getElementById('cfg-tg-enabled');
+            const tokenInp = document.getElementById('cfg-tg-token');
+            const chatInp = document.getElementById('cfg-tg-chatid');
+            const minSpInp = document.getElementById('cfg-min-spread');
+            const cdInp = document.getElementById('cfg-cooldown');
+            const onlyArbChk = document.getElementById('cfg-only-surebet');
+            const statusBox = document.getElementById('tg-test-status');
+
+            const payload = {
+                telegram_enabled: chk ? chk.checked : false,
+                telegram_bot_token: tokenInp ? tokenInp.value.trim() : '',
+                telegram_chat_id: chatInp ? chatInp.value.trim() : '',
+                min_spread_alert_pct: minSpInp ? parseFloat(minSpInp.value) || 10.0 : 10.0,
+                cooldown_minutes: cdInp ? parseInt(cdInp.value) || 10 : 10,
+                notify_on_surebet: onlyArbChk ? onlyArbChk.checked : true
+            };
+
+            try {
+                const res = await fetch('/api/alerts/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                if (statusBox) {
+                    statusBox.style.display = 'block';
+                    statusBox.style.background = 'rgba(16,185,129,0.12)';
+                    statusBox.style.border = '1px solid var(--accent-emerald)';
+                    statusBox.style.color = 'var(--accent-emerald)';
+                    statusBox.innerText = '✅ Настройки успешно сохранены!';
+                }
+                showToast('Настройки алертов сохранены!');
+            } catch (e) {
+                if (statusBox) {
+                    statusBox.style.display = 'block';
+                    statusBox.style.background = 'rgba(244,63,94,0.12)';
+                    statusBox.style.border = '1px solid var(--accent-rose)';
+                    statusBox.style.color = 'var(--accent-rose)';
+                    statusBox.innerText = '❌ Ошибка при сохранении настроек';
+                }
+            }
+        }
+
+        async function testTelegramMessage() {
+            const tokenInp = document.getElementById('cfg-tg-token');
+            const chatInp = document.getElementById('cfg-tg-chatid');
+            const statusBox = document.getElementById('tg-test-status');
+
+            const token = tokenInp ? tokenInp.value.trim() : '';
+            const chat_id = chatInp ? chatInp.value.trim() : '';
+
+            if (!token || !chat_id) {
+                if (statusBox) {
+                    statusBox.style.display = 'block';
+                    statusBox.style.background = 'rgba(245,158,11,0.12)';
+                    statusBox.style.border = '1px solid var(--accent-amber)';
+                    statusBox.style.color = 'var(--accent-amber)';
+                    statusBox.innerText = '⚠️ Сначала заполните Bot Token и Chat ID!';
+                }
+                return;
+            }
+
+            if (statusBox) {
+                statusBox.style.display = 'block';
+                statusBox.style.background = 'rgba(56,189,248,0.12)';
+                statusBox.style.border = '1px solid var(--accent-cyan)';
+                statusBox.style.color = 'var(--accent-cyan)';
+                statusBox.innerText = '⏳ Отправка тестового сигнала...';
+            }
+
+            try {
+                const res = await fetch('/api/alerts/test_telegram', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, chat_id })
+                });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    statusBox.style.background = 'rgba(16,185,129,0.12)';
+                    statusBox.style.border = '1px solid var(--accent-emerald)';
+                    statusBox.style.color = 'var(--accent-emerald)';
+                    statusBox.innerText = '🚀 Успех! Проверьте Telegram — тестовый сигнал доставлен!';
+                } else {
+                    statusBox.style.background = 'rgba(244,63,94,0.12)';
+                    statusBox.style.border = '1px solid var(--accent-rose)';
+                    statusBox.style.color = 'var(--accent-rose)';
+                    statusBox.innerText = '❌ Ошибка Telegram: ' + (result.error || 'Неверный токен или ID чата');
+                }
+            } catch (e) {
+                if (statusBox) {
+                    statusBox.style.background = 'rgba(244,63,94,0.12)';
+                    statusBox.style.border = '1px solid var(--accent-rose)';
+                    statusBox.style.color = 'var(--accent-rose)';
+                    statusBox.innerText = '❌ Сетевая ошибка при отправке теста';
+                }
+            }
+        }
+
+        async function refreshAlertsLog() {
+            const listEl = document.getElementById('alerts-history-list');
+            const countTag = document.getElementById('alerts-count-tag');
+            if (!listEl) return;
+            try {
+                const res = await fetch('/api/alerts/history?limit=25');
+                const data = await res.json();
+                const alerts = data.alerts || [];
+                if (countTag) countTag.innerText = `${alerts.length} записей`;
+                if (alerts.length === 0) {
+                    listEl.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:10px 0;">Алерты пока не срабатывали</div>';
+                } else {
+                    listEl.innerHTML = alerts.map(a => `<div style="padding:2px 0; border-bottom:1px solid rgba(255,255,255,0.03);">${a}</div>`).join('');
+                }
+            } catch (e) {
+                console.error("Error refreshing alerts log:", e);
+            }
         }
 
         // ─── Hotkeys ───

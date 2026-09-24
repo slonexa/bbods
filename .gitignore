@@ -5,6 +5,7 @@
 *.sqlite
 *.sqlite3
 spreads.db
+ticks.db
 
 # Python cache & virtual environment
 __pycache__/
@@ -20,6 +21,7 @@ venv.bak/
 
 # Logs
 *.log
+*.err
 logs/
 
 # IDE & OS
@@ -29,8 +31,14 @@ logs/
 Thumbs.db
 desktop.ini
 
-# Scratch & temporary
+# Scratch, Backups & Temporary
 temp_*
 scratch/
-
+backups/
 *.zip
+
+# Sensitive & Runtime Configs
+engine/alert_config.json
+engine/paper_config.json
+engine/.health.json
+engine/.sec_logger_health.json
