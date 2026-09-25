@@ -445,12 +445,30 @@ class HighFrequencyTickLogger:
                     # Record window opening prices on first tick of the window
                     win_key = (base_sym, window_id)
                     if win_key not in self.window_opens:
+                        # If restarting mid-window, try to recover S0 from ticks.db
+                        db_open_idx, db_open_spot = 0.0, 0.0
+                        try:
+                            conn_r = sqlite3.connect(self.db_path)
+                            cur_r = conn_r.cursor()
+                            cur_r.execute(
+                                "SELECT window_open_index, window_open_spot FROM sec_ticks WHERE symbol=? AND window_id=? ORDER BY id ASC LIMIT 1",
+                                (base_sym, window_id)
+                            )
+                            row_r = cur_r.fetchone()
+                            conn_r.close()
+                            if row_r:
+                                db_open_idx = float(row_r[0] or 0.0)
+                                db_open_spot = float(row_r[1] or 0.0)
+                        except Exception:
+                            pass
+
                         self.window_opens[win_key] = {
-                            "index": idx_p,
-                            "spot": spot_p,
+                            "index": db_open_idx or idx_p,
+                            "spot": db_open_spot or spot_p,
                             "futures": fut_p,
                             "twap": twap_60s,
-                            "recorded_at": now_ts
+                            "recorded_at": now_ts,
+                            "series": []
                         }
                         # Prune old window keys
                         if len(self.window_opens) > 50:
@@ -461,9 +479,11 @@ class HighFrequencyTickLogger:
                     open_info = self.window_opens[win_key]
                     open_idx = open_info["index"] or idx_p
                     open_spot = open_info["spot"] or spot_p
+                    open_fut = open_info.get("futures") or fut_p
 
                     spot_delta_pct = round(((spot_p - open_spot) / open_spot) * 100.0, 5) if open_spot > 0 else 0.0
                     index_delta_pct = round(((idx_p - open_idx) / open_idx) * 100.0, 5) if open_idx > 0 else 0.0
+                    fut_delta_pct = round(((fut_p - open_fut) / open_fut) * 100.0, 5) if open_fut > 0 else 0.0
 
                     prob_up = float(up_item.get("wp", 0.0) or 0.0) if up_item else 0.0
                     prob_down = float(down_item.get("wp", 0.0) or 0.0) if down_item else 0.0
@@ -494,6 +514,29 @@ class HighFrequencyTickLogger:
                     valid_costs = [c for c in (cost_c1, cost_c2) if c > 0]
                     cross_hedge_cost = round(min(valid_costs), 4) if valid_costs else 0.0
 
+                    # Append 1s tick to current window series AND continuous 420s rolling series (for 300s-from-entry Bybit tracking)
+                    tick_pt = {
+                        "ts": round(now_ts, 1),
+                        "s": round(sec_from_start, 1),
+                        "idx": idx_p,
+                        "spot": spot_p,
+                        "fut": fut_p,
+                        "d": round(index_delta_pct, 4),
+                        "p_up": poly_up_ask,
+                        "p_dn": poly_down_ask
+                    }
+                    series_list = open_info.setdefault("series", [])
+                    series_list.append(tick_pt)
+                    if len(series_list) > 320:
+                        del series_list[:-320]
+
+                    if not hasattr(self, "rolling_series"):
+                        self.rolling_series = {}
+                    r_list = self.rolling_series.setdefault(base_sym, [])
+                    r_list.append(tick_pt)
+                    if len(r_list) > 450:
+                        del r_list[:-450]
+
                     batch.append((
                         base_sym, coin, wtype, window_id,
                         odds_up, odds_down, prob_up, prob_down, turnover,
@@ -511,6 +554,7 @@ class HighFrequencyTickLogger:
                         "coin": coin,
                         "window_type": wtype,
                         "window_id": window_id,
+                        "now_ts": round(now_ts, 1),
                         "odds_up": odds_up,
                         "odds_down": odds_down,
                         "prob_up": round(prob_up, 4),
@@ -519,10 +563,14 @@ class HighFrequencyTickLogger:
                         "index_price": idx_p,
                         "spot_price": spot_p,
                         "futures_price": fut_p,
+                        "mark_price": mark_p,
                         "twap_60s": twap_60s,
                         "window_open_index": open_idx,
+                        "window_open_spot": open_spot,
+                        "window_open_futures": open_fut,
                         "index_delta_pct": index_delta_pct,
                         "spot_delta_pct": spot_delta_pct,
+                        "fut_delta_pct": fut_delta_pct,
                         "sec_from_start": sec_from_start,
                         "seconds_to_expiry": sec_to_exp,
                         "poly_up_ask": poly_up_ask,
@@ -531,8 +579,34 @@ class HighFrequencyTickLogger:
                         "poly_odds_down": poly_odds_down,
                         "poly_accepting": poly_accepting,
                         "poly_slug": poly_slug,
-                        "cross_hedge_cost": cross_hedge_cost
+                        "cross_hedge_cost": cross_hedge_cost,
+                        "series": series_list[-300:],
+                        "rolling_series": r_list[-420:]
                     })
+
+                # Write health & live 1s HFT snapshot EVERY second (atomically) for real-time manual cockpit
+                try:
+                    db_size_mb = round(os.path.getsize(self.db_path) / (1024 * 1024), 2) if os.path.exists(self.db_path) else 0.0
+                    tmp_health = self.health_file + ".tmp"
+                    with open(tmp_health, "w", encoding="utf-8") as hf:
+                        json.dump({
+                            "status": "running",
+                            "started_at": self.started_at,
+                            "last_update": now_iso,
+                            "total_ticks": self.total_ticks_logged + len(batch),
+                            "db_size_mb": db_size_mb,
+                            "prices": prices_snap,
+                            "windows": live_windows_summary
+                        }, hf)
+                    os.replace(tmp_health, self.health_file)
+                except Exception:
+                    pass
+
+                # Run 1-second HFT signal entry & exact +300s/+900s settlement every second
+                try:
+                    self.paper_trader.run_fast_1s_cycle()
+                except Exception:
+                    pass
 
                 # Flush batch to SQLite every 5 seconds
                 if time.time() - last_flush >= 5.0 and batch:
@@ -540,27 +614,11 @@ class HighFrequencyTickLogger:
                     batch.clear()
                     last_flush = time.time()
 
-                    # Run auto-paper trading cycle (entry & settlement)
+                    # Reload config & check daily cross-trades every 5s
                     try:
                         self.paper_trader.run_cycle()
                     except Exception as e:
                         print(f"[SecLogger] AutoPaper cycle error: {e}")
-
-                    # Write health & live HFT snapshot for Dashboard and Auto-Trader
-                    try:
-                        db_size_mb = round(os.path.getsize(self.db_path) / (1024 * 1024), 2) if os.path.exists(self.db_path) else 0.0
-                        with open(self.health_file, "w", encoding="utf-8") as hf:
-                            json.dump({
-                                "status": "running",
-                                "started_at": self.started_at,
-                                "last_update": now_iso,
-                                "total_ticks": self.total_ticks_logged,
-                                "db_size_mb": db_size_mb,
-                                "prices": prices_snap,
-                                "windows": live_windows_summary
-                            }, hf, indent=2)
-                    except Exception:
-                        pass
 
                 if cycle_idx % 3600 == 0:
                     self.cleanup_old_ticks(retention_days=5)

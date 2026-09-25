@@ -19,9 +19,10 @@ ENV/
 env.bak/
 venv.bak/
 
-# Logs
+# Logs & CSV exports
 *.log
 *.err
+*.csv
 logs/
 
 # IDE & OS
@@ -35,6 +36,7 @@ desktop.ini
 temp_*
 scratch/
 backups/
+Новая папка/
 *.zip
 
 # Sensitive & Runtime Configs

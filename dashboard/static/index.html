@@ -1463,6 +1463,9 @@
             <button id="tab-btn-fast" class="tab-btn" onclick="switchTab('fast')" style="border-color:rgba(56,189,248,0.35);">
                 ⚡ 5/15m Полигон (<span id="fast-badge-count">0</span>)
             </button>
+            <button id="tab-btn-cockpit" class="tab-btn" onclick="openPairCockpit(activeCockpitSymbol || 'BTCUSDT-5MIN')" style="border-color:rgba(16,185,129,0.45); color:var(--accent-emerald);">
+                🔥 Схема №1: Терминал пары
+            </button>
             <button id="tab-btn-debug" class="tab-btn" onclick="switchTab('debug')">
                 🛠️ Дебаг (Тики)
             </button>
@@ -1739,9 +1742,14 @@
                     <div id="fast-kpi-winrate" class="mono font-bold" style="font-size:17px; color:#a78bfa; margin-top:3px;">100%</div>
                 </div>
                 <div style="background:#090d14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
-                    <div style="font-size:9.5px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Задержка TWAP60</div>
+                    <div style="font-size:9.5px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Лаг p90 (lag.ts)</div>
                     <div id="fast-kpi-lag" class="mono font-bold" style="font-size:17px; color:var(--accent-amber); margin-top:3px;">47–51с</div>
                 </div>
+            </div>
+
+            <!-- Statistical Significance & Lag Lab Strip (Section 12 bbods-master-status1.md) -->
+            <div id="fast-stat-sig-bar" style="margin-top:10px; background:#070b12; border:1px solid rgba(168,85,247,0.3); border-radius:6px; padding:8px 12px; font-size:11px; font-family:'JetBrains Mono',monospace; color:var(--text-secondary); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <span>🔬 <b>Стат-контроль (Порог N ≥ 100, Бином. тест p &lt; 0.05):</b> загрузка из <code>ticks.db</code>...</span>
             </div>
         </div>
 
@@ -1835,6 +1843,236 @@
                 <button class="btn-mini-tool" onclick="submitManualLog('odds_moved_before_fill')" style="color:#d8b4fe; border-color:rgba(168,85,247,0.4); font-weight:700;">⚠️ Коэф обманул</button>
             </div>
             <div id="manual-logs-mini-list" style="font-size:10.5px; font-family:'JetBrains Mono',monospace; color:var(--text-secondary); max-height:95px; overflow-y:auto;"></div>
+        </div>
+    </div>
+
+    <!-- ─── Tab: Scheme 1 Dedicated Pair Cockpit (Моментум 60–90с на Bybit) ─── -->
+    <div id="tab-cockpit" style="display: none;">
+        <!-- Top Navigation & Pair Selector Bar -->
+        <div style="background:var(--bg-card); border:1px solid rgba(16,185,129,0.4); border-radius:10px; padding:12px 16px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; box-shadow:0 6px 18px rgba(0,0,0,0.35);">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <button class="btn-nav" onclick="switchTab('fast')" style="font-size:11.5px; color:var(--text-secondary);">
+                    ← К 5/15m Полигону
+                </button>
+                <div style="height:20px; width:1px; background:var(--border-subtle); margin:0 4px;"></div>
+                <span style="font-size:11px; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Выбор пары:</span>
+                <button id="cockpit-pair-BTCUSDT-5MIN" class="btn-nav active" onclick="openPairCockpit('BTCUSDT-5MIN')" style="font-weight:800; font-size:12px; padding:6px 12px;">
+                    🟠 BTC 5m
+                </button>
+                <button id="cockpit-pair-ETHUSDT-5MIN" class="btn-nav" onclick="openPairCockpit('ETHUSDT-5MIN')" style="font-weight:800; font-size:12px; padding:6px 12px;">
+                    🔵 ETH 5m
+                </button>
+                <button id="cockpit-pair-BTCUSDT-15MIN" class="btn-nav" onclick="openPairCockpit('BTCUSDT-15MIN')" style="font-weight:700; font-size:11px; padding:5px 10px;">
+                    🟠 BTC 15m
+                </button>
+                <button id="cockpit-pair-ETHUSDT-15MIN" class="btn-nav" onclick="openPairCockpit('ETHUSDT-15MIN')" style="font-weight:700; font-size:11px; padding:5px 10px;">
+                    🔵 ETH 15m
+                </button>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <span class="badge badge-arb" style="font-size:10.5px; padding:4px 8px;">⚡ 1 Hz LIVE (Обновление каждую секунду)</span>
+                <button class="btn-nav" onclick="popoutPairCockpit()" style="color:var(--accent-cyan); border-color:rgba(56,189,248,0.4); font-size:11px;" title="Открыть эту страницу в отдельном компактном окне рядом с Bybit">
+                    🗗 В отдельном окне
+                </button>
+                <a href="https://www.bybit.com/en/option/usdt/fast-price-prediction" target="_blank" class="btn-nav" style="background:#f7a600; color:#090d14; font-weight:800; border:none; text-decoration:none; font-size:11.5px; padding:6px 12px;">
+                    🟡 Открыть Bybit Fast Prediction ↗
+                </a>
+            </div>
+        </div>
+
+        <!-- Giant Main Signal & 300s Window Progress Banner -->
+        <div id="cockpit-hero-card" style="background:linear-gradient(180deg, rgba(15,23,42,0.95) 0%, rgba(9,13,20,0.98) 100%); border:2px solid rgba(56,189,248,0.45); border-radius:12px; padding:18px 20px; margin-bottom:12px; box-shadow:0 8px 24px rgba(0,0,0,0.45); transition:all 0.2s ease;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:14px; margin-bottom:14px;">
+                <div>
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                        <span id="cockpit-pair-title" style="font-size:22px; font-weight:900; color:#fff; font-family:'JetBrains Mono',monospace;">BTCUSDT-5MIN</span>
+                        <span id="cockpit-phase-badge" class="badge" style="font-size:11.5px; padding:4px 10px; background:rgba(56,189,248,0.15); color:var(--accent-cyan); border:1px solid var(--accent-cyan);">Фаза 1: Разгон окна</span>
+                    </div>
+                    <div id="cockpit-hero-action" style="font-size:24px; font-weight:900; color:#e2e8f0; letter-spacing:0.3px; line-height:1.25;">
+                        ⏳ Ожидание данных секундного радара...
+                    </div>
+                    <div id="cockpit-hero-sub" style="font-size:12.5px; color:var(--text-secondary); margin-top:6px;">
+                        Схема №1 (Моментум 60–90с): Входим по тренду на 60–90 секунде, если цена ушла от Strike S₀ минимум на ±0.030%
+                    </div>
+                </div>
+
+                <!-- Big Timer Countdown Box -->
+                <div style="background:#06090f; border:1px solid var(--border-subtle); border-radius:10px; padding:10px 18px; text-align:right; min-width:210px;">
+                    <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Таймер текущего окна</div>
+                    <div id="cockpit-timer-main" class="mono" style="font-size:26px; font-weight:900; color:var(--accent-cyan); margin-top:2px;">+00с / 300с</div>
+                    <div id="cockpit-timer-sub" class="mono" style="font-size:11px; color:var(--text-secondary);">До конца окна: --с</div>
+                </div>
+            </div>
+
+            <!-- Visual 300s Window Progress Bar with Highlighted 60-90s Entry Zone -->
+            <div style="position:relative; height:24px; background:#05080d; border:1px solid rgba(255,255,255,0.1); border-radius:8px; overflow:hidden; margin-bottom:6px;">
+                <!-- Golden Entry Zone Marker (60s..105s = 20%..35% of 300s) -->
+                <div id="cockpit-zone-marker" style="position:absolute; left:19.3%; width:15.7%; top:0; bottom:0; background:rgba(16,185,129,0.22); border-left:2px dashed #10b981; border-right:2px dashed #10b981; z-index:2; display:flex; align-items:center; justify-content:center;">
+                    <span style="font-size:9.5px; font-weight:800; color:#6ee7b7; font-family:'JetBrains Mono',monospace; text-shadow:0 1px 2px #000;">🎯 ЗОНА ВХОДА 60–90с</span>
+                </div>
+                <!-- Current Time Fill -->
+                <div id="cockpit-progress-fill" style="height:100%; width:0%; background:linear-gradient(90deg, rgba(56,189,248,0.35), rgba(56,189,248,0.65)); transition:width 0.3s linear; z-index:1;"></div>
+                <!-- Current Time Pointer -->
+                <div id="cockpit-progress-head" style="position:absolute; left:0%; top:0; bottom:0; width:3px; background:#fff; box-shadow:0 0 8px #fff; z-index:3;"></div>
+            </div>
+            <div id="cockpit-scale-labels" style="display:flex; justify-content:space-between; font-size:10px; font-family:'JetBrains Mono',monospace; color:var(--text-muted);">
+                <span>0с (Начало 5м свечи S₀ — ждем разгон)</span>
+                <span style="color:var(--accent-emerald); font-weight:700;">▲ 60с–90с (Ловим импульс и жмем вход на Bybit ➔ отсюда начнется твой отсчет 300с!)</span>
+                <span>300с свечи</span>
+            </div>
+        </div>
+
+        <!-- 4 Large Telemetry Cards -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:10px; margin-bottom:12px;">
+            <!-- Card 1: Candle Open S0 (Impulse reference) -->
+            <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:10px; padding:12px 14px;">
+                <div style="font-size:10.5px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">1. База импульса (S₀ старта 5м свечи)</div>
+                <div id="cockpit-s0-price" class="mono" style="font-size:24px; font-weight:900; color:#fff; margin-top:4px;">$—</div>
+                <div id="cockpit-s0-sub" class="mono" style="font-size:11px; color:var(--text-secondary); margin-top:4px;">Нужна только чтобы замерить разгон Δ% к 60–90с</div>
+            </div>
+
+            <!-- Card 2: Current Index (= Bybit Entry Strike) -->
+            <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:10px; padding:12px 14px;">
+                <div style="font-size:10.5px; color:var(--accent-cyan); text-transform:uppercase; font-weight:800;">2. Текущий Индекс (= Твой Страйк входа Bybit)</div>
+                <div style="display:flex; align-items:baseline; gap:8px; margin-top:4px;">
+                    <span id="cockpit-idx-price" class="mono" style="font-size:24px; font-weight:900; color:#fff;">$—</span>
+                    <span id="cockpit-delta-badge" class="mono" style="font-size:16px; font-weight:800; color:var(--accent-cyan);">0.000%</span>
+                </div>
+                <div id="cockpit-delta-usd" class="mono" style="font-size:11px; color:var(--text-secondary); margin-top:4px;">Разгон от S₀: $0.00 (Мин. порог входа: ±0.030%)</div>
+            </div>
+
+            <!-- Card 3: Spot vs Futures vs Index Alignment -->
+            <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:10px; padding:12px 14px;">
+                <div style="font-size:10.5px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">3. Потоки: Spot / Futures / TWAP60</div>
+                <div id="cockpit-streams-row" class="mono" style="font-size:12px; color:var(--text-primary); margin-top:6px; line-height:1.5;">
+                    Spot: <b>$—</b><br>
+                    Futures: <b>$—</b> • TWAP60: <b>$—</b>
+                </div>
+                <div id="cockpit-streams-sync" style="font-size:11px; font-weight:700; color:var(--accent-emerald); margin-top:4px;">Ожидание синхронизации...</div>
+            </div>
+
+            <!-- Card 4: Bybit Payout & Pair Winrate (+300s from entry) -->
+            <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:10px; padding:12px 14px;">
+                <div style="font-size:10.5px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">4. Выплата Bybit & WR (+300с от входа)</div>
+                <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:4px;">
+                    <span id="cockpit-odds-row" class="mono" style="font-size:20px; font-weight:900; color:var(--bybit-color);">UP 1.80x / DN 1.80x</span>
+                    <span id="cockpit-pair-wr" class="badge badge-arb" style="font-size:11px;">WR: —%</span>
+                </div>
+                <div id="cockpit-pair-stats-sub" class="mono" style="font-size:11px; color:var(--text-secondary); margin-top:5px;">Расчет: ровно через 300 сек после клика</div>
+            </div>
+        </div>
+
+        <!-- 3-Condition Live Checklist + Manual Test Action Tracker -->
+        <div style="display:grid; grid-template-columns:1.15fr 1.05fr; gap:12px; margin-bottom:12px;">
+            <!-- Left: 3 Conditions Checklist -->
+            <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:10px; padding:14px 16px;">
+                <div style="font-size:12px; font-weight:800; color:var(--text-primary); text-transform:uppercase; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <span>✅ Чек-лист Схемы №1 (Когда нажимать вход на Bybit)</span>
+                    <span style="font-size:10.5px; color:var(--text-muted); font-weight:400;">Все 3 пункта должны гореть зелёным</span>
+                </div>
+                <div style="display:grid; gap:8px; font-size:12px;">
+                    <div id="chk-row-1" style="display:flex; justify-content:space-between; align-items:center; background:#080c14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
+                        <span><b>1. Секунда свечи:</b> 60–90 сек от начала пятиминутки (58–105с)</span>
+                        <span id="chk-val-1" class="mono font-bold" style="color:var(--text-muted);">⏳ Ожидание</span>
+                    </div>
+                    <div id="chk-row-2" style="display:flex; justify-content:space-between; align-items:center; background:#080c14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
+                        <span><b>2. Разгон импульса:</b> Отклонение от S₀ ≥ 0.030% (и ≤ 0.350%)</span>
+                        <span id="chk-val-2" class="mono font-bold" style="color:var(--text-muted);">⏳ Ожидание</span>
+                    </div>
+                    <div id="chk-row-3" style="display:flex; justify-content:space-between; align-items:center; background:#080c14; border:1px solid var(--border-subtle); border-radius:6px; padding:8px 12px;">
+                        <span><b>3. Подтверждение:</b> Спот и Фьючерс давят в сторону импульса</span>
+                        <span id="chk-val-3" class="mono font-bold" style="color:var(--text-muted);">⏳ Ожидание</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Personal 300s Bybit Countdown Tracker -->
+            <div style="background:var(--bg-card); border:1.5px solid rgba(245,158,11,0.45); border-radius:10px; padding:14px 16px; display:flex; flex-direction:column; justify-content:space-between;">
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+                        <span style="font-size:12px; font-weight:800; color:var(--accent-amber); text-transform:uppercase;">⏱️ Твоя сделка на Bybit (Отсчет 300с от момента входа!)</span>
+                        <span style="font-size:10.5px; color:var(--text-muted);">Кликни сразу как открыл сделку на Bybit</span>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+                        <button onclick="markManualCockpitEntry('UP')" style="flex:1; background:rgba(16,185,129,0.18); border:1.5px solid var(--accent-emerald); color:#6ee7b7; border-radius:8px; padding:9px 10px; font-size:12.5px; font-weight:800; cursor:pointer;">
+                            🔼 Старт 300с: Я вошёл UP
+                        </button>
+                        <button onclick="markManualCockpitEntry('DOWN')" style="flex:1; background:rgba(244,63,94,0.18); border:1.5px solid var(--accent-rose); color:#fda4af; border-radius:8px; padding:9px 10px; font-size:12.5px; font-weight:800; cursor:pointer;">
+                            🔽 Старт 300с: Я вошёл DOWN
+                        </button>
+                        <button onclick="clearManualCockpitEntry()" class="btn-mini-tool" style="padding:8px 10px;" title="Сбросить таймер сделки">✕ Сброс</button>
+                    </div>
+                    <div id="cockpit-strike-edit-row" style="display:none; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; background:#090e18; border:1px dashed rgba(245,158,11,0.45); border-radius:6px; padding:5px 10px; font-size:11px; font-family:'JetBrains Mono',monospace;">
+                        <span style="color:var(--text-secondary);">🎯 Твой Страйк входа на Bybit ($):</span>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <input id="cockpit-manual-strike-input" type="number" step="0.01" oninput="updateManualStrikePrice(this.value)" style="width:110px; background:#05080f; border:1px solid var(--accent-amber); color:#fbbf24; font-weight:800; font-family:'JetBrains Mono',monospace; border-radius:4px; padding:3px 6px; font-size:11.5px;" title="Если на Bybit зафиксировалась соседняя секунда — поправь точный страйк тут">
+                            <span style="font-size:10px; color:var(--text-muted);">(можно подправить)</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="cockpit-manual-status" style="background:#070b12; border:1px solid var(--border-subtle); border-radius:6px; padding:9px 12px; font-size:11.5px; font-family:'JetBrains Mono',monospace; color:var(--text-secondary);">
+                    На Bybit отсчет <b>300 секунд</b> и фиксация <b>твоего Страйка входа</b> начинаются ровно в секунду клика! Нажми кнопку выше при входе — и таймер + график поведут твои персональные 300 секунд.
+                </div>
+            </div>
+        </div>
+
+        <!-- Live 1-Second Price Trajectory Chart -->
+        <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:10px; padding:14px 16px; margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:15px;">📈</span>
+                    <span id="cockpit-chart-title" style="font-size:12.5px; font-weight:800; color:var(--text-primary); text-transform:uppercase;">Живой посекундный график (До входа: разгон свечи • После входа: твои 300 секунд на Bybit)</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px; font-size:10.5px; font-family:'JetBrains Mono',monospace;">
+                    <span style="color:#fbbf24;">━━ <b>Твой Страйк входа Bybit</b></span>
+                    <span style="color:#94a3b8;">--- Пунктир: <b>S₀ свечи</b></span>
+                    <span style="color:#6ee7b7;">🟩 60–90с: <b>Зона импульса</b></span>
+                </div>
+            </div>
+            <div id="cockpit-chart-container" style="width:100%; height:220px; background:#06090f; border:1px solid rgba(255,255,255,0.06); border-radius:8px; position:relative; overflow:hidden;">
+                <div style="color:var(--text-muted); font-size:12px; text-align:center; padding-top:95px;">Ожидание секундных точек...</div>
+            </div>
+        </div>
+
+        <!-- 4-Market Overnight Auto-Simulator Scoreboard (BTC 5M, ETH 5M, BTC 15M, ETH 15M) -->
+        <div style="background:var(--bg-card); border:1.5px solid rgba(56,189,248,0.35); border-radius:10px; padding:12px 14px; margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:15px;">🌙</span>
+                    <span style="font-size:12.5px; font-weight:800; color:var(--accent-cyan); text-transform:uppercase;">Ночной Авто-Симулятор по всем 4 рынкам (Вход строго по 3 галочкам чек-листа каждую секунду!)</span>
+                </div>
+                <span style="font-size:10.5px; color:var(--text-muted); font-family:'JetBrains Mono',monospace;">Кликни на любую карточку рынка для переключения терминала</span>
+            </div>
+            <div id="cockpit-4markets-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;">
+                <div style="color:var(--text-muted); font-size:11px; padding:8px;">Загрузка сводки 4 рынков...</div>
+            </div>
+        </div>
+
+        <!-- Last 15 Completed Signals History for Selected Pair (Rolling +300s from entry + Candle S0 comparison!) -->
+        <div class="table-container" style="margin-bottom:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--bg-card); border-bottom:1px solid var(--border-subtle); flex-wrap:wrap; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:13px; font-weight:800; color:var(--text-primary);">📜 История последних 15 окон выбранной пары (Bybit +300с/+900с от входа vs Свеча от S₀)</span>
+                </div>
+                <span id="cockpit-history-summary" class="mono" style="font-size:11px; color:var(--accent-emerald); font-weight:700;">Загрузка статистики...</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Вход ➔ Экспирация (+300с)</th>
+                        <th>S₀ свечи (0с)</th>
+                        <th>Разгон при входе (Δ% от S₀)</th>
+                        <th>🎯 Страйк входа Bybit</th>
+                        <th>Сигнал Схемы №1</th>
+                        <th>🏁 Цена через +300с от входа</th>
+                        <th>Итог Bybit (от Страйка входа)</th>
+                        <th>Итог Свечи (от S₀, как на Poly)</th>
+                    </tr>
+                </thead>
+                <tbody id="cockpit-history-body">
+                    <tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:20px;">Загрузка истории из ticks.db...</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -2039,6 +2277,9 @@
         const LOGO_BTC = '/media/logo/Bitcoin/Bitcoin_id_4h5jyQK_0.svg';
         const LOGO_ETH = '/media/logo/Ethereum/Ethereum_Icon_0.jpeg';
 
+        let activeCockpitSymbol = localStorage.getItem('activeCockpitSymbol') || 'BTCUSDT-5MIN';
+        let manualCockpitEntry = null; // { symbol, window_id, dir, entry_sec, entry_price, s0, logged }
+
         // ─── Initialization ───
         function initApp() {
             initBankrollUI();
@@ -2056,6 +2297,15 @@
 
             startRefreshLoops();
             setupHotkeys();
+
+            // Auto-open Scheme 1 Pair Cockpit if navigated to /momentum or ?symbol=...
+            const params = new URLSearchParams(window.location.search);
+            const symParam = params.get('symbol') || params.get('pair');
+            if (window.location.pathname.includes('/momentum') || symParam) {
+                isTopCollapsed = true;
+                applyTopCollapseUI();
+                openPairCockpit((symParam || activeCockpitSymbol || 'BTCUSDT-5MIN').toUpperCase());
+            }
         }
 
         // ─── Scale Controller ───
@@ -2098,6 +2348,8 @@
                 refreshSecondsLeft--;
                 if (refreshSecondsLeft < 0) refreshSecondsLeft = 5;
                 updateCircleProgress();
+                if (currentTab === 'fast') fetchTicksStats();
+                if (currentTab === 'cockpit') fetchCockpitDetail();
             }, 1000);
 
             fetchTicksStats();
@@ -2622,6 +2874,37 @@
                     kpiWinrate.innerText = closedCount > 0 ? `${Math.round((wonCount / closedCount) * 100)}%` : '100%';
                 }
 
+                // Fetch statistical significance & lag.ts summary
+                try {
+                    const hRes = await fetch('/api/hypotheses_stats');
+                    const hData = await hRes.json();
+                    const sigBar = document.getElementById('fast-stat-sig-bar');
+                    const kpiLag = document.getElementById('fast-kpi-lag');
+                    if (hData && hData.status === 'ok') {
+                        const m = hData.momentum_4_5 || {};
+                        const l = hData.lag_4_4 || {};
+                        if (kpiLag && l.p90LagMs) {
+                            kpiLag.innerText = `${(l.p90LagMs / 1000).toFixed(2)}с`;
+                            kpiLag.title = `Медиана: ${l.medianLagMs}мс | p90: ${l.p90LagMs}мс | Замеров: ${l.samples}`;
+                        }
+                        if (sigBar) {
+                            const sigColor = m.is_significant ? 'var(--accent-emerald)' : 'var(--accent-amber)';
+                            const sigIcon = m.is_significant ? '🟢 ПОДТВЕРЖДЕН' : `⏳ СБОР ВЫБОРКИ (${m.n || 0}/${hData.min_sample_size || 100})`;
+                            sigBar.innerHTML = `
+                                <div>
+                                    🔬 <b>Моментум 4.5:</b> <span style="color:${sigColor}; font-weight:700;">${sigIcon}</span>
+                                    • WR: <b>${m.win_rate_pct || 0}%</b> (${m.wins || 0}/${m.n || 0})
+                                    • 95% CI Уилсона: <b>[${(m.ci_95||[0,0])[0]}%, ${(m.ci_95||[0,0])[1]}%]</b>
+                                    • Бином. p-val: <b>${m.p_value !== undefined ? m.p_value : 1.0}</b>
+                                </div>
+                                <div>
+                                    ⏱️ <b>Лаг Poly CLOB (lag.ts):</b> медиана <b>${l.medianLagMs || '—'} мс</b> • p90: <b>${l.p90LagMs || '—'} мс</b> (&gt;3с: ${l.shareOver3s || 0}%, N=${l.samples || 0})
+                                </div>
+                            `;
+                        }
+                    }
+                } catch (e) {}
+
                 if (trades.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:24px;">Ожидание 5/15m сделок (2-шаговый Lock-In хедж, синхронный старт 0–25с или импульс 47–51с)...</td></tr>';
                     return;
@@ -2701,6 +2984,7 @@
                     }
 
                     gridEl.innerHTML = data.windows.map(w => {
+                        const sec = Math.round(w.sec_from_start || 0);
                         const delta = (w.index_delta_pct || 0);
                         const dColor = delta >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)';
                         const pUp = w.poly_up_ask ? `$${w.poly_up_ask.toFixed(2)} (${w.poly_odds_up.toFixed(2)}x)` : '—';
@@ -2711,14 +2995,30 @@
                             ? `<span style="color:${isArb ? 'var(--accent-emerald)' : 'var(--text-muted)'}; font-weight:700;">Cost: ${hCost.toFixed(3)} ${isArb ? '🔥 ВИЛКА' : ''}</span>`
                             : `<span style="color:var(--text-muted);">CLOB ожидание</span>`;
 
+                        // Live manual trading assistant signal
+                        let signalHtml = '';
+                        const isMomentumWindow = (w.window_type === '5MIN' && sec >= 58 && sec <= 105 && Math.abs(delta) >= 0.03);
+                        const isLockInUp = (w.poly_up_ask > 0 && w.poly_up_ask <= 0.38);
+                        const isLockInDown = (w.poly_down_ask > 0 && w.poly_down_ask <= 0.38);
+
+                        if (isMomentumWindow) {
+                            const dir = delta > 0 ? 'UP 🔼' : 'DOWN 🔽';
+                            signalHtml = `<div style="margin-top:4px; padding:3px 6px; border-radius:4px; background:rgba(16,185,129,0.18); border:1px solid var(--accent-emerald); color:var(--accent-emerald); font-weight:800;">🔥 МОМЕНТУМ (${sec}с): Бери ${dir} на Bybit!</div>`;
+                        } else if (sec <= 25) {
+                            signalHtml = `<div style="margin-top:4px; padding:3px 6px; border-radius:4px; background:rgba(56,189,248,0.15); border:1px solid var(--accent-cyan); color:var(--accent-cyan); font-weight:700;">🎯 СТАРТ ОКНА (+${sec}с): Якорь Шаг 1 ($11 на Bybit)</div>`;
+                        } else if (isLockInUp || isLockInDown) {
+                            const cheapSide = isLockInUp ? `UP @ $${w.poly_up_ask.toFixed(2)}` : `DOWN @ $${w.poly_down_ask.toFixed(2)}`;
+                            signalHtml = `<div style="margin-top:4px; padding:3px 6px; border-radius:4px; background:rgba(168,85,247,0.2); border:1px solid #c084fc; color:#e9d5ff; font-weight:800;">🔒 ШАГ 2 ЗАМОК: Докупи Poly ${cheapSide} ($7)!</div>`;
+                        }
+
                         return `
-                            <div style="background:#090d14; border:1px solid ${isArb ? 'var(--accent-emerald)' : 'var(--border-subtle)'}; border-radius:6px; padding:8px 10px; font-size:10.5px; font-family:'JetBrains Mono',monospace;">
+                            <div onclick="openPairCockpit('${w.symbol}')" title="Нажмите, чтобы открыть подробный терминал Схемы №1 для ${w.symbol}" style="background:#090d14; border:1px solid ${(isArb || isMomentumWindow) ? 'var(--accent-emerald)' : 'var(--border-subtle)'}; border-radius:8px; padding:9px 11px; font-size:10.5px; font-family:'JetBrains Mono',monospace; cursor:pointer; transition:all 0.15s ease; box-shadow:0 2px 8px rgba(0,0,0,0.25);" onmouseover="this.style.borderColor='var(--accent-cyan)'; this.style.transform='translateY(-1px)'" onmouseout="this.style.borderColor='${(isArb || isMomentumWindow) ? 'var(--accent-emerald)' : 'var(--border-subtle)'}'; this.style.transform='none'">
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                                    <span style="font-weight:800; color:var(--text-primary);">${w.symbol}</span>
+                                    <span style="font-weight:800; color:var(--text-primary); font-size:11.5px;">${w.symbol} <span style="color:var(--text-muted); font-weight:400;">(+${sec}с)</span></span>
                                     <span style="color:${dColor}; font-weight:700;">Δ ${delta >= 0 ? '+' : ''}${delta.toFixed(3)}%</span>
                                 </div>
                                 <div style="color:var(--text-secondary); margin-bottom:3px;">
-                                    Idx: <b>$${(w.index_price||0).toLocaleString()}</b> | TWAP60: $${(w.twap_60s||0).toLocaleString()}
+                                    Strike S₀: <b>$${(w.window_open_index||w.index_price||0).toLocaleString()}</b> ➔ Idx: <b>$${(w.index_price||0).toLocaleString()}</b>
                                 </div>
                                 <div style="color:#93c5fd; margin-bottom:3px;">
                                     Poly 🔼 ${pUp} | 🔽 ${pDown}
@@ -2727,11 +3027,715 @@
                                     <span style="color:var(--bybit-color);">BB: ${w.odds_up}x / ${w.odds_down}x</span>
                                     ${hBadge}
                                 </div>
+                                ${signalHtml}
+                                <div style="margin-top:6px; text-align:center; padding:4px 6px; border-radius:4px; background:rgba(56,189,248,0.1); border:1px dashed rgba(56,189,248,0.4); color:var(--accent-cyan); font-weight:800; font-size:10px;">
+                                    🎯 Открыть Терминал Схемы №1 (${w.coin} ${w.window_type === '15MIN' ? '15m' : '5m'}) ➔
+                                </div>
                             </div>
                         `;
                     }).join('');
                 }
             } catch (e) {}
+        }
+
+        // ─── Scheme 1 (Momentum 60-90s) Dedicated Pair Cockpit Controller ───
+        function openPairCockpit(symbol) {
+            activeCockpitSymbol = (symbol || 'BTCUSDT-5MIN').toUpperCase();
+            localStorage.setItem('activeCockpitSymbol', activeCockpitSymbol);
+
+            ['BTCUSDT-5MIN', 'ETHUSDT-5MIN', 'BTCUSDT-15MIN', 'ETHUSDT-15MIN'].forEach(sym => {
+                const btn = document.getElementById(`cockpit-pair-${sym}`);
+                if (btn) btn.classList.toggle('active', sym === activeCockpitSymbol);
+            });
+
+            switchTab('cockpit');
+            fetchCockpitDetail();
+        }
+
+        function popoutPairCockpit() {
+            const url = `/momentum?symbol=${encodeURIComponent(activeCockpitSymbol || 'BTCUSDT-5MIN')}`;
+            window.open(url, `MomentumCockpit_${activeCockpitSymbol}`, 'width=1020,height=880,menubar=no,toolbar=no,location=no,status=no');
+        }
+
+        function markManualCockpitEntry(dir) {
+            const w = window.__last_cockpit_live;
+            if (!w) {
+                showToast('Ожидание живых данных окна...');
+                return;
+            }
+            const is15m = (activeCockpitSymbol || '').includes('15MIN');
+            const durSec = is15m ? 900 : 300;
+            const nowTs = w.now_ts || (Date.now() / 1000);
+
+            manualCockpitEntry = {
+                symbol: activeCockpitSymbol,
+                window_id: w.window_id,
+                dir: dir,
+                entry_ts: nowTs,
+                duration_sec: durSec,
+                expiry_ts: nowTs + durSec,
+                entry_sec: Math.round(w.sec_from_start || 0),
+                entry_price: w.index_price || 0,
+                s0: w.window_open_index || w.index_price || 0,
+                settled: false,
+                settle_price: 0,
+                logged: false
+            };
+            const strikeRow = document.getElementById('cockpit-strike-edit-row');
+            const strikeInp = document.getElementById('cockpit-manual-strike-input');
+            if (strikeRow) strikeRow.style.display = 'flex';
+            if (strikeInp) strikeInp.value = manualCockpitEntry.entry_price;
+            showToast(`⏱️ Старт отсчета ${durSec}с на Bybit! Вход ${dir} по страйку $${manualCockpitEntry.entry_price.toFixed(2)}`);
+            fetchCockpitDetail();
+        }
+
+        function updateManualStrikePrice(val) {
+            const num = parseFloat(val);
+            if (manualCockpitEntry && num > 0) {
+                manualCockpitEntry.entry_price = num;
+                if (window.__last_cockpit_live) {
+                    updateManualCockpitBox(window.__last_cockpit_live);
+                }
+            }
+        }
+
+        function clearManualCockpitEntry() {
+            manualCockpitEntry = null;
+            const strikeRow = document.getElementById('cockpit-strike-edit-row');
+            if (strikeRow) strikeRow.style.display = 'none';
+            const box = document.getElementById('cockpit-manual-status');
+            if (box) {
+                box.innerHTML = 'На Bybit отсчет <b>300 секунд</b> и фиксация <b>твоего Страйка входа</b> начинаются ровно в секунду клика! Нажми кнопку выше при входе — и таймер + график поведут твои персональные 300 секунд.';
+            }
+            fetchCockpitDetail();
+        }
+
+        function updateManualCockpitBox(w) {
+            const box = document.getElementById('cockpit-manual-status');
+            const strikeRow = document.getElementById('cockpit-strike-edit-row');
+            if (!box || !w) return;
+            if (!manualCockpitEntry || manualCockpitEntry.symbol !== activeCockpitSymbol) {
+                if (strikeRow) strikeRow.style.display = 'none';
+                return;
+            }
+            if (strikeRow) strikeRow.style.display = 'flex';
+
+            const nowTs = w.now_ts || (Date.now() / 1000);
+            const dur = manualCockpitEntry.duration_sec || 300;
+            const elapsedSec = Math.max(0, Math.round(nowTs - manualCockpitEntry.entry_ts));
+            const remSec = Math.max(0, dur - elapsedSec);
+
+            // Lock settlement price at exact 300s (remSec === 0)
+            if (remSec === 0 && !manualCockpitEntry.settled) {
+                manualCockpitEntry.settled = true;
+                manualCockpitEntry.settle_price = w.index_price || 0;
+            }
+
+            const strikeEntry = manualCockpitEntry.entry_price || w.index_price || 0;
+            const cur = manualCockpitEntry.settled ? (manualCockpitEntry.settle_price || w.index_price || 0) : (w.index_price || 0);
+            const diffUsd = cur - strikeEntry;
+            const diffPct = strikeEntry > 0 ? ((diffUsd / strikeEntry) * 100) : 0;
+            const isWinning = (manualCockpitEntry.dir === 'UP' && cur > strikeEntry) || (manualCockpitEntry.dir === 'DOWN' && cur < strikeEntry);
+            const stColor = isWinning ? 'var(--accent-emerald)' : 'var(--accent-rose)';
+
+            const stText = manualCockpitEntry.settled
+                ? (isWinning ? '🏁 300с ИСТЕКЛИ: ПОБЕДА (+$4.00 чистыми / выплата $9)' : '🏁 300с ИСТЕКЛИ: УБЫТОК (-$5.00)')
+                : (isWinning ? `✅ В ПЛЮСЕ (+$4.00 чистыми) • Ост: ${remSec}с из ${dur}с` : `❌ В МИНУСЕ (-$5.00) • Ост: ${remSec}с из ${dur}с`);
+
+            box.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:6px;">
+                    <span>Вход $5: <b style="color:#fff;">${manualCockpitEntry.dir} @ 1.80x</b> (Страйк: <b style="color:#fbbf24;">$${strikeEntry.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b>) ➔ Сейчас: <b>$${cur.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b> (<b style="color:${stColor};">${diffUsd >= 0 ? '+' : ''}$${diffUsd.toFixed(2)} / ${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(3)}%</b>)</span>
+                    <span style="color:${stColor}; font-weight:900; font-size:12px;">${stText}</span>
+                </div>
+                <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                    <span style="font-size:10px; color:var(--text-muted);">Записать итог ($5 ставка):</span>
+                    <button class="btn-mini-tool" onclick="quickLogFromCockpit('win', 4.0)" style="color:var(--accent-emerald); border-color:rgba(16,185,129,0.4); font-weight:700; padding:2px 8px;">✅ Записать WIN (+$4 чистыми / $9)</button>
+                    <button class="btn-mini-tool" onclick="quickLogFromCockpit('loss', -5.0)" style="color:var(--accent-rose); border-color:rgba(244,63,94,0.4); font-weight:700; padding:2px 8px;">❌ Записать LOSS (-$5)</button>
+                    <button class="btn-mini-tool" onclick="quickLogFromCockpit('missed_timing', 0)" style="color:var(--accent-amber); border-color:rgba(245,158,11,0.4); padding:2px 8px;">⏱️ Не успел</button>
+                </div>
+            `;
+        }
+
+        async function quickLogFromCockpit(outcome, pnlVal) {
+            const w = window.__last_cockpit_live || {};
+            const dir = manualCockpitEntry ? manualCockpitEntry.dir : ((w.index_delta_pct || 0) >= 0 ? 'UP' : 'DOWN');
+            const sec = manualCockpitEntry ? manualCockpitEntry.entry_sec : Math.round(w.sec_from_start || 0);
+            const strikeUsed = manualCockpitEntry ? manualCockpitEntry.entry_price : (w.index_price || 0);
+            const deltaStr = (w.index_delta_pct || 0).toFixed(3);
+            const note = `Схема 1 [${activeCockpitSymbol}] ${dir} на +${sec}с (Страйк входа=$${strikeUsed.toFixed(2)}, Δсвечи ${deltaStr}%)`;
+            try {
+                await fetch('/api/manual_logs', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        platform_a: 'bybit_odds',
+                        platform_b: 'polymarket',
+                        requested_odds: 1.80,
+                        filled_odds: w.odds_up || 1.80,
+                        outcome: outcome,
+                        pnl: pnlVal,
+                        note: note
+                    })
+                });
+                showToast(`📝 Записано в manual_trades_log.csv: ${outcome.toUpperCase()} (${note})`);
+                loadManualLogs();
+            } catch (e) {
+                showToast('Ошибка сохранения в CSV');
+            }
+        }
+
+        async function fetchCockpitDetail() {
+            const sym = activeCockpitSymbol || 'BTCUSDT-5MIN';
+            try {
+                const res = await fetch(`/api/pair_detail?symbol=${encodeURIComponent(sym)}`);
+                const data = await res.json();
+                if (!data || data.status !== 'ok') return;
+
+                const w = data.live;
+                window.__last_cockpit_live = w;
+
+                // Update top pair buttons with live delta preview
+                if (data.all_windows) {
+                    data.all_windows.forEach(aw => {
+                        const btn = document.getElementById(`cockpit-pair-${aw.symbol}`);
+                        if (btn) {
+                            const d = (aw.index_delta_pct || 0);
+                            const sign = d >= 0 ? '+' : '';
+                            const icon = aw.coin === 'BTC' ? '🟠' : '🔵';
+                            const tf = aw.window_type === '15MIN' ? '15m' : '5m';
+                            btn.innerHTML = `${icon} ${aw.coin} ${tf} <span class="mono" style="font-size:10.5px; opacity:0.9; margin-left:3px;">(${sign}${d.toFixed(2)}%)</span>`;
+                        }
+                    });
+                }
+
+                const titleEl = document.getElementById('cockpit-pair-title');
+                if (titleEl) titleEl.innerText = sym;
+
+                if (w) {
+                    const is15m = sym.includes('15MIN');
+                    const dur = is15m ? 900 : 300;
+                    const entryMinS = is15m ? 150 : 58;
+                    const entryMaxS = is15m ? 260 : 105;
+
+                    const nowTs = w.now_ts || (Date.now() / 1000);
+                    const sec = Math.round(w.sec_from_start || 0);
+                    const rem = Math.round(w.seconds_to_expiry || Math.max(0, dur - sec));
+                    const s0 = w.window_open_index || w.index_price || 0;
+                    const s0Spot = w.window_open_spot || w.spot_price || s0;
+                    const idx = w.index_price || 0;
+                    const spot = w.spot_price || idx;
+                    const fut = w.futures_price || idx;
+                    const twap = w.twap_60s || idx;
+                    const delta = w.index_delta_pct || 0;
+                    const absDelta = Math.abs(delta);
+                    const diffUsd = idx - s0;
+
+                    // Check if user has an active personal 300s Bybit trade running on this symbol
+                    const hasActiveManualTrade = manualCockpitEntry && manualCockpitEntry.symbol === sym;
+                    const tradeElapsed = hasActiveManualTrade ? Math.max(0, Math.round(nowTs - manualCockpitEntry.entry_ts)) : 0;
+                    const tradeRem = hasActiveManualTrade ? Math.max(0, (manualCockpitEntry.duration_sec || dur) - tradeElapsed) : 0;
+
+                    const fillEl = document.getElementById('cockpit-progress-fill');
+                    const headEl = document.getElementById('cockpit-progress-head');
+                    const zoneEl = document.getElementById('cockpit-zone-marker');
+                    const scaleLabels = document.getElementById('cockpit-scale-labels');
+                    const tMain = document.getElementById('cockpit-timer-main');
+                    const tSub = document.getElementById('cockpit-timer-sub');
+
+                    if (hasActiveManualTrade) {
+                        // Personal 300s Bybit Countdown Mode (from exact entry click!)
+                        const tDur = manualCockpitEntry.duration_sec || dur;
+                        const tPct = Math.min(100, Math.max(0, (tradeElapsed / tDur) * 100));
+                        if (fillEl) {
+                            fillEl.style.width = `${tPct}%`;
+                            fillEl.style.background = 'linear-gradient(90deg, rgba(245,158,11,0.35), rgba(16,185,129,0.7))';
+                        }
+                        if (headEl) headEl.style.left = `${tPct}%`;
+                        if (zoneEl) zoneEl.style.display = 'none';
+                        if (scaleLabels) {
+                            scaleLabels.innerHTML = `
+                                <span style="color:#fbbf24; font-weight:700;">0с (Твой вход ${manualCockpitEntry.dir} @ Страйк $${manualCockpitEntry.entry_price.toFixed(2)})</span>
+                                <span>+150с (Середина твоей сделки Bybit)</span>
+                                <span style="color:var(--accent-emerald); font-weight:700;">🏁 +${tDur}с (Экспирация твоей сделки Bybit)</span>
+                            `;
+                        }
+                        if (tMain) {
+                            tMain.innerText = `Ост: ${tradeRem}с`;
+                            tMain.style.color = tradeRem > 0 ? '#fbbf24' : 'var(--accent-emerald)';
+                        }
+                        if (tSub) {
+                            tSub.innerHTML = `От входа прошло: <b>+${tradeElapsed}с / ${tDur}с</b> • (Свеча: +${sec}с)`;
+                        }
+                    } else {
+                        // Candle Impulse Radar Mode (0..300s of 5m candle)
+                        const pct = Math.min(100, Math.max(0, (sec / dur) * 100));
+                        if (fillEl) {
+                            fillEl.style.width = `${pct}%`;
+                            fillEl.style.background = 'linear-gradient(90deg, rgba(56,189,248,0.35), rgba(56,189,248,0.65))';
+                        }
+                        if (headEl) headEl.style.left = `${pct}%`;
+                        if (zoneEl) {
+                            zoneEl.style.display = 'flex';
+                            const zLeft = (entryMinS / dur) * 100;
+                            const zWidth = ((entryMaxS - entryMinS) / dur) * 100;
+                            zoneEl.style.left = `${zLeft}%`;
+                            zoneEl.style.width = `${zWidth}%`;
+                        }
+                        if (scaleLabels) {
+                            scaleLabels.innerHTML = `
+                                <span>0с (Начало 5м свечи S₀ — ждем разгон)</span>
+                                <span style="color:var(--accent-emerald); font-weight:700;">▲ 60с–90с (Ловим импульс и жмем вход на Bybit ➔ отсюда начнется твой отсчет 300с!)</span>
+                                <span>${dur}с свечи</span>
+                            `;
+                        }
+                        if (tMain) {
+                            tMain.innerText = `+${sec}с / ${dur}с`;
+                            tMain.style.color = 'var(--accent-cyan)';
+                        }
+                        if (tSub) {
+                            if (sec < entryMinS) {
+                                tSub.innerHTML = `До зоны сигнала: <b style="color:var(--accent-amber);">${entryMinS - sec} сек</b> (Отсчет 300с пойдет от клика)`;
+                            } else if (sec <= entryMaxS) {
+                                tSub.innerHTML = `<b style="color:var(--accent-emerald);">🔥 ЗОНА ВХОДА (еще ${entryMaxS - sec}с) • На Bybit пойдет 300с от клика!</b>`;
+                            } else {
+                                tSub.innerHTML = `До новой 5м свечи: <b>${rem} сек</b>`;
+                            }
+                        }
+                    }
+
+                    // Telemetry Cards 1..4
+                    const s0El = document.getElementById('cockpit-s0-price');
+                    const s0Sub = document.getElementById('cockpit-s0-sub');
+                    if (s0El) s0El.innerText = `$${s0.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                    if (s0Sub) s0Sub.innerText = `Spot S₀: $${s0Spot.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})} • База для замера импульса 60–90с`;
+
+                    const idxEl = document.getElementById('cockpit-idx-price');
+                    const dBadge = document.getElementById('cockpit-delta-badge');
+                    const dUsd = document.getElementById('cockpit-delta-usd');
+                    const dColor = delta >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)';
+                    if (idxEl) idxEl.innerText = `$${idx.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                    if (dBadge) {
+                        dBadge.innerText = `${delta >= 0 ? '+' : ''}${delta.toFixed(3)}%`;
+                        dBadge.style.color = dColor;
+                    }
+                    if (dUsd) {
+                        dUsd.innerHTML = `Разгон от S₀: <b style="color:${dColor};">${diffUsd >= 0 ? '+' : ''}$${diffUsd.toFixed(2)}</b> (Порог: ±$${(s0 * 0.0003).toFixed(2)}) • <b>При клике эта цена станет твоим Страйком на 300с!</b>`;
+                    }
+
+                    // Streams alignment
+                    const stRow = document.getElementById('cockpit-streams-row');
+                    const stSync = document.getElementById('cockpit-streams-sync');
+                    if (stRow) {
+                        stRow.innerHTML = `Spot: <b>$${spot.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b> (${(w.spot_delta_pct||0) >= 0 ? '+' : ''}${(w.spot_delta_pct||0).toFixed(3)}%)<br>Futures: <b>$${fut.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b> • TWAP60: <b>$${twap.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b>`;
+                    }
+
+                    const idxAbove = idx > s0;
+                    const spotAbove = spot > s0Spot;
+                    const futAbove = fut > s0;
+                    const allUp = idxAbove && spotAbove && futAbove;
+                    const allDown = (!idxAbove) && (!spotAbove) && (!futAbove);
+                    const isStreamsSynced = allUp || allDown;
+
+                    if (stSync) {
+                        if (allUp) {
+                            stSync.innerText = '✅ СИНХРОННО UP: Spot + Futures + Index все тянут вверх';
+                            stSync.style.color = 'var(--accent-emerald)';
+                        } else if (allDown) {
+                            stSync.innerText = '✅ СИНХРОННО DOWN: Spot + Futures + Index все давят вниз';
+                            stSync.style.color = 'var(--accent-rose)';
+                        } else {
+                            stSync.innerText = '⚠️ РАЗНОБОЙ: Спот и Фьючерс еще не синхронны';
+                            stSync.style.color = 'var(--accent-amber)';
+                        }
+                    }
+
+                    const oddsRow = document.getElementById('cockpit-odds-row');
+                    if (oddsRow) {
+                        oddsRow.innerText = `UP ${(w.odds_up||1.8).toFixed(2)}x / DN ${(w.odds_down||1.8).toFixed(2)}x`;
+                    }
+
+                    // 3-Condition Checklist
+                    const cond1 = (sec >= entryMinS && sec <= entryMaxS);
+                    const cond2 = (absDelta >= 0.030 && absDelta <= 0.350);
+                    const cond3 = isStreamsSynced && absDelta >= 0.020;
+
+                    const setChk = (num, ok, text, warn=false) => {
+                        const rowEl = document.getElementById(`chk-row-${num}`);
+                        const valEl = document.getElementById(`chk-val-${num}`);
+                        if (!rowEl || !valEl) return;
+                        valEl.innerText = text;
+                        if (ok) {
+                            rowEl.style.borderColor = 'rgba(16,185,129,0.5)';
+                            rowEl.style.background = 'rgba(16,185,129,0.08)';
+                            valEl.style.color = 'var(--accent-emerald)';
+                        } else if (warn) {
+                            rowEl.style.borderColor = 'rgba(245,158,11,0.4)';
+                            rowEl.style.background = 'rgba(245,158,11,0.06)';
+                            valEl.style.color = 'var(--accent-amber)';
+                        } else {
+                            rowEl.style.borderColor = 'var(--border-subtle)';
+                            rowEl.style.background = '#080c14';
+                            valEl.style.color = 'var(--text-muted)';
+                        }
+                    };
+
+                    setChk(
+                        1,
+                        cond1,
+                        cond1 ? `✅ ДА (+${sec}с свечи)` : (sec < entryMinS ? `⏳ Ждем еще ${entryMinS - sec}с` : `🔒 Прошло (+${sec}с)`),
+                        sec >= entryMinS - 8 && sec < entryMinS
+                    );
+                    setChk(
+                        2,
+                        cond2,
+                        cond2 ? `✅ ДА (${delta >= 0 ? '+' : ''}${delta.toFixed(3)}%)` : (absDelta < 0.03 ? `❌ Мало (${delta.toFixed(3)}% < 0.03%)` : `⚠️ Перегрев (${delta.toFixed(3)}%)`),
+                        absDelta >= 0.022 && absDelta < 0.030
+                    );
+                    setChk(
+                        3,
+                        cond3,
+                        cond3 ? `✅ ДА (${allUp ? 'Все тянут UP 🔼' : 'Все тянут DOWN 🔽'})` : '⚠️ Нет синхрона'
+                    );
+
+                    // Hero Banner Decision
+                    const heroCard = document.getElementById('cockpit-hero-card');
+                    const phaseBadge = document.getElementById('cockpit-phase-badge');
+                    const heroAction = document.getElementById('cockpit-hero-action');
+                    const heroSub = document.getElementById('cockpit-hero-sub');
+
+                    if (hasActiveManualTrade) {
+                        const strikeE = manualCockpitEntry.entry_price || idx;
+                        const curP = manualCockpitEntry.settled ? (manualCockpitEntry.settle_price || idx) : idx;
+                        const moveUsd = curP - strikeE;
+                        const movePct = strikeE > 0 ? ((moveUsd / strikeE) * 100) : 0;
+                        const isWinNow = (manualCockpitEntry.dir === 'UP' && curP > strikeE) || (manualCockpitEntry.dir === 'DOWN' && curP < strikeE);
+                        const col = isWinNow ? '#10b981' : '#f43f5e';
+
+                        if (heroCard) heroCard.style.borderColor = col;
+                        if (phaseBadge) {
+                            phaseBadge.innerText = manualCockpitEntry.settled ? '🏁 ТВОИ 300 СЕКУНД НА BYBIT ЗАВЕРШЕНЫ!' : `⏱️ ВЕДЕНИЕ ТВОЕЙ СДЕЛКИ BYBIT (Ост: ${tradeRem}с из ${manualCockpitEntry.duration_sec}с)`;
+                            phaseBadge.style.background = isWinNow ? 'rgba(16,185,129,0.2)' : 'rgba(244,63,94,0.2)';
+                            phaseBadge.style.color = col;
+                        }
+                        if (heroAction) {
+                            heroAction.innerHTML = manualCockpitEntry.settled
+                                ? `<span style="color:${col};">${isWinNow ? '✅ ПОБЕДА НА BYBIT (+$4.00 чистыми / выплата $9)!' : '❌ МИНУС НА BYBIT (-$5.00)'} Финал: $${curP.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})} против Страйка $${strikeE.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`
+                                : `🎯 Твой вход $5 <b>${manualCockpitEntry.dir}</b> (Страйк <b>$${strikeE.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</b>) ➔ <span style="color:${col};">${isWinNow ? 'СЕЙЧАС В ПЛЮСЕ (+$4.00)' : 'СЕЙЧАС В МИНУСЕ (-$5.00)'} (${moveUsd >= 0 ? '+' : ''}$${moveUsd.toFixed(2)} / ${movePct >= 0 ? '+' : ''}${movePct.toFixed(3)}%)</span>`;
+                        }
+                        if (heroSub) {
+                            heroSub.innerHTML = `Отсчет идет ровно <b>${manualCockpitEntry.duration_sec} сек от момента твоего клика</b> (независимо от смены 5м свечи). Осталось: <b>${tradeRem} сек</b>.`;
+                        }
+                    } else if (sec < entryMinS) {
+                        const waitSec = entryMinS - sec;
+                        const preDir = absDelta >= 0.03 ? (delta > 0 ? 'Предварительно: тянет UP 🔼' : 'Предварительно: тянет DOWN 🔽') : 'Пока цена около S₀ свечи (флэт)';
+                        if (heroCard) heroCard.style.borderColor = 'rgba(56,189,248,0.45)';
+                        if (phaseBadge) {
+                            phaseBadge.innerText = `Фаза 1: Замер импульса свечи (0..${entryMinS}с)`;
+                            phaseBadge.style.background = 'rgba(56,189,248,0.15)';
+                            phaseBadge.style.color = 'var(--accent-cyan)';
+                        }
+                        if (heroAction) {
+                            heroAction.innerHTML = `⏳ ЖДЕМ РАЗГОНА: До окна входа осталось <span style="color:var(--accent-cyan);">${waitSec} сек</span>`;
+                        }
+                        if (heroSub) {
+                            heroSub.innerHTML = `${preDir} • Разгон от S₀: <b>${delta >= 0 ? '+' : ''}${delta.toFixed(3)}%</b> (${diffUsd >= 0 ? '+' : ''}$${diffUsd.toFixed(2)}). Когда на 60–90с войдешь на Bybit — отсчет 300с пойдет от секунды клика!`;
+                        }
+                    } else if (sec >= entryMinS && sec <= entryMaxS) {
+                        if (cond2) {
+                            const isUp = delta > 0;
+                            const dirText = isUp ? 'UP 🔼 (ВЫШЕ)' : 'DOWN 🔽 (НИЖЕ)';
+                            const actionColor = isUp ? '#10b981' : '#f43f5e';
+                            if (heroCard) heroCard.style.borderColor = actionColor;
+                            if (phaseBadge) {
+                                phaseBadge.innerText = '🔥 ФАЗА 2: АКТИВНЫЙ СИГНАЛ ВХОДА НА BYBIT!';
+                                phaseBadge.style.background = isUp ? 'rgba(16,185,129,0.22)' : 'rgba(244,63,94,0.22)';
+                                phaseBadge.style.color = actionColor;
+                            }
+                            if (heroAction) {
+                                heroAction.innerHTML = `<span style="color:${actionColor};">🔥 ВХОД СЕЙЧАС! ЖМИ ${dirText} НА BYBIT ($5 @ ${(isUp ? w.odds_up : w.odds_down) || 1.80}x ➔ выплата $9 / +$4 чистыми)</span>`;
+                            }
+                            if (heroSub) {
+                                heroSub.innerHTML = `Твой Страйк входа на Bybit будет зафиксирован по <b>~$${idx.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</b> и начнется твой отсчет <b>300 секунд</b>! Сразу после входа нажми кнопку «Старт 300с» справа.`;
+                            }
+                        } else {
+                            if (heroCard) heroCard.style.borderColor = 'rgba(245,158,11,0.5)';
+                            if (phaseBadge) {
+                                phaseBadge.innerText = '⚠️ ФАЗА 2: СЛАБЫЙ ИМПУЛЬС (ФЛЭТ)';
+                                phaseBadge.style.background = 'rgba(245,158,11,0.18)';
+                                phaseBadge.style.color = 'var(--accent-amber)';
+                            }
+                            if (heroAction) {
+                                heroAction.innerHTML = `<span style="color:var(--accent-amber);">✋ НЕ ВХОДИМ: Разгон всего ${delta >= 0 ? '+' : ''}${delta.toFixed(3)}% (нужно ≥ 0.030%)</span>`;
+                            }
+                            if (heroSub) {
+                                heroSub.innerHTML = `Цена слишком близко к S₀ свечи ($${s0.toLocaleString()}). Если до ${entryMaxS}-й секунды пробьет ±0.030% — сигнал загорится зелёным!`;
+                            }
+                        }
+                    } else {
+                        const curDir = idx > s0 ? 'UP 🔼' : 'DOWN 🔽';
+                        if (heroCard) heroCard.style.borderColor = 'var(--border-subtle)';
+                        if (phaseBadge) {
+                            phaseBadge.innerText = `Ожидание новой 5м свечи (через ${rem}с)`;
+                            phaseBadge.style.background = 'rgba(255,255,255,0.06)';
+                            phaseBadge.style.color = 'var(--text-secondary)';
+                        }
+                        if (heroAction) {
+                            heroAction.innerHTML = `🔒 Зона импульса 60–90с этой свечи прошла • Текущий тренд: <span style="color:${dColor};">${curDir} (${delta >= 0 ? '+' : ''}${delta.toFixed(3)}%)</span>`;
+                        }
+                        if (heroSub) {
+                            heroSub.innerHTML = `Если ты уже вошёл на Bybit — нажми кнопку <b>«Старт 300с: Я вошёл UP/DOWN»</b> справа, чтобы включить персональный таймер сделки! Иначе жди новую свечу через <b>${rem} сек</b>.`;
+                        }
+                    }
+
+                    updateManualCockpitBox(w);
+                    renderCockpitChart(w.series || [], w.rolling_series || [], s0, dur, entryMinS, entryMaxS);
+                }
+
+                // Update 4-Market Overnight Auto-Simulator Scoreboard
+                const mGrid = document.getElementById('cockpit-4markets-grid');
+                const mOver = data.markets_overview || [];
+                if (mGrid && mOver.length > 0) {
+                    mGrid.innerHTML = mOver.map(m => {
+                        const isSel = m.symbol === activeCockpitSymbol;
+                        const bbTot = (m.bybit_won || 0) + (m.bybit_lost || 0);
+                        const pTot = (m.poly_won || 0) + (m.poly_lost || 0);
+                        const bbColor = (m.bybit_pnl || 0) >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)';
+                        const pColor = (m.poly_pnl || 0) >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)';
+                        return `
+                            <div onclick="openPairCockpit('${m.symbol}')" style="cursor:pointer; background:${isSel ? 'rgba(56,189,248,0.12)' : '#070b12'}; border:${isSel ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-subtle)'}; border-radius:8px; padding:9px 11px; transition:all 0.15s;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                    <span style="font-size:12px; font-weight:800; color:#fff;">${m.symbol.replace('USDT-', ' ')}</span>
+                                    ${m.bybit_open > 0 ? `<span class="badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; font-size:9.5px;">⏱️ В сделке (${m.bybit_open})</span>` : `<span style="font-size:10px; color:var(--text-muted);">Ставка $5</span>`}
+                                </div>
+                                <div style="font-size:10.5px; font-family:'JetBrains Mono',monospace; margin-bottom:3px; display:flex; justify-content:space-between;">
+                                    <span style="color:var(--text-secondary);">Bybit (+300/900с):</span>
+                                    <span><b>${m.bybit_won}W/${m.bybit_lost}L</b> (${bbTot > 0 ? m.bybit_wr + '%' : '—'}) <b style="color:${bbColor};">${m.bybit_pnl >= 0 ? '+' : ''}$${m.bybit_pnl}</b></span>
+                                </div>
+                                <div style="font-size:10.5px; font-family:'JetBrains Mono',monospace; display:flex; justify-content:space-between;">
+                                    <span style="color:var(--text-secondary);">Poly (Свеча S₀):</span>
+                                    <span><b>${m.poly_won}W/${m.poly_lost}L</b> (${pTot > 0 ? m.poly_wr + '%' : '—'}) <b style="color:${pColor};">${m.poly_pnl >= 0 ? '+' : ''}$${m.poly_pnl}</b></span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                // Update Pair Stats & Recent 15 Windows History Table (+300s from entry + Candle S0!)
+                const ps = data.pair_stats || {};
+                const wrBadge = document.getElementById('cockpit-pair-wr');
+                const psSub = document.getElementById('cockpit-pair-stats-sub');
+                const histSum = document.getElementById('cockpit-history-summary');
+                if (wrBadge) {
+                    wrBadge.innerText = `Bybit WR: ${ps.win_rate_pct || 0}% (${ps.wins || 0}W/${ps.losses || 0}L) • Свеча S₀: ${ps.candle_win_rate_pct || 0}%`;
+                }
+                if (psSub) {
+                    const pnlSign = (ps.net_pnl_10usd || 0) >= 0 ? '+' : '';
+                    psSub.innerHTML = `Ставка $5 (+$4 / -$5): <b>${ps.wins || 0}W/${ps.losses || 0}L</b> (<b style="color:${(ps.net_pnl_10usd||0)>=0 ? 'var(--accent-emerald)' : 'var(--accent-rose)'};">${pnlSign}$${(ps.net_pnl_10usd || 0).toFixed(0)}</b>) • Свеча S₀: <b style="color:var(--accent-emerald);">${ps.candle_wins || 0}W/${ps.candle_losses || 0}L (${ps.candle_win_rate_pct || 0}%)</b>`;
+                }
+                if (histSum) {
+                    histSum.innerText = `Ставка $5 (+$4 чистыми / -$5 риск) • Сигналов: ${ps.signals_count || 0} из ${ps.total_windows || 0} окон • Bybit: ${ps.wins || 0}W/${ps.losses || 0}L (${ps.win_rate_pct || 0}%) • Свеча S₀: ${ps.candle_wins || 0}W/${ps.candle_losses || 0}L (${ps.candle_win_rate_pct || 0}%)`;
+                }
+
+                const hBody = document.getElementById('cockpit-history-body');
+                const rec = data.recent_windows || [];
+                if (hBody) {
+                    if (rec.length === 0) {
+                        hBody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:18px;">Пока нет завершенных окон для этой пары в ticks.db</td></tr>';
+                    } else {
+                        hBody.innerHTML = rec.map(r => {
+                            const sigColor = r.signal === 'UP' ? 'var(--accent-emerald)' : (r.signal === 'DOWN' ? 'var(--accent-rose)' : 'var(--text-muted)');
+                            const sigBadge = r.signal === 'SKIP'
+                                ? '<span class="badge" style="background:rgba(255,255,255,0.05); color:var(--text-muted);">⚪ Пропуск (нет 3 галочек)</span>'
+                                : `<span class="badge" style="background:${r.signal==='UP'?'rgba(16,185,129,0.18)':'rgba(244,63,94,0.18)'}; color:${sigColor}; border:1px solid ${sigColor};">🔥 Вход ${r.signal} (+${r.sig_sec}с)</span>`;
+
+                            let resHtml = '<span style="color:var(--text-muted);">— (Без входа)</span>';
+                            if (r.result === 'WIN') {
+                                resHtml = `<span class="badge badge-arb" style="font-size:11px;">✅ WIN (+$4 чистыми / $9) • ${r.close_delta_pct >= 0 ? '+' : ''}${r.close_delta_pct.toFixed(3)}%</span>`;
+                            } else if (r.result === 'LOSS') {
+                                resHtml = `<span class="badge" style="background:rgba(244,63,94,0.18); color:var(--accent-rose); border:1px solid rgba(244,63,94,0.4); font-size:11px;">❌ LOSS (-$5) • ${r.close_delta_pct >= 0 ? '+' : ''}${r.close_delta_pct.toFixed(3)}%</span>`;
+                            }
+
+                            let candleHtml = '<span style="color:var(--text-muted);">—</span>';
+                            if (r.candle_result === 'WIN') {
+                                candleHtml = `<span class="badge badge-arb" style="font-size:11px;">✅ WIN от S₀ (${(r.candle_delta_pct||0) >= 0 ? '+' : ''}${(r.candle_delta_pct||0).toFixed(3)}%)</span>`;
+                            } else if (r.candle_result === 'LOSS') {
+                                candleHtml = `<span class="badge" style="background:rgba(244,63,94,0.15); color:var(--accent-rose); font-size:11px;">❌ LOSS от S₀ (${(r.candle_delta_pct||0) >= 0 ? '+' : ''}${(r.candle_delta_pct||0).toFixed(3)}%)</span>`;
+                            }
+
+                            const d60Color = r.sig_delta_pct >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)';
+
+                            return `
+                                <tr>
+                                    <td class="mono" style="font-size:11px; color:var(--text-secondary);">${r.time_label}</td>
+                                    <td class="mono" style="color:var(--text-muted);">$${r.strike_s0.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                                    <td class="mono font-bold" style="color:${d60Color};">${r.sig_delta_pct >= 0 ? '+' : ''}${r.sig_delta_pct.toFixed(3)}%</td>
+                                    <td class="mono font-bold" style="color:#fbbf24;">$${r.sig_price.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                                    <td>${sigBadge}</td>
+                                    <td class="mono font-bold">$${r.close_price.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                                    <td>${resHtml}</td>
+                                    <td>${candleHtml}</td>
+                                </tr>
+                            `;
+                        }).join('');
+                    }
+                }
+            } catch (e) {}
+        }
+
+        function renderCockpitChart(series, rollingSeries, s0, durationSec, entryMinS, entryMaxS) {
+            const container = document.getElementById('cockpit-chart-container');
+            if (!container) return;
+
+            const hasActiveManualTrade = manualCockpitEntry && manualCockpitEntry.symbol === activeCockpitSymbol;
+
+            // If user clicked "Я вошёл UP/DOWN", plot their personal 300s trade trajectory from entry_ts to entry_ts + 300s!
+            if (hasActiveManualTrade && rollingSeries && rollingSeries.length >= 2) {
+                const entryTs = manualCockpitEntry.entry_ts;
+                const tDur = manualCockpitEntry.duration_sec || durationSec;
+                const strikeE = manualCockpitEntry.entry_price || s0;
+
+                // Filter points from 15s before entry up to entry + tDur
+                const tradePts = rollingSeries
+                    .filter(p => p.ts && p.ts >= (entryTs - 15) && p.ts <= (entryTs + tDur + 5) && p.idx > 0)
+                    .map(p => ({
+                        secFromEntry: p.ts - entryTs,
+                        idx: p.idx
+                    }));
+
+                if (tradePts.length >= 2) {
+                    const width = 860;
+                    const height = 220;
+                    const padL = 72;
+                    const padR = 24;
+                    const padT = 18;
+                    const padB = 26;
+                    const cW = width - padL - padR;
+                    const cH = height - padT - padB;
+
+                    const prices = tradePts.map(p => p.idx);
+                    const padBand = Math.max(strikeE * 0.0004, 8);
+                    const minP = Math.min(strikeE - padBand, s0 - padBand * 0.5, ...prices);
+                    const maxP = Math.max(strikeE + padBand, s0 + padBand * 0.5, ...prices);
+                    const rangeP = (maxP - minP) || 1.0;
+
+                    const toX = (sVal) => padL + Math.min(1, Math.max(0, (sVal + 15) / (tDur + 15))) * cW;
+                    const toY = (priceVal) => padT + cH - ((priceVal - minP) / rangeP) * cH;
+
+                    const strikeY = toY(strikeE);
+                    const s0Y = toY(s0);
+                    const entryX = toX(0);
+                    const expX = toX(tDur);
+
+                    const pts = tradePts.map(p => `${toX(p.secFromEntry).toFixed(1)},${toY(p.idx).toFixed(1)}`).join(' ');
+                    const lastPt = tradePts[tradePts.length - 1];
+                    const lastX = toX(lastPt.secFromEntry);
+                    const lastY = toY(lastPt.idx);
+                    const isWinning = (manualCockpitEntry.dir === 'UP' && lastPt.idx > strikeE) || (manualCockpitEntry.dir === 'DOWN' && lastPt.idx < strikeE);
+                    const lineColor = isWinning ? '#10b981' : '#f43f5e';
+
+                    container.innerHTML = `
+                        <svg viewBox="0 0 ${width} ${height}" style="width:100%; height:220px; display:block;">
+                            <!-- Vertical Entry Line (0s of Bybit Trade) -->
+                            <line x1="${entryX.toFixed(1)}" y1="${padT}" x2="${entryX.toFixed(1)}" y2="${padT + cH}" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4 3" />
+                            <text x="${(entryX + 5).toFixed(1)}" y="${padT + 12}" fill="#fbbf24" font-size="9.5" font-weight="bold" font-family="'JetBrains Mono', monospace">▶ СТАРТ СДЕЛКИ (0с)</text>
+
+                            <!-- Candle S0 Reference Line -->
+                            <line x1="${padL}" y1="${s0Y.toFixed(1)}" x2="${width - padR}" y2="${s0Y.toFixed(1)}" stroke="rgba(148,163,184,0.4)" stroke-width="1" stroke-dasharray="3 3" />
+
+                            <!-- Personal Bybit Entry Strike Baseline -->
+                            <line x1="${padL}" y1="${strikeY.toFixed(1)}" x2="${width - padR}" y2="${strikeY.toFixed(1)}" stroke="#fbbf24" stroke-width="2" />
+                            <text x="${padL - 6}" y="${(strikeY + 3).toFixed(1)}" fill="#fbbf24" font-size="9.5" font-weight="bold" font-family="'JetBrains Mono', monospace" text-anchor="end">Страйк $${strikeE.toFixed(1)}</text>
+
+                            <!-- Y-Axis Labels -->
+                            <text x="${padL - 6}" y="${padT + 8}" fill="#64748b" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="end">$${maxP.toFixed(1)}</text>
+                            <text x="${padL - 6}" y="${padT + cH}" fill="#64748b" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="end">$${minP.toFixed(1)}</text>
+
+                            <!-- X-Axis Labels (0s .. +300s from Entry) -->
+                            <text x="${entryX.toFixed(1)}" y="${height - 6}" fill="#fbbf24" font-size="9.5" font-weight="bold" font-family="'JetBrains Mono', monospace">0с (Вход)</text>
+                            <text x="${toX(tDur * 0.25).toFixed(1)}" y="${height - 6}" fill="#64748b" font-size="9.5" font-family="'JetBrains Mono', monospace" text-anchor="middle">+${Math.round(tDur*0.25)}с</text>
+                            <text x="${toX(tDur * 0.5).toFixed(1)}" y="${height - 6}" fill="#64748b" font-size="9.5" font-family="'JetBrains Mono', monospace" text-anchor="middle">+${Math.round(tDur*0.5)}с</text>
+                            <text x="${toX(tDur * 0.75).toFixed(1)}" y="${height - 6}" fill="#64748b" font-size="9.5" font-family="'JetBrains Mono', monospace" text-anchor="middle">+${Math.round(tDur*0.75)}с</text>
+                            <text x="${expX.toFixed(1)}" y="${height - 6}" fill="#10b981" font-size="9.5" font-weight="bold" font-family="'JetBrains Mono', monospace" text-anchor="end">🏁 +${tDur}с (Финиш)</text>
+
+                            <!-- Live Trade Trajectory Polyline -->
+                            <polyline fill="none" stroke="${lineColor}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" points="${pts}" />
+                            <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="4.5" fill="${lineColor}" stroke="#fff" stroke-width="1.5" />
+                        </svg>
+                    `;
+                    return;
+                }
+            }
+
+            if (!series || series.length < 2 || !s0) {
+                container.innerHTML = '<div style="color:var(--text-muted); font-size:12px; text-align:center; padding-top:95px;">Начало новой 5м свечи: накопление первых секундных тиков...</div>';
+                return;
+            }
+
+            const width = 860;
+            const height = 220;
+            const padL = 68;
+            const padR = 24;
+            const padT = 18;
+            const padB = 26;
+            const cW = width - padL - padR;
+            const cH = height - padT - padB;
+
+            const threshBandUsd = s0 * 0.0003; // ±0.03% deadzone
+            const prices = series.map(p => p.idx).filter(v => v > 0);
+            const minP = Math.min(s0 - threshBandUsd * 2.2, ...prices);
+            const maxP = Math.max(s0 + threshBandUsd * 2.2, ...prices);
+            const rangeP = (maxP - minP) || 1.0;
+
+            const toX = (secVal) => padL + Math.min(1, Math.max(0, secVal / durationSec)) * cW;
+            const toY = (priceVal) => padT + cH - ((priceVal - minP) / rangeP) * cH;
+
+            const s0Y = toY(s0);
+            const bandTopY = toY(s0 + threshBandUsd);
+            const bandBotY = toY(s0 - threshBandUsd);
+            const bandH = Math.max(2, bandBotY - bandTopY);
+
+            const zoneX1 = toX(entryMinS);
+            const zoneX2 = toX(entryMaxS);
+            const zoneW = Math.max(4, zoneX2 - zoneX1);
+
+            const pts = series.filter(p => p.idx > 0).map(p => `${toX(p.s).toFixed(1)},${toY(p.idx).toFixed(1)}`).join(' ');
+            const lastPt = series[series.length - 1];
+            const lastX = toX(lastPt.s);
+            const lastY = toY(lastPt.idx);
+            const isAbove = lastPt.idx >= s0;
+            const lineColor = isAbove ? '#10b981' : '#f43f5e';
+
+            container.innerHTML = `
+                <svg viewBox="0 0 ${width} ${height}" style="width:100%; height:220px; display:block;">
+                    <!-- Shaded ±0.03% Deadzone around Strike S0 -->
+                    <rect x="${padL}" y="${bandTopY.toFixed(1)}" width="${cW}" height="${bandH.toFixed(1)}" fill="rgba(251,191,36,0.08)" />
+                    <line x1="${padL}" y1="${bandTopY.toFixed(1)}" x2="${width - padR}" y2="${bandTopY.toFixed(1)}" stroke="rgba(251,191,36,0.35)" stroke-dasharray="3 3" stroke-width="1" />
+                    <line x1="${padL}" y1="${bandBotY.toFixed(1)}" x2="${width - padR}" y2="${bandBotY.toFixed(1)}" stroke="rgba(251,191,36,0.35)" stroke-dasharray="3 3" stroke-width="1" />
+
+                    <!-- Shaded 60s-90s Golden Entry Zone -->
+                    <rect x="${zoneX1.toFixed(1)}" y="${padT}" width="${zoneW.toFixed(1)}" height="${cH}" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.45)" stroke-dasharray="4 3" />
+                    <text x="${(zoneX1 + zoneW / 2).toFixed(1)}" y="${padT + 12}" fill="#6ee7b7" font-size="9.5" font-weight="bold" font-family="'JetBrains Mono', monospace" text-anchor="middle">ЗОНА СИГНАЛА (${entryMinS}–${entryMaxS}с)</text>
+
+                    <!-- Strike S0 Baseline -->
+                    <line x1="${padL}" y1="${s0Y.toFixed(1)}" x2="${width - padR}" y2="${s0Y.toFixed(1)}" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 4" />
+                    <text x="${padL - 6}" y="${(s0Y + 3).toFixed(1)}" fill="#e2e8f0" font-size="9.5" font-weight="bold" font-family="'JetBrains Mono', monospace" text-anchor="end">S₀ $${s0.toFixed(1)}</text>
+
+                    <!-- Y-Axis Top & Bottom Labels -->
+                    <text x="${padL - 6}" y="${padT + 8}" fill="#64748b" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="end">$${maxP.toFixed(1)}</text>
+                    <text x="${padL - 6}" y="${padT + cH}" fill="#64748b" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="end">$${minP.toFixed(1)}</text>
+
+                    <!-- X-Axis Time Labels -->
+                    <text x="${padL}" y="${height - 6}" fill="#64748b" font-size="9.5" font-family="'JetBrains Mono', monospace">0с свечи</text>
+                    <text x="${zoneX1.toFixed(1)}" y="${height - 6}" fill="#10b981" font-size="9.5" font-weight="bold" font-family="'JetBrains Mono', monospace">${entryMinS}с</text>
+                    <text x="${zoneX2.toFixed(1)}" y="${height - 6}" fill="#10b981" font-size="9.5" font-weight="bold" font-family="'JetBrains Mono', monospace">${entryMaxS}с</text>
+                    <text x="${(padL + cW * 0.5).toFixed(1)}" y="${height - 6}" fill="#64748b" font-size="9.5" font-family="'JetBrains Mono', monospace" text-anchor="middle">${durationSec/2}с</text>
+                    <text x="${width - padR}" y="${height - 6}" fill="#64748b" font-size="9.5" font-family="'JetBrains Mono', monospace" text-anchor="end">${durationSec}с</text>
+
+                    <!-- Live 1s Price Polyline -->
+                    <polyline fill="none" stroke="${lineColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="${pts}" />
+                    <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="4.5" fill="${lineColor}" stroke="#fff" stroke-width="1.5" />
+                </svg>
+            `;
         }
 
         async function loadManualLogs() {
@@ -4455,7 +5459,7 @@
         // ─── Tabs & Sorting Controls ───
         function switchTab(tab) {
             currentTab = tab;
-            ['cross', 'comp', 'paper', 'fast', 'debug'].forEach(t => {
+            ['cross', 'comp', 'paper', 'fast', 'cockpit', 'debug'].forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 const btn = document.getElementById(`tab-btn-${t}`);
                 if (el) el.style.display = (tab === t) ? 'block' : 'none';
@@ -4470,6 +5474,9 @@
                 fetchUpdownSpreads();
                 syncFastPaperTrades();
                 fetchTicksStats();
+            }
+            if (tab === 'cockpit') {
+                fetchCockpitDetail();
             }
         }
 

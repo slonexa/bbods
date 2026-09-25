@@ -244,7 +244,7 @@ class BybitOddsCollector(BaseCollector):
 
             wp_str = ticker.get("wp", "0")
             wp = float(wp_str) if wp_str else 0.0
-            if wp <= 0:
+            if wp <= 0 or wp >= 0.999:
                 continue
                 
             contract = contracts_snapshot.get(symbol, {})
@@ -258,6 +258,8 @@ class BybitOddsCollector(BaseCollector):
             pr = float(pr_str) if pr_str else 0.0
             if pr <= 0 and wp > 0:
                 pr = round(1.0 / wp, 4)
+            if pr <= 1.001:
+                continue
             
             # Parse date from expiry_tag if Target or Range
             expiry_tag = info.get("expiry_tag", "")
@@ -266,11 +268,19 @@ class BybitOddsCollector(BaseCollector):
             # Extract settleTime if available
             settle_time_ms = contract.get("settleTime")
             if settle_time_ms:
+                if (int(settle_time_ms) / 1000.0) <= now_ts:
+                    continue
                 dt = datetime.utcfromtimestamp(int(settle_time_ms) / 1000.0)
                 expiry = dt.isoformat() + "Z"
             elif settle_date:
                 # Bybit daily options and target events settle at 08:00 UTC
                 expiry = f"{settle_date}T08:00:00Z"
+                try:
+                    exp_dt = datetime.strptime(expiry, "%Y-%m-%dT%H:%M:%SZ")
+                    if (exp_dt - datetime(1970, 1, 1)).total_seconds() <= now_ts:
+                        continue
+                except Exception:
+                    pass
             else:
                 expiry = "unknown"
                 

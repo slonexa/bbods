@@ -43,14 +43,14 @@ class AutoPaperTrader:
     def load_config(self) -> dict:
         default_config = {
             "enabled": True,
-            "default_stake": 20.0,
+            "default_stake": 5.0,
             "min_spread_pct": 3.5,
             "auto_cross_arbs": True,
             "auto_5min_momentum": True,
             "auto_poly_48s_lag": True,
             "auto_two_step_hedge": True,
             "momentum_min_delta_pct": 0.03,
-            "max_active_trades": 25,
+            "max_active_trades": 60,
             "initial_balance": 1000.0
         }
         if not os.path.exists(self.config_path):
@@ -60,6 +60,8 @@ class AutoPaperTrader:
             with open(self.config_path, "r", encoding="utf-8") as f:
                 cfg = json.load(f)
                 default_config.update(cfg)
+                if default_config.get("max_active_trades", 0) < 50:
+                    default_config["max_active_trades"] = 60
                 return default_config
         except Exception:
             return default_config
@@ -196,7 +198,7 @@ class AutoPaperTrader:
             if cursor.fetchone()[0] > 0:
                 continue
 
-            bank = float(self.config.get("default_stake", 20.0))
+            bank = float(self.config.get("default_stake", 5.0))
             hedge_cost = float(r.get("hedge_cost") or 0.0)
             is_arb = int(r.get("is_arb") or 0)
 
@@ -246,13 +248,13 @@ class AutoPaperTrader:
              - Leg 2 bought on impulse during the window when opposite outcome drops so Cost(Leg1 + Leg2) <= 0.92!
              - Zero time mismatch, zero strike gap -> guaranteed risk-free payout at T_end!
           3. `poly_48s_lag`: Polymarket 47–51s window opening TWAP lag test.
-          4. `updown_5m`: Bybit 5MIN early momentum test.
+          4. `updown_5m`: Bybit 5MIN/15MIN early momentum test.
         """
         if not os.path.exists(self.sec_health_file):
             return
 
         active_cnt = self.get_active_trades_count()
-        max_trades = self.config.get("max_active_trades", 25)
+        max_trades = self.config.get("max_active_trades", 60)
         if active_cnt >= max_trades:
             return
 
@@ -266,7 +268,7 @@ class AutoPaperTrader:
         now_ts = time.time()
         now_iso = datetime.now(timezone.utc).isoformat()
         min_delta = self.config.get("momentum_min_delta_pct", 0.03)
-        stake = float(self.config.get("default_stake", 20.0))
+        stake = float(self.config.get("default_stake", 5.0))
 
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -419,9 +421,11 @@ class AutoPaperTrader:
                             active_cnt += 1
                             print(f"[AutoPaper] Locked 2-Step Risk-Free Hedge: {coin} {wtype} ({dir1}+{dir2}, Cost={total_h_cost:.3f})")
 
-            # ─── Strategy 3: Polymarket 47–51s Window Lag (Section 8 test) ───
-            if self.config.get("auto_poly_48s_lag", True) and wtype == "5MIN" and poly_accepting:
-                if 42.0 <= sec_from_start <= 62.0 and abs(delta_pct) >= min_delta:
+            # ─── Strategy 3: Polymarket Window Lag (5MIN & 15MIN Fixed S0 Strike) ───
+            if self.config.get("auto_poly_48s_lag", True) and wtype in ("5MIN", "15MIN") and poly_accepting:
+                p_min_s = 42.0 if wtype == "5MIN" else 110.0
+                p_max_s = 68.0 if wtype == "5MIN" else 190.0
+                if p_min_s <= sec_from_start <= p_max_s and min_delta <= abs(delta_pct) <= 0.35:
                     direction = "UP" if delta_pct > 0 else "DOWN"
                     p_ask = poly_up_ask if direction == "UP" else poly_down_ask
                     p_odds = poly_odds_up if direction == "UP" else poly_odds_down
@@ -441,24 +445,40 @@ class AutoPaperTrader:
                                 ) VALUES (?, ?, ?, ?, ?, 'polymarket', 'none', ?, '', ?, 0, ?, 0, ?, ?, ?, 'OPEN', ?, ?, ?, 'auto')
                             ''', (
                                 "poly_48s_lag", ev_key,
-                                f"⚡ Poly {sec_from_start:.0f}s Lag: {coin} 5M {direction} (Δ {delta_pct:+.2f}%)",
+                                f"⚡ Poly {sec_from_start:.0f}s Lag [{sym}]: {direction} (Δ {delta_pct:+.3f}%)",
                                 coin, direction,
-                                f"Poly CLOB: Купить {direction} @ ${p_ask:.2f} ({p_odds:.2f}x)",
+                                f"Poly CLOB ({wtype}): Купить {direction} @ ${p_ask:.2f} ({p_odds:.2f}x, Страйк S₀=${open_idx:,.2f})",
                                 p_odds, stake, stake, p_ask, open_idx,
                                 now_iso, exp_iso, idx_p
                             ))
                             active_cnt += 1
-                            print(f"[AutoPaper] Placed Poly 48s Lag trade: {coin} {direction} @ {p_odds:.2f}x (sec={sec_from_start:.1f}s)")
+                            print(f"[AutoPaper] Placed Poly Lag trade: {sym} {direction} @ {p_odds:.2f}x (sec={sec_from_start:.1f}s)")
 
-            # ─── Strategy 4: Bybit 5M Momentum ───
-            if self.config.get("auto_5min_momentum", True) and wtype == "5MIN":
-                if 60.0 <= sec_from_start <= 180.0 and abs(delta_pct) >= min_delta:
+            # ─── Strategy 4: Scheme 1 Cockpit Simulation on ALL 4 Bybit Markets (BTC/ETH 5MIN & 15MIN) ───
+            # Follows the exact 3-Condition Cockpit Checklist + Active Impulse confirmation,
+            # locking Bybit Strike = idx_p at the exact second of click and counting +300s (5MIN) / +900s (15MIN) from entry!
+            if self.config.get("auto_5min_momentum", True) and wtype in ("5MIN", "15MIN"):
+                entry_min_s = 58.0 if wtype == "5MIN" else 150.0
+                entry_max_s = 105.0 if wtype == "5MIN" else 260.0
+                spot_delta = float(win.get("spot_delta_pct") or 0.0)
+                fut_delta = float(win.get("fut_delta_pct") or 0.0)
+                spot_p = float(win.get("spot_price") or idx_p)
+
+                # Condition 1: Inside Entry Window (58-105s for 5M, 150-260s for 15M)
+                cond1 = entry_min_s <= sec_from_start <= entry_max_s
+                # Condition 2: Impulse Range 0.030% <= |Δ| <= 0.350% (not overextended)
+                cond2 = min_delta <= abs(delta_pct) <= 0.350
+                # Condition 3: Spot & Futures confirm direction AND Spot is actively supporting Index
+                cond3_up = (delta_pct > 0 and spot_delta > 0 and fut_delta >= 0 and spot_p >= idx_p * 0.99995)
+                cond3_dn = (delta_pct < 0 and spot_delta < 0 and fut_delta <= 0 and spot_p <= idx_p * 1.00005)
+
+                if cond1 and cond2 and (cond3_up or cond3_dn):
                     ev_key = f"{sym}-{win_id}"
                     cursor.execute("SELECT COUNT(*) FROM paper_trades WHERE event_key = ?", (ev_key,))
                     if cursor.fetchone()[0] == 0:
                         direction = "UP" if delta_pct > 0 else "DOWN"
                         odds = win.get("odds_up", 1.8) if direction == "UP" else win.get("odds_down", 1.8)
-                        exp_epoch = int(now_ts) + 300
+                        exp_epoch = int(round(now_ts)) + dur_sec
                         exp_iso = datetime.fromtimestamp(exp_epoch, timezone.utc).isoformat()
 
                         cursor.execute('''
@@ -470,14 +490,15 @@ class AutoPaperTrader:
                                 status, entry_time, expiry_time, entry_price, created_by
                             ) VALUES (?, ?, ?, ?, ?, 'bybit_odds', 'none', ?, '', ?, 0, ?, 0, ?, 0, ?, 'OPEN', ?, ?, ?, 'auto')
                         ''', (
-                            "updown_5m", ev_key, f"{coin} 5MIN {direction} (Δ {delta_pct:+.2f}%)",
+                            "updown_5m", ev_key,
+                            f"🎯 Схема №1 [{sym}]: {direction} на +{sec_from_start:.0f}с (Δ {delta_pct:+.3f}%)",
                             coin, direction,
-                            f"Bybit: Взять {direction} @ {odds:.2f}x (Страйк ${idx_p:,.1f})",
+                            f"Bybit ({wtype}): Взять {direction} @ {odds:.2f}x (Страйк входа ${idx_p:,.2f}, Эксп +{dur_sec}с)",
                             odds, stake, stake, open_idx,
                             now_iso, exp_iso, idx_p
                         ))
                         active_cnt += 1
-                        print(f"[AutoPaper] Placed Bybit 5M Momentum trade: {coin} {direction} (Entry=${idx_p:,.1f})")
+                        print(f"[AutoPaper] Placed Scheme 1 Cockpit trade: {sym} {direction} at +{sec_from_start:.0f}s (Strike=${idx_p:,.2f}, Exp=+{dur_sec}s)")
 
         conn.commit()
         conn.close()
@@ -518,13 +539,13 @@ class AutoPaperTrader:
             t_id = trade["id"]
             deal_type = trade["deal_type"]
             coin = trade.get("coin") or "BTC"
-            stake = float(trade.get("total_stake") or 20.0)
+            stake = float(trade.get("total_stake") or 5.0)
             c_data = latest_prices.get(coin, {})
             live_idx_price = c_data.get("index") or c_data.get("spot") or 0.0
             live_twap = twap_by_coin.get(coin) or live_idx_price
 
-            # 1. Settle 5-Minute Bybit Up/Down contracts (against exact entry_price)
-            if deal_type == "updown_5m":
+            # 1. Settle Scheme 1 Bybit Up/Down 5M & 15M contracts (against exact entry_price = Bybit Strike at click)
+            if deal_type in ("updown_5m", "updown_15m"):
                 settle_price = live_idx_price or float(trade.get("entry_price") or 0.0)
                 entry_price = float(trade.get("entry_price") or settle_price)
                 direction = trade.get("direction", "UP")
@@ -546,7 +567,7 @@ class AutoPaperTrader:
                     SET status = ?, settle_price = ?, payout = ?, net_profit = ?, roi_pct = ?
                     WHERE id = ?
                 ''', (status, settle_price, payout, net_profit, roi_pct, t_id))
-                print(f"[AutoPaper] Settled Bybit 5M {trade['title']}: {status} (${net_profit:+.2f})")
+                print(f"[AutoPaper] Settled Scheme 1 Bybit {trade['title']}: {status} (Strike=${entry_price:,.2f} -> Settle=${settle_price:,.2f}, PnL=${net_profit:+.2f})")
 
             # 2. Settle Polymarket 47–51s Lag trade (against 60s TWAP vs window_open strike_price)
             elif deal_type == "poly_48s_lag":
@@ -685,6 +706,16 @@ class AutoPaperTrader:
             cursor.execute("DELETE FROM paper_trades")
         conn.commit()
         conn.close()
+
+    def run_fast_1s_cycle(self):
+        """1-second cycle for HFT signals and exact +300s/+900s Bybit settlement."""
+        if not self.config.get("enabled", True):
+            return
+        try:
+            self.check_and_place_hft_signals()
+            self.settle_expired_trades()
+        except Exception as e:
+            print(f"[AutoPaper] Fast 1s cycle error: {e}")
 
     def run_cycle(self):
         self.config = self.load_config()
