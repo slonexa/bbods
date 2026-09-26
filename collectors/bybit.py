@@ -1,4 +1,5 @@
 import json
+import re
 import threading
 import time
 from datetime import datetime
@@ -171,11 +172,15 @@ class BybitOddsCollector(BaseCollector):
             info["complement_direction"] = "OUT" if direction == "IN" else "IN"
             info["match_key"] = f"{parts[0]}-{parts[1]}-{parts[2]}-{parts[3]}"
         elif len(parts) == 4:
-            # Format: PAIR-EXPIRY-TARGET-DIRECTION (e.g. BTCUSDT-23SEP26-86250-ABOVE)
+            # Format: PAIR-EXPIRY-TARGET-DIRECTION (e.g. BTCUSDT-23SEP26-86250-ABOVE, ETHUSDT-27SEP26-2640-ABOVE)
             info["expiry_tag"] = parts[1]
             info["target_price"] = parts[2]
-            info["type"] = "Target"
-            info["complement_direction"] = "BELOW" if direction == "ABOVE" else "ABOVE"
+            if direction in ("TOUCH", "NOTOUCH"):
+                info["type"] = "OneTouch"
+                info["complement_direction"] = "NOTOUCH" if direction == "TOUCH" else "TOUCH"
+            else:
+                info["type"] = "Target"
+                info["complement_direction"] = "BELOW" if direction == "ABOVE" else "ABOVE"
             info["match_key"] = f"{parts[0]}-{parts[1]}-{parts[2]}"
         else:
             info["type"] = "Unknown"
@@ -202,8 +207,8 @@ class BybitOddsCollector(BaseCollector):
             upper = info.get("upper_bound", "?")
             expiry_tag = info.get("expiry_tag", "?")
             return f"{coin} {expiry_tag} Range {lower}-{upper} {direction}"
-        elif info["type"] == "Target":
-            target = info.get("target_price", "?")
+        elif info["type"] in ("Target", "OneTouch"):
+            target = info.get("target_price") or contract.get("targetPrice") or "?"
             expiry_tag = info.get("expiry_tag", "?")
             return f"{coin} {expiry_tag} ${target} {direction}"
         else:
@@ -211,18 +216,18 @@ class BybitOddsCollector(BaseCollector):
 
     @staticmethod
     def parse_expiry_date(expiry_tag: str) -> str:
-        """Parse Bybit expiry tag like 23SEP26 into ISO date 2026-09-23."""
+        """Parse Bybit expiry tag like 23SEP26 or 2OCT26 into ISO date 2026-09-23 or 2026-10-02."""
         months = {"JAN":"01","FEB":"02","MAR":"03","APR":"04","MAY":"05","JUN":"06",
                   "JUL":"07","AUG":"08","SEP":"09","OCT":"10","NOV":"11","DEC":"12"}
-        if len(expiry_tag) >= 7:
-            try:
-                day = expiry_tag[:2]
-                mon = expiry_tag[2:5].upper()
-                yr = "20" + expiry_tag[5:]
-                if mon in months:
-                    return f"{yr}-{months[mon]}-{day}"
-            except Exception:
-                pass
+        if not expiry_tag:
+            return ""
+        m = re.match(r'^(\d{1,2})([A-Za-z]{3})(\d{2})$', expiry_tag.strip())
+        if m:
+            day = m.group(1).zfill(2)
+            mon = m.group(2).upper()
+            yr = "20" + m.group(3)
+            if mon in months:
+                return f"{yr}-{months[mon]}-{day}"
         return ""
 
     def fetch(self):
@@ -244,7 +249,7 @@ class BybitOddsCollector(BaseCollector):
 
             wp_str = ticker.get("wp", "0")
             wp = float(wp_str) if wp_str else 0.0
-            if wp <= 0 or wp >= 0.999:
+            if wp <= 0.0 or wp >= 1.0:
                 continue
                 
             contract = contracts_snapshot.get(symbol, {})
@@ -258,7 +263,7 @@ class BybitOddsCollector(BaseCollector):
             pr = float(pr_str) if pr_str else 0.0
             if pr <= 0 and wp > 0:
                 pr = round(1.0 / wp, 4)
-            if pr <= 1.001:
+            if pr <= 1.0:
                 continue
             
             # Parse date from expiry_tag if Target or Range
@@ -287,7 +292,14 @@ class BybitOddsCollector(BaseCollector):
             title = self._build_title(symbol, contract)
             url = self._build_url(symbol)
             
-            strike_price = float(info.get("target_price", 0)) if info.get("target_price") else None
+            # Parse strike price exactly as provided by API without grid-step rounding
+            raw_target = info.get("target_price") or contract.get("targetPrice")
+            strike_price = None
+            if raw_target is not None and str(raw_target).strip() != "":
+                try:
+                    strike_price = float(str(raw_target).replace(",", "").strip())
+                except ValueError:
+                    strike_price = None
             
             # Extract volume if present
             try:
@@ -307,6 +319,9 @@ class BybitOddsCollector(BaseCollector):
                 contract_type=info.get("type", ""),
                 timeframe=info.get("timeframe", ""),
                 strike_price=strike_price,
+                strike=strike_price,
+                lower_bound=info.get("lower_bound"),
+                upper_bound=info.get("upper_bound"),
                 direction=direction,
                 settle_date=settle_date,
                 settle_time=expiry,

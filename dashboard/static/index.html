@@ -1455,7 +1455,7 @@
                 🌐 Кросс-платформа (Live)
             </button>
             <button id="tab-btn-comp" class="tab-btn" onclick="switchTab('comp')">
-                🔄 Внутри биржи (Bybit Dutch Book)
+                🔄 Все контракты Bybit & Пары (<span id="active-bybit-count">0</span>)
             </button>
             <button id="tab-btn-paper" class="tab-btn" onclick="switchTab('paper')">
                 📊 P&L и Портфель (<span id="paper-badge-count">0</span>)
@@ -1517,8 +1517,53 @@
         </div>
     </div>
 
-    <!-- ─── Tab 2: Complementary Bybit Table ─── -->
+    <!-- ─── Tab 2: All Active Bybit Contracts (Strike Ladder) & Complementary Bybit Table ─── -->
     <div id="tab-comp" style="display: none;">
+        <!-- All Active Bybit Contracts (including unpaired $10-step Target strikes) -->
+        <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:8px; padding:12px 14px; margin-bottom:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span style="font-size:15px;">📋</span>
+                    <span style="font-size:13px; font-weight:800; color:var(--text-primary);">Все активные контракты Bybit Odds (включая мелкую сетку страйков без пары на Polymarket)</span>
+                    <span id="active-contracts-summary" class="badge badge-sync" style="font-size:10px;">Загрузка...</span>
+                </div>
+                <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                    <button class="preset-btn active" id="ac-filter-all" onclick="setActiveContractsFilter('all')">Все</button>
+                    <button class="preset-btn" id="ac-filter-target" onclick="setActiveContractsFilter('Target')">🎯 Target (Лесенка страйков)</button>
+                    <button class="preset-btn" id="ac-filter-unpaired" onclick="setActiveContractsFilter('unpaired')">⚪ Только без пары Poly</button>
+                    <button class="preset-btn" id="ac-filter-BTC" onclick="setActiveContractsFilter('BTC')">🟠 BTC</button>
+                    <button class="preset-btn" id="ac-filter-ETH" onclick="setActiveContractsFilter('ETH')">🔵 ETH</button>
+                    <button class="preset-btn" id="ac-filter-SOL" onclick="setActiveContractsFilter('SOL')">🟣 SOL</button>
+                </div>
+            </div>
+            <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">
+                Здесь отображаются <b>все живые контракты Bybit</b> без фильтрации по шагу сетки (в том числе страйки с шагом \$10 и мельче, например ETH \$2,640 / \$2,650 / \$2,690), даже если для них нет парного страйка на Polymarket. Все они пишутся в БД <code>price_history</code>.
+            </div>
+            <div class="table-container" style="max-height:360px; overflow-y:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Монета</th>
+                            <th>Тип</th>
+                            <th>Страйк / Диапазон</th>
+                            <th>Направление</th>
+                            <th>Экспирация (UTC)</th>
+                            <th>Коэфф (Odds)</th>
+                            <th>Implied Prob (wp)</th>
+                            <th>Статус пары Polymarket</th>
+                            <th>Ссылка</th>
+                        </tr>
+                    </thead>
+                    <tbody id="active-contracts-body">
+                        <tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:20px;">Загрузка всех активных контрактов Bybit...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div style="font-size:12.5px; font-weight:700; color:var(--text-secondary); margin:8px 0 6px 2px;">
+            🔄 Внутренние комплементарные пары Bybit (Dutch Book: UP+DOWN / IN+OUT / ABOVE+BELOW на одном страйке):
+        </div>
         <div class="table-container">
             <table>
                 <thead>
@@ -1627,8 +1672,9 @@
                     <span style="font-size:13px; font-weight:700; color:var(--text-primary);">История сделок основного портфеля</span>
                     <span id="paper-table-count" class="badge" style="background:rgba(255,255,255,0.08); color:var(--text-muted); font-size:10px;">0 сделок</span>
                 </div>
-                <div style="display:flex; gap:4px;">
+                <div style="display:flex; gap:4px; flex-wrap:wrap;">
                     <button class="preset-btn active" id="paper-filter-all" onclick="setPaperFilter('all')">Все</button>
+                    <button class="preset-btn" id="paper-filter-corridor_2x" onclick="setPaperFilter('corridor_2x')" style="color:var(--accent-cyan); border-color:rgba(56,189,248,0.35);">🎯 Коридор 2x</button>
                     <button class="preset-btn" id="paper-filter-open" onclick="setPaperFilter('open')">⚡ Активные</button>
                     <button class="preset-btn" id="paper-filter-won" onclick="setPaperFilter('won')">✓ Закрытые</button>
                 </div>
@@ -1636,13 +1682,13 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Время входа</th>
-                        <th>Событие (Страйк)</th>
+                        <th>Время / Эксп.</th>
+                        <th>Событие & Коридор</th>
                         <th>Банк</th>
                         <th>🟡 Bybit ордер</th>
                         <th>🔵 Poly ордер</th>
                         <th>Спред входа</th>
-                        <th>Гарант. выплата</th>
+                        <th>Выплата (1п / 🎯 2x)</th>
                         <th>Чистая прибыль</th>
                         <th>Статус</th>
                         <th>Действие</th>
@@ -2294,12 +2340,25 @@
 
             fetchSpreads();
             fetchTopSpreads();
+            fetchActiveContracts();
 
             startRefreshLoops();
             setupHotkeys();
 
-            // Auto-open Scheme 1 Pair Cockpit if navigated to /momentum or ?symbol=...
+            // Check URL params for ?bank=100, ?calc=<event_key>, or /momentum?symbol=...
             const params = new URLSearchParams(window.location.search);
+            const bankParam = parseFloat(params.get('bank'));
+            if (!isNaN(bankParam) && bankParam > 0) {
+                currentBankroll = bankParam;
+                localStorage.setItem('userBankroll', bankParam);
+                initBankrollUI();
+            }
+
+            const calcParam = params.get('calc') || params.get('deal');
+            if (calcParam) {
+                window.__pendingCalcKey = calcParam.trim();
+            }
+
             const symParam = params.get('symbol') || params.get('pair');
             if (window.location.pathname.includes('/momentum') || symParam) {
                 isTopCollapsed = true;
@@ -2365,11 +2424,15 @@
                 syncServerPaperTrades();
                 syncFastPaperTrades();
                 if (currentTab === 'fast') fetchUpdownSpreads();
+                if (currentTab === 'comp') fetchActiveContracts();
                 if (currentTab === 'debug') fetchRawSpreads();
             }, 5000);
 
             setInterval(() => {
-                if (autoRefreshEnabled) fetchTopSpreads();
+                if (autoRefreshEnabled) {
+                    fetchTopSpreads();
+                    fetchActiveContracts();
+                }
             }, 15000);
         }
 
@@ -2503,7 +2566,7 @@
 
         function setPaperFilter(filter) {
             paperFilter = filter;
-            ['all', 'open', 'won'].forEach(f => {
+            ['all', 'corridor_2x', 'open', 'won'].forEach(f => {
                 const btn = document.getElementById(`paper-filter-${f}`);
                 if (btn) btn.classList.toggle('active', f === filter);
             });
@@ -3806,31 +3869,58 @@
                 const res = await fetch('/api/paper/trades?limit=60&mode=main');
                 const json = await res.json();
                 const serverTrades = json.data || [];
+                const activeServerKeys = new Set(serverTrades.map(st => `auto_${st.id}_${st.event_key}`));
+
+                // Remove stale auto_ trades that were deleted on the server (e.g., invalid strike-gap rows)
+                const preFilterLen = paperTrades.length;
+                paperTrades = paperTrades.filter(lt => !lt.server_key || activeServerKeys.has(lt.server_key));
+                if (paperTrades.length !== preFilterLen) changed = true;
 
                 serverTrades.forEach(st => {
                     const serverKey = `auto_${st.id}_${st.event_key}`;
                     const existingIdx = paperTrades.findIndex(lt => lt.server_key === serverKey || lt.event_key === st.event_key);
+                    const totalStake = parseFloat(st.total_stake || 5.0);
+                    const hCost = parseFloat(st.hedge_cost || 1.0);
+                    const payout1x = hCost > 0 ? (totalStake / hCost) : totalStake;
+                    const payout2x = payout1x * 2.0;
+
                     const formatted = {
                         id: st.id + 1000000,
                         server_key: serverKey,
+                        deal_type: st.deal_type || 'cross_value',
                         title: st.title || st.event_key,
                         event_key: st.event_key,
-                        bank: (st.total_stake || 20).toFixed(2),
-                        stake_a: (st.stake_a || 10).toFixed(2),
-                        stake_b: (st.stake_b || 10).toFixed(2),
+                        bank: totalStake.toFixed(2),
+                        stake_a: (st.stake_a || 0).toFixed(2),
+                        stake_b: (st.stake_b || 0).toFixed(2),
                         action_a: st.action_a || 'Bybit',
                         action_b: st.action_b || 'Polymarket',
                         odds_a: st.odds_a || 0,
                         odds_b: st.odds_b || 0,
-                        spread_pct: st.roi_pct ? st.roi_pct.toFixed(2) : '3.50',
-                        guaranteed_payout: (st.payout || ((st.total_stake || 20) * 1.035)).toFixed(2),
-                        net_profit: (st.status === 'OPEN' ? ((st.total_stake || 20) * 0.035) : (st.net_profit || 0)).toFixed(2),
+                        hedge_cost: hCost,
+                        strike_price: st.strike_price || 0,
+                        strike_b: st.strike_b || 0,
+                        settle_price: st.settle_price || 0,
+                        resolution_note: st.resolution_note || '',
+                        expiry_time: st.expiry_time || '',
+                        spread_pct: st.roi_pct !== undefined && st.roi_pct !== null ? parseFloat(st.roi_pct).toFixed(2) : '3.50',
+                        guaranteed_payout: (st.payout ? st.payout : payout1x).toFixed(2),
+                        payout_1x: payout1x.toFixed(2),
+                        payout_2x: payout2x.toFixed(2),
+                        net_profit: (st.status === 'OPEN' ? 0.0 : parseFloat(st.net_profit || 0)).toFixed(2),
                         created_at: st.entry_time || new Date().toISOString(),
                         status: st.status || 'OPEN'
                     };
 
                     if (existingIdx !== -1) {
-                        if (paperTrades[existingIdx].status !== formatted.status || paperTrades[existingIdx].net_profit !== formatted.net_profit) {
+                        const prev = paperTrades[existingIdx];
+                        if (
+                            prev.status !== formatted.status ||
+                            prev.net_profit !== formatted.net_profit ||
+                            prev.deal_type !== formatted.deal_type ||
+                            prev.resolution_note !== formatted.resolution_note ||
+                            prev.stake_b !== formatted.stake_b
+                        ) {
                             paperTrades[existingIdx] = formatted;
                             changed = true;
                         }
@@ -4084,7 +4174,7 @@
 
             paperTrades.forEach(t => {
                 const b = parseFloat(t.bank) || 0;
-                const p = parseFloat(t.net_profit) || 0;
+                const p = t.status === 'OPEN' ? 0 : (parseFloat(t.net_profit) || 0);
                 totalInvested += b;
                 totalProfit += p;
 
@@ -4092,7 +4182,7 @@
                     openCount++;
                 } else {
                     closedCount++;
-                    if (t.status === 'WON' && p > 0) wonCount++;
+                    if (t.status === 'WON' && p >= 0) wonCount++;
                 }
 
                 const titleUpper = (t.title || '').toUpperCase();
@@ -4112,8 +4202,9 @@
             });
 
             const filteredTrades = paperTrades.filter(t => {
+                if (paperFilter === 'corridor_2x') return t.deal_type === 'corridor_2x' || (t.resolution_note || '').includes('Коридор 2x');
                 if (paperFilter === 'open') return t.status === 'OPEN';
-                if (paperFilter === 'won') return t.status === 'WON';
+                if (paperFilter === 'won') return t.status === 'WON' || t.status === 'LOST';
                 return true;
             });
 
@@ -4126,32 +4217,82 @@
                 filteredTrades.forEach(t => {
                     const tr = document.createElement('tr');
                     const time = new Date(t.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                    const expStr = t.expiry_time ? t.expiry_time.slice(5, 16).replace('T', ' ') + ' UTC' : '';
                     const isWon = t.status === 'WON';
                     const isLost = t.status === 'LOST';
                     const isCancelled = t.status === 'CANCELLED';
+                    const isCorridor = t.deal_type === 'corridor_2x' || (t.resolution_note || '').includes('Коридор 2x');
+                    const isArb = t.deal_type === 'cross_arb';
+
+                    let typeBadge = '<span class="badge badge-sync" style="font-size:9px;">💎 VALUE 1П</span>';
+                    if (isCorridor) {
+                        typeBadge = '<span class="badge" style="background:rgba(56,189,248,0.18); color:var(--accent-cyan); border:1px solid rgba(56,189,248,0.4); font-size:9px;">🎯 КОРИДОР 2X</span>';
+                    } else if (isArb) {
+                        typeBadge = '<span class="badge badge-arb" style="font-size:9px;">🔥 ВИЛКА</span>';
+                    }
+
                     let statusBadge = '<span class="badge badge-sync">⚡ АКТИВНА</span>';
-                    if (isWon) statusBadge = '<span class="badge badge-arb">✓ ЗАКРЫТА (+$$)</span>';
-                    else if (isLost) statusBadge = '<span class="badge" style="background:rgba(244,63,94,0.15); color:var(--accent-rose); border:1px solid rgba(244,63,94,0.3);">✕ УБЫТОК</span>';
+                    if (isWon) statusBadge = `<span class="badge badge-arb">✓ WIN</span>`;
+                    else if (isLost) statusBadge = '<span class="badge" style="background:rgba(244,63,94,0.15); color:var(--accent-rose); border:1px solid rgba(244,63,94,0.3);">✕ LOSS (1п)</span>';
                     else if (isCancelled) statusBadge = '<span class="badge" style="background:rgba(255,255,255,0.06); color:var(--text-muted);">✕ ОТМЕНЕНА</span>';
 
-                    const pnlVal = parseFloat(t.net_profit) || 0;
-                    const pnlStr = pnlVal >= 0 ? `+$${pnlVal.toFixed(2)}` : `-$${Math.abs(pnlVal).toFixed(2)}`;
-                    const pnlColor = pnlVal >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)';
+                    const bankVal = parseFloat(t.bank) || 5.0;
+                    const p1x = parseFloat(t.payout_1x || t.guaranteed_payout || bankVal);
+                    const p2x = parseFloat(t.payout_2x || (p1x * 2.0));
+                    const net1x = p1x - bankVal;
+                    const net2x = p2x - bankVal;
+
+                    let payoutCellHtml = `<span class="mono font-bold">$${t.guaranteed_payout}</span>`;
+                    let profitCellHtml = '';
+
+                    if (t.status === 'OPEN') {
+                        if (isCorridor) {
+                            payoutCellHtml = `
+                                <div class="mono" style="font-size:10.5px; color:var(--text-secondary);">1п: <b>$${p1x.toFixed(2)}</b></div>
+                                <div class="mono font-bold" style="font-size:11px; color:var(--accent-cyan);">🎯 2x: $${p2x.toFixed(2)}</div>
+                            `;
+                            const n1Str = net1x >= 0 ? `+$${net1x.toFixed(2)}` : `-$${Math.abs(net1x).toFixed(2)}`;
+                            profitCellHtml = `
+                                <div class="mono" style="font-size:10px; color:${net1x >= 0 ? 'var(--accent-emerald)' : 'var(--accent-amber)'};">1п: ${n1Str}</div>
+                                <div class="mono font-bold" style="font-size:11px; color:var(--accent-emerald);">🎯 2x: +$${net2x.toFixed(2)}</div>
+                            `;
+                        } else if (isArb) {
+                            profitCellHtml = `<span class="mono font-bold" style="color:var(--accent-emerald);">+$${Math.max(0, net1x).toFixed(2)} (гарант.)</span>`;
+                        } else {
+                            profitCellHtml = `<span class="mono" style="font-size:10.5px; color:var(--text-muted);">ожид. экспир.</span>`;
+                        }
+                    } else {
+                        const pnlVal = parseFloat(t.net_profit) || 0;
+                        const pnlStr = pnlVal >= 0 ? `+$${pnlVal.toFixed(2)}` : `-$${Math.abs(pnlVal).toFixed(2)}`;
+                        const pnlColor = pnlVal >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)';
+                        profitCellHtml = `<span class="mono font-bold" style="color:${pnlColor};">${pnlStr}</span>`;
+                    }
+
+                    const spVal = parseFloat(t.spread_pct) || 0;
 
                     tr.innerHTML = `
-                        <td class="mono" style="font-size:11px; color:var(--text-muted);">${time}</td>
-                        <td style="font-size:11.5px; font-weight:600; color:var(--text-primary);">${t.title}</td>
+                        <td class="mono" style="font-size:10.5px; color:var(--text-muted);">
+                            <div>${time}</div>
+                            ${expStr ? `<div style="font-size:9.5px; color:#64748b;" title="Время экспирации Bybit">⏱ ${expStr}</div>` : ''}
+                        </td>
+                        <td>
+                            <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
+                                ${typeBadge}
+                                <span style="font-size:11.5px; font-weight:600; color:var(--text-primary);">${t.title}</span>
+                            </div>
+                            ${t.resolution_note ? `<div style="font-size:10px; color:var(--accent-cyan); margin-top:2px;">${t.resolution_note}</div>` : ''}
+                        </td>
                         <td class="mono font-bold" style="color:var(--accent-cyan);">$${t.bank}</td>
                         <td><span style="font-size:10.5px; color:var(--bybit-color);">${t.action_a} ($${t.stake_a}) @ ${t.odds_a}x</span></td>
-                        <td><span style="font-size:10.5px; color:var(--poly-color);">${t.action_b} ($${t.stake_b}) @ ${t.odds_b}x</span></td>
-                        <td><span class="${pnlVal >= 0 ? 'spread-positive' : 'spread-negative'} font-bold">${pnlVal >= 0 ? '+' : ''}${t.spread_pct}%</span></td>
-                        <td class="mono font-bold">$${t.guaranteed_payout}</td>
-                        <td class="mono font-bold" style="color:${pnlColor};">${pnlStr}</td>
+                        <td><span style="font-size:10.5px; color:var(--poly-color);">${t.action_b ? `${t.action_b} ($${t.stake_b}) @ ${t.odds_b}x` : '— (1 плечо)'}</span></td>
+                        <td><span class="${spVal >= 0 ? 'spread-positive' : 'spread-negative'} font-bold">${spVal >= 0 ? '+' : ''}${t.spread_pct}%</span></td>
+                        <td>${payoutCellHtml}</td>
+                        <td>${profitCellHtml}</td>
                         <td>${statusBadge}</td>
                         <td>
                             <div style="display:flex; gap:4px;">
                                 ${!isWon && !isLost && !isCancelled ? `
-                                    <button class="btn-mini-tool" onclick="closePaperTrade(${t.id}, true)" title="Зафиксировать гарантированную прибыль" style="color:var(--accent-emerald);">💰 Зафиксировать</button>
+                                    <button class="btn-mini-tool" onclick="closePaperTrade(${t.id}, true)" title="Зафиксировать прибыль" style="color:var(--accent-emerald);">💰 Зафикс.</button>
                                     <button class="btn-mini-tool" onclick="closePaperTrade(${t.id}, false)" title="Отменить сделку" style="color:var(--text-muted);">✕</button>
                                 ` : ''}
                                 <button class="btn-mini-tool" onclick="removePaperTrade(${t.id})" style="color:var(--accent-rose);" title="Удалить из истории">🗑️</button>
@@ -4316,6 +4457,23 @@
                 renderTables(cachedData);
                 updateKPIMetrics(cachedData);
                 updateTickerTape(cachedData);
+
+                // If opened via Telegram deep link (?calc=...), auto-select and open the Calculator Modal
+                if (window.__pendingCalcKey && cachedData.length > 0) {
+                    const targetRaw = window.__pendingCalcKey.toUpperCase();
+                    const targetBase = targetRaw.split('::')[0].replace(/-(ABOVE|BELOW|UP|DOWN)$/i, '');
+                    const matched = cachedData.find(r => {
+                        const ek = (r.event_key || '').toUpperCase();
+                        const tt = (r.title || '').toUpperCase();
+                        return ek === targetRaw || tt === targetRaw || ek.startsWith(targetRaw) || (targetBase.length > 5 && ek.includes(targetBase));
+                    });
+                    window.__pendingCalcKey = null;
+                    if (matched) {
+                        const rowKey = matched.title || matched.event_key;
+                        selectAndScroll(rowKey);
+                        openDealModal(matched);
+                    }
+                }
 
                 // Freshness check: find most recent detected_at
                 let newestTs = 0;
@@ -4615,10 +4773,20 @@
 
                 const probA = (row.prob_a * 100).toFixed(1) + '%';
                 const probB = (row.prob_b * 100).toFixed(1) + '%';
-                const oddsA = row.odds_a ? row.odds_a.toFixed(3) + 'x' : '-';
-                const oddsB = row.odds_b ? row.odds_b.toFixed(3) + 'x' : '-';
+                const oddsA_num = parseFloat(row.odds_a) || 0;
+                const oddsB_num = parseFloat(row.odds_b) || 0;
+                const oddsA = oddsA_num > 0 ? oddsA_num.toFixed(3) + 'x' : '-';
+                const oddsB = oddsB_num > 0 ? oddsB_num.toFixed(3) + 'x' : '-';
                 const spread = (row.spread_after_fees * 100).toFixed(2) + '%';
                 const time = new Date(row.detected_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+                const costA_calc = oddsA_num > 0 ? (1.0 / oddsA_num) : 0.5;
+                const totalHedgeCostRow = (row.hedge_cost && row.hedge_cost > costA_calc) ? parseFloat(row.hedge_cost) : (costA_calc + (oddsB_num > 0 ? (1.0 / oddsB_num) : 0.5));
+                const costB_oppRow = Math.max(0.01, totalHedgeCostRow - costA_calc);
+                const oddsB_hedgeRow = 1.0 / costB_oppRow;
+                const hasCorridor = (row.time_warning || '').includes('Коридор 2x');
+                const hasDiffStrikes = hasCorridor || (row.exact_strike_match === false || row.exact_strike_match === 0) || (row.title || '').includes('/ Poly') || (row.time_warning || '').includes('Зазор');
+                const isExactStrike = !hasDiffStrikes;
 
                 const coinBadge = getCoinBadge(row.title);
                 let arbBadge = '';
@@ -4626,6 +4794,10 @@
                     arbBadge = '<span class="badge badge-arb" style="margin-left:4px;">⚡ ВИЛКА</span>';
                 } else if (isTimeRisky) {
                     arbBadge = '<span class="badge badge-gap" style="margin-left:4px;" title="Хедж > 0%, но разница экспираций > 0.5ч">⚠️ РИСК ВРЕМЕНИ</span>';
+                } else if (hasCorridor) {
+                    arbBadge = '<span class="badge" style="margin-left:4px; background:rgba(245,158,11,0.15); color:#fbbf24; border:1px solid rgba(245,158,11,0.35);" title="Оба плеча выиграют, если цена закроется внутри коридора страйков">🎯 КОРИДОР 2X</span>';
+                } else if (isExactStrike && totalHedgeCostRow > 1.12) {
+                    arbBadge = '<span class="badge" style="margin-left:4px; background:rgba(56,189,248,0.12); color:var(--accent-cyan); border:1px solid rgba(56,189,248,0.3);" title="Страйки совпадают 1-в-1; хедж 2 плеч убыточен из-за дорогого кэфа — выгодно брать 1 недооцененное плечо (Value)">💎 VALUE 1-ПЛЕЧО</span>';
                 }
                 const pinBadge = isSelected ? '<span class="pin-badge">📌 ВЫБРАНО</span>' : '';
                 const starClass = isStarred ? 'star-toggle starred' : 'star-toggle';
@@ -4651,25 +4823,11 @@
                 const isPolyYes = (row.action_summary && row.action_summary.includes('Poly: YES')) || (row.action_b && row.action_b.includes('YES'));
                 const polyActionText = row.action_b ? row.action_b.replace('Poly: ', '') : (isPolyYes ? 'Купить YES' : 'Купить NO');
 
-                let splitA = row.stake_a ? Math.round(row.stake_a * 100) : null;
-                let splitB = row.stake_b ? Math.round(row.stake_b * 100) : null;
-                if (!splitA || !splitB || (splitA === 0 && splitB === 0)) {
-                    if (row.odds_a > 0 && row.odds_b > 0) {
-                        const invA = 1.0 / row.odds_a;
-                        const invB = 1.0 / row.odds_b;
-                        const tot = invA + invB;
-                        splitA = Math.round((invA / tot) * 100);
-                        splitB = 100 - splitA;
-                    } else {
-                        splitA = 50;
-                        splitB = 50;
-                    }
-                } else {
-                    splitB = 100 - splitA;
-                }
+                let splitA = Math.round((costA_calc / totalHedgeCostRow) * 100);
+                let splitB = 100 - splitA;
 
                 const bank = currentBankroll;
-                const stakeA_num = Math.max(0.01, Math.round((bank * (splitA / 100)) * 100) / 100);
+                const stakeA_num = Math.max(0.01, Math.round((bank * (costA_calc / totalHedgeCostRow)) * 100) / 100);
                 const stakeB_num = Math.max(0.01, Math.round((bank - stakeA_num) * 100) / 100);
 
                 const minPct = Math.min(splitA, splitB) / 100.0;
@@ -4677,16 +4835,35 @@
                 const minWarnHtml = (stakeA_num < 1.0 || stakeB_num < 1.0) ? `<div class="trade-min-warn">⚠️ мин $${recommendedBank}</div>` : '';
 
                 let profitHtml = '';
-                if (row.hedge_cost && row.hedge_cost > 0) {
-                    const payout = (bank / row.hedge_cost).toFixed(2);
-                    const profitVal = (payout - bank).toFixed(2);
-                    const profitPct = ((1.0 / row.hedge_cost - 1.0) * 100).toFixed(1);
+                if (totalHedgeCostRow > 0) {
+                    const payoutNum = bank / totalHedgeCostRow;
+                    const payout = payoutNum.toFixed(2);
+                    const profitValNum = payoutNum - bank;
+                    const profitVal = profitValNum.toFixed(2);
+                    const profitPct = ((profitValNum / bank) * 100).toFixed(1);
+                    const doublePayout = (payoutNum * 2).toFixed(2);
+                    const doubleProfit = (payoutNum * 2 - bank).toFixed(2);
+
                     if (isTrueArb) {
-                        profitHtml = `<span class="profit-preview mono" style="color:var(--accent-emerald); font-weight:700;">+$${profitVal} (+${profitPct}%)</span>`;
+                        profitHtml = `<span class="profit-preview mono" style="color:var(--accent-emerald); font-weight:700;">🔥 Хедж: $${bank} ➔ $${payout} (+$${profitVal} / +${profitPct}%)</span>`;
                     } else if (isTimeRisky) {
-                        profitHtml = `<span class="profit-preview mono" style="color:var(--accent-amber);" title="Риск несовпадения экспираций: $${bank} ➔ $${payout}">⚠️ ~$${payout} (+${profitPct}%)</span>`;
+                        profitHtml = `<span class="profit-preview mono" style="color:var(--accent-amber);" title="Риск несовпадения экспираций: $${bank} ➔ $${payout}">⚠️ Хедж: ~$${payout} (+$${profitVal} / +${profitPct}%)</span>`;
                     } else {
-                        profitHtml = `<span class="profit-preview mono" style="color:var(--text-muted);">$${bank} ➔ $${payout}</span>`;
+                        const lossColor = profitValNum < -2 ? 'var(--accent-rose)' : 'var(--text-muted)';
+                        profitHtml = `<div class="profit-preview mono" style="color:${lossColor};" title="Итог при срабатывании 1 плеча из 2 (обычный исход)">Хедж 2п: $${bank} ➔ $${payout} (${profitValNum >= 0 ? '+' : ''}$${profitVal} / ${profitPct}%)</div>`;
+                    }
+
+                    if (hasCorridor) {
+                        profitHtml += `<div class="mono" style="font-size:10px; color:#fbbf24; font-weight:700; margin-top:2px;" title="Если цена финиширует между страйками Bybit и Poly — выигрывают ОБА плеча!">🎯 Бонуска 2x: $${doublePayout} (чистыми +$${doubleProfit})</div>`;
+                    }
+
+                    if (isExactStrike && totalHedgeCostRow > 1.12 && oddsA_num > 0 && oddsB_num > 0) {
+                        if (oddsB_num > oddsA_num) {
+                            const sameOutPoly = isPolyYes ? 'NO (Ниже)' : 'YES (Выше)';
+                            profitHtml += `<div class="mono" style="font-size:9.5px; color:var(--accent-cyan); margin-top:2px;" title="Страйки 1-в-1. Кэф Bybit (${oddsA_num.toFixed(2)}x) слишком дорогой для хеджа — выгоднее взять 1 плечо на Poly!">💎 Value 1п: Poly ${sameOutPoly} @ ${oddsB_num.toFixed(2)}x ($${(1/oddsB_num).toFixed(2)})</div>`;
+                        } else {
+                            profitHtml += `<div class="mono" style="font-size:9.5px; color:var(--accent-cyan); margin-top:2px;" title="Страйки 1-в-1. На Bybit кэф (${oddsA_num.toFixed(2)}x) значительно выгоднее оценки Polymarket!">💎 Value 1п: Bybit @ ${oddsA_num.toFixed(2)}x</div>`;
+                        }
                     }
                 }
 
@@ -4735,7 +4912,7 @@
                         <div class="exchange-col-cell">
                             <div class="exchange-odds-row">
                                 <span class="odds-val odds-bybit">${oddsA}</span>
-                                <span class="prob-tag">(${probA})</span>
+                                <span class="prob-tag" title="Оценка вероятности Bybit">(${probA})</span>
                             </div>
                             <a href="${row.url_bybit || (row.platform_a === 'bybit_odds' ? row.url_a : row.url_b) || '#'}" target="_blank" class="leg-pill leg-pill-bybit" onclick="event.stopPropagation();" title="Открыть Bybit (${bybitActionText}) ↗">
                                 <span>🟡 ${bybitActionText}</span>
@@ -4745,9 +4922,10 @@
                     </td>
                     <td>
                         <div class="exchange-col-cell">
-                            <div class="exchange-odds-row">
-                                <span class="odds-val odds-poly">${oddsB}</span>
+                            <div class="exchange-odds-row" style="flex-wrap:wrap; gap:3px;">
+                                <span class="odds-val odds-poly" title="Кэф того же направления на Polymarket (для сравнения спреда)">${oddsB}</span>
                                 <span class="prob-tag">(${probB})</span>
+                                <span class="mono" style="font-size:9.5px; color:#93c5fd; background:rgba(59,130,246,0.12); padding:1px 4px; border-radius:3px;" title="Кэф противоположного плеча, которое покупается для хеджа">Хедж: ${oddsB_hedgeRow.toFixed(2)}x ($${costB_oppRow.toFixed(2)})</span>
                                 ${synthBadge}
                                 ${liqBadge}
                             </div>
@@ -4771,8 +4949,8 @@
                     </td>
                     <td>
                         <div class="spread-col-cell">
-                            <div style="display:flex; align-items:center; gap:5px;">
-                                <span class="spread-primary">+${spread}</span>
+                            <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
+                                <span class="spread-primary" title="Разница оценок вероятности одного исхода между Bybit и Polymarket">Спред: +${spread}</span>
                                 ${arbBadge}
                             </div>
                             ${profitHtml}
@@ -4979,33 +5157,60 @@
                 const minPct = Math.min(splitA, splitB) / 100.0;
                 const recommendedBank = minPct > 0 ? Math.ceil(1.0 / minPct) : 20;
 
-                const oddsA_str = item.odds_a ? `${item.odds_a.toFixed(2)}x` : '-';
-                const oddsB_str = item.odds_b ? `${item.odds_b.toFixed(2)}x` : '-';
+                const oddsA_num = parseFloat(item.odds_a) || 0;
+                const oddsB_num = parseFloat(item.odds_b) || 0;
+                const costA_card = oddsA_num > 0 ? (1.0 / oddsA_num) : 0.5;
+                const totalHedgeCostCard = (item.hedge_cost && item.hedge_cost > costA_card) ? parseFloat(item.hedge_cost) : (costA_card + (oddsB_num > 0 ? (1.0 / oddsB_num) : 0.5));
+                const costB_oppCard = Math.max(0.01, totalHedgeCostCard - costA_card);
+                const oddsB_hedgeCard = 1.0 / costB_oppCard;
+
+                const oddsA_str = oddsA_num > 0 ? `${oddsA_num.toFixed(2)}x` : '-';
+                const oddsB_str = `${oddsB_hedgeCard.toFixed(2)}x ($${costB_oppCard.toFixed(2)})`;
+                const hasCorridorCard = (item.time_warning || '').includes('Коридор 2x');
+                const hasDiffStrikesCard = hasCorridorCard || (item.exact_strike_match === false || item.exact_strike_match === 0) || (item.title || '').includes('/ Poly') || (item.time_warning || '').includes('Зазор');
+                const isExactStrikeCard = !hasDiffStrikesCard;
 
                 let profitBanner = '';
-                if (item.hedge_cost && item.hedge_cost > 0) {
-                    const payout = (bank / item.hedge_cost).toFixed(2);
-                    const profitVal = (payout - bank).toFixed(2);
-                    const profitPct = ((1.0 / item.hedge_cost - 1.0) * 100).toFixed(1);
+                if (totalHedgeCostCard > 0) {
+                    const payoutNum = bank / totalHedgeCostCard;
+                    const payout = payoutNum.toFixed(2);
+                    const profitValNum = payoutNum - bank;
+                    const profitVal = profitValNum.toFixed(2);
+                    const profitPct = ((profitValNum / bank) * 100).toFixed(1);
+                    const doublePayout = (payoutNum * 2).toFixed(2);
+                    const doubleProfit = (payoutNum * 2 - bank).toFixed(2);
+
                     if (item.is_arb && item.hedge_margin > 0) {
                         profitBanner = `
                             <div class="top-card-profit" style="border-color:var(--accent-emerald); background:rgba(16,185,129,0.08);">
-                                <span style="color:var(--accent-emerald); font-weight:700;">🔥 $${bank} ➔ $${payout} (+${profitPct}%)</span>
+                                <span style="color:var(--accent-emerald); font-weight:700;">🔥 Хедж: $${bank} ➔ $${payout} (+${profitPct}%)</span>
                                 <span style="color:var(--accent-emerald); font-weight:800;">+$${profitVal}</span>
                             </div>
                         `;
                     } else if (item.is_arb_time_risky) {
                         profitBanner = `
                             <div class="top-card-profit" style="border-color:var(--accent-amber); background:rgba(245,158,11,0.08);">
-                                <span style="color:var(--accent-amber); font-weight:700;">⚠️ $${bank} ➔ $${payout} (+${profitPct}%)</span>
+                                <span style="color:var(--accent-amber); font-weight:700;">⚠️ Хедж: $${bank} ➔ $${payout} (+${profitPct}%)</span>
                                 <span style="color:var(--accent-amber); font-weight:800;">+$${profitVal}</span>
                             </div>
                         `;
+                    } else if (hasCorridorCard) {
+                        profitBanner = `
+                            <div class="top-card-profit" style="border-color:rgba(245,158,11,0.35); background:rgba(245,158,11,0.07); flex-direction:column; align-items:stretch; gap:2px;">
+                                <div style="display:flex; justify-content:space-between; font-size:10px;">
+                                    <span style="color:${profitValNum < -2 ? 'var(--accent-rose)' : 'var(--text-muted)'};">1 плечо: $${bank} ➔ $${payout} (${profitVal} / ${profitPct}%)</span>
+                                    <span style="color:#fbbf24; font-weight:800;">🎯 2x: $${doublePayout} (+$${doubleProfit})</span>
+                                </div>
+                            </div>
+                        `;
                     } else {
+                        const valueSpan = isExactStrikeCard
+                            ? `<span style="color:var(--accent-cyan); font-weight:700;">💎 Value: ${Math.max(oddsA_num, oddsB_num).toFixed(2)}x</span>`
+                            : `<span style="color:var(--text-muted); font-size:10px;">Только хедж 2п</span>`;
                         profitBanner = `
                             <div class="top-card-profit">
-                                <span style="color:var(--text-muted);">💡 $${bank} ➔ Баланс: $${payout}</span>
-                                <span style="color:var(--text-secondary);">$${payout}</span>
+                                <span style="color:${profitValNum < -2 ? 'var(--accent-rose)' : 'var(--text-muted)'};">Хедж 2п: $${bank} ➔ $${payout} (${profitVal}$)</span>
+                                ${valueSpan}
                             </div>
                         `;
                     }
@@ -5038,7 +5243,7 @@
                             </div>
                         </div>
                         <div style="text-align:right; flex-shrink:0;">
-                            <span class="mono" style="font-size:14px; font-weight:800; color:var(--accent-emerald);">+${spreadPct}</span>
+                            <span class="mono" style="font-size:13px; font-weight:800; color:var(--accent-emerald);" title="Разница вероятностей одного исхода">Спред +${spreadPct}</span>
                             <div>${isArb}</div>
                         </div>
                     </div>
@@ -5114,38 +5319,86 @@
             if (linkBybit) linkBybit.href = row.url_bybit || (row.platform_a === 'bybit_odds' ? row.url_a : row.url_b) || '#';
             if (linkPoly) linkPoly.href = row.url_poly || (row.platform_b === 'polymarket' ? row.url_b : row.url_a) || '#';
 
-            let splitA = row.stake_a ? Math.round(row.stake_a * 100) : 50;
-            let splitB = 100 - splitA;
-            if (splitA === 0 && splitB === 0 && row.odds_a > 0 && row.odds_b > 0) {
-                const invA = 1.0 / row.odds_a;
-                const invB = 1.0 / row.odds_b;
-                splitA = Math.round((invA / (invA + invB)) * 100);
-                splitB = 100 - splitA;
-            }
-
             const bank = currentBankroll;
-            const stakeA = Math.max(0.01, Math.round((bank * (splitA / 100)) * 100) / 100);
+            const oddsA_val = parseFloat(row.odds_a) || 1.80;
+            const oddsB_same = parseFloat(row.odds_b) || 1.80;
+            const costA = oddsA_val > 0 ? (1.0 / oddsA_val) : 0.50;
+            const totalHedgeCost = (row.hedge_cost && row.hedge_cost > costA)
+                ? parseFloat(row.hedge_cost)
+                : (costA + (oddsB_same > 0 ? (1.0 / oddsB_same) : 0.50));
+            const costB_opp = Math.max(0.01, totalHedgeCost - costA);
+            const oddsB_hedge = 1.0 / costB_opp;
+
+            let splitA = Math.round((costA / totalHedgeCost) * 100);
+            let splitB = 100 - splitA;
+
+            const stakeA = Math.max(0.01, Math.round((bank * (costA / totalHedgeCost)) * 100) / 100);
             const stakeB = Math.max(0.01, Math.round((bank - stakeA) * 100) / 100);
 
-            const payoutA = (stakeA * (row.odds_a || 0)).toFixed(2);
-            const payoutB = (stakeB * (row.odds_b || 0)).toFixed(2);
+            const payoutA = (stakeA * oddsA_val).toFixed(2);
+            const payoutB = (stakeB * oddsB_hedge).toFixed(2);
 
-            let guaranteedPayout = '0.00';
-            let netProfitVal = '0.00';
-            let netProfitPct = '0.00';
+            const payoutSingleNum = bank / totalHedgeCost;
+            const guaranteedPayout = payoutSingleNum.toFixed(2);
+            const netProfitNum = payoutSingleNum - bank;
+            const netProfitVal = netProfitNum.toFixed(2);
+            const netProfitPct = ((netProfitNum / bank) * 100).toFixed(2);
 
-            if (row.hedge_cost && row.hedge_cost > 0) {
-                const payout = (bank / row.hedge_cost);
-                guaranteedPayout = payout.toFixed(2);
-                netProfitVal = (payout - bank).toFixed(2);
-                netProfitPct = ((1.0 / row.hedge_cost - 1.0) * 100).toFixed(2);
-            } else {
-                guaranteedPayout = Math.min(parseFloat(payoutA), parseFloat(payoutB)).toFixed(2);
-                netProfitVal = (parseFloat(guaranteedPayout) - bank).toFixed(2);
-                netProfitPct = ((parseFloat(netProfitVal) / bank) * 100).toFixed(2);
-            }
+            const payoutDoubleNum = payoutSingleNum * 2.0;
+            const doublePayoutStr = payoutDoubleNum.toFixed(2);
+            const doubleProfitStr = (payoutDoubleNum - bank).toFixed(2);
+            const doubleProfitPct = (((payoutDoubleNum - bank) / bank) * 100).toFixed(1);
 
             const isArb = (row.is_arb === 1 || row.is_arb === true) && (row.hedge_margin > 0);
+            const hasCorridor = (row.time_warning || '').includes('Коридор 2x');
+            const hasDiffStrikes = hasCorridor || (row.exact_strike_match === false || row.exact_strike_match === 0) || (row.title || '').includes('/ Poly') || (row.time_warning || '').includes('Зазор');
+            const isExactStrike = !hasDiffStrikes;
+            const calcSlug = (row.event_key || row.title || '').split('::')[0];
+            const directCalcUrl = `${window.location.origin}/?calc=${encodeURIComponent(calcSlug)}&bank=${bank}`;
+
+            const corridorHtml = hasCorridor ? `
+                <div style="background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.4); border-radius:8px; padding:10px 12px; margin-top:8px;">
+                    <div style="font-size:11px; font-weight:700; color:#fbbf24; margin-bottom:4px;">
+                        🎯 БОНУСКА «КОРИДОР 2X» (если цена финиширует между страйками — выиграют ОБА ордера!):
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:11.5px; color:var(--text-secondary);">Двойная выплата (Bybit + Poly):</span>
+                        <span class="mono" style="font-size:15px; font-weight:800; color:var(--accent-emerald);">
+                            $${doublePayoutStr} (Чистыми: +$${doubleProfitStr} / +${doubleProfitPct}%!)
+                        </span>
+                    </div>
+                </div>
+            ` : '';
+
+            let valuePlayHtml = '';
+            if (isExactStrike && totalHedgeCost > 1.05 && oddsA_val > 0 && oddsB_same > 0) {
+                const isPolyCheaper = oddsB_same > oddsA_val;
+                const bestPlat = isPolyCheaper ? 'Polymarket' : 'Bybit';
+                const bestOdds = isPolyCheaper ? oddsB_same : oddsA_val;
+                const otherOdds = isPolyCheaper ? oddsA_val : oddsB_same;
+                const isPolyYes = (row.action_summary && row.action_summary.includes('Poly: YES')) || (row.action_b && row.action_b.includes('YES'));
+                const samePolySide = isPolyYes ? 'NO (Ниже)' : 'YES (Выше)';
+                const valueAction = isPolyCheaper
+                    ? `Купить ${samePolySide} на Polymarket @ ${bestOdds.toFixed(2)}x ($${(1/bestOdds).toFixed(2)})`
+                    : `${row.action_a || 'Взять Bybit'} @ ${bestOdds.toFixed(2)}x`;
+                const singlePayout = (bank * bestOdds).toFixed(2);
+                const singleNet = (bank * (bestOdds - 1)).toFixed(2);
+
+                valuePlayHtml = `
+                    <div style="background:rgba(56,189,248,0.10); border:1px solid rgba(56,189,248,0.35); border-radius:8px; padding:10px 12px; margin-top:8px;">
+                        <div style="font-size:11px; font-weight:700; color:var(--accent-cyan); margin-bottom:4px;">
+                            💎 ПОЧЕМУ СПРЕД +${((row.spread_after_fees||0)*100).toFixed(1)}%, А ХЕДЖ В МИНУСЕ? (ИДЕЯ НА 1 ПЛЕЧО — СТРАЙКИ 1-В-1):
+                        </div>
+                        <div style="font-size:11px; color:var(--text-secondary); line-height:1.45; margin-bottom:6px;">
+                            На один и тот же страйк две биржи дают разные кэфы: <b>${bestPlat} дает ${bestOdds.toFixed(2)}x</b>, а вторая биржа — всего <b>${otherOdds.toFixed(2)}x</b>. Из-за дорогого второго плеча двусторонний хедж стоит <b>$${totalHedgeCost.toFixed(2)} за $1 выплаты</b> (${netProfitVal}$). Выгоднее не хеджировать, а взять <b>только недооцененное плечо (Value)</b>:
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.25); padding:6px 9px; border-radius:6px;">
+                            <span style="font-size:11.5px; font-weight:700; color:#fff;">👉 ${valueAction}</span>
+                            <span class="mono" style="font-size:12.5px; font-weight:800; color:var(--accent-emerald);">На $${bank} ➔ $${singlePayout} (+$${singleNet})</span>
+                        </div>
+                    </div>
+                `;
+            }
 
             bodyEl.innerHTML = `
                 <!-- ─── Spread History Area Chart ─── -->
@@ -5170,12 +5423,20 @@
                     </div>
                 </div>
 
-                <!-- ─── Bankroll & Leg Calculation ─── -->
-                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:8px; padding:8px 12px; margin-bottom:12px;">
+                <!-- ─── Bankroll & Quick Presets ($20 / $50 / $100 / $500) ─── -->
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:8px; padding:8px 12px; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
                     <span style="font-size:11.5px; color:var(--text-secondary);">Инвестиционный банк:</span>
-                    <div class="bankroll-input-wrap">
-                        <span style="color:var(--text-muted); font-size:12px; margin-right:3px;">$</span>
-                        <input class="bankroll-input" type="number" min="1" step="1" value="${bank}" onchange="setBankroll(this.value)">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <div class="preset-group">
+                            <button class="preset-btn ${bank===20?'active':''}" onclick="setBankroll(20)">$20</button>
+                            <button class="preset-btn ${bank===50?'active':''}" onclick="setBankroll(50)">$50</button>
+                            <button class="preset-btn ${bank===100?'active':''}" onclick="setBankroll(100)">$100</button>
+                            <button class="preset-btn ${bank===500?'active':''}" onclick="setBankroll(500)">$500</button>
+                        </div>
+                        <div class="bankroll-input-wrap">
+                            <span style="color:var(--text-muted); font-size:12px; margin-right:3px;">$</span>
+                            <input class="bankroll-input" type="number" min="1" step="1" value="${bank}" onchange="setBankroll(this.value)">
+                        </div>
                     </div>
                 </div>
 
@@ -5184,44 +5445,50 @@
                         <span style="font-weight:700; color:var(--bybit-color); font-size:12.5px; display:flex; align-items:center; gap:5px;">
                             <img src="${LOGO_BYBIT}" alt="Bybit" style="height:11px;"> Ордер 1: Bybit
                         </span>
-                        <span class="mono" style="font-size:11.5px; color:var(--text-muted);">${row.odds_a ? row.odds_a.toFixed(3) + 'x' : '-'}</span>
+                        <span class="mono" style="font-size:11.5px; color:var(--text-muted);">${oddsA_val.toFixed(2)}x (цена $${costA.toFixed(2)} • вер. ${((row.prob_a || costA)*100).toFixed(1)}%)</span>
                     </div>
                     <div style="font-size:12px; color:var(--text-primary); margin-bottom:4px;">
                         Действие: <b>${row.action_a || 'ABOVE'}</b>
                     </div>
                     <div style="display:flex; justify-content:space-between; font-size:11.5px; color:var(--text-secondary);">
                         <span>Сумма ордера: <b class="mono" style="color:var(--accent-cyan);">$${stakeA.toFixed(2)}</b> (${splitA}%)</span>
-                        <span>Выплата при успехе: <b class="mono" style="color:var(--text-primary);">$${payoutA}</b></span>
+                        <span>Выплата при победе: <b class="mono" style="color:var(--text-primary);">$${payoutA}</b></span>
                     </div>
                 </div>
 
                 <div class="modal-order-card" style="border-left:4px solid var(--poly-color);">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
                         <span style="font-weight:700; color:var(--poly-color); font-size:12.5px; display:flex; align-items:center; gap:5px;">
-                            <img src="${LOGO_POLY}" alt="Poly" style="height:12px;"> Ордер 2: Polymarket
+                            <img src="${LOGO_POLY}" alt="Poly" style="height:12px;"> Ордер 2: Polymarket (Хедж — противоположное плечо)
                         </span>
-                        <span class="mono" style="font-size:11.5px; color:var(--text-muted);">${row.odds_b ? row.odds_b.toFixed(3) + 'x' : '-'}</span>
+                        <span class="mono" style="font-size:11.5px; color:var(--text-muted);">${oddsB_hedge.toFixed(2)}x (цена $${costB_opp.toFixed(2)})</span>
                     </div>
                     <div style="font-size:12px; color:var(--text-primary); margin-bottom:4px;">
-                        Действие: <b>${row.action_b || 'BUY YES'}</b>
+                        Действие: <b>${row.action_b || 'BUY NO'}</b>
                     </div>
                     <div style="display:flex; justify-content:space-between; font-size:11.5px; color:var(--text-secondary);">
                         <span>Сумма ордера: <b class="mono" style="color:var(--accent-cyan);">$${stakeB.toFixed(2)}</b> (${splitB}%)</span>
-                        <span>Выплата при успехе: <b class="mono" style="color:var(--text-primary);">$${payoutB}</b></span>
+                        <span>Выплата при победе: <b class="mono" style="color:var(--text-primary);">$${payoutB}</b></span>
                     </div>
                 </div>
 
-                <div style="background:${isArb ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.03)'}; border:1px solid ${isArb ? 'rgba(16,185,129,0.3)' : 'var(--border-subtle)'}; border-radius:8px; padding:10px 12px; margin-top:12px;">
+                <div style="background:${isArb ? 'rgba(16,185,129,0.12)' : (netProfitNum < 0 ? 'rgba(244,63,94,0.08)' : 'rgba(255,255,255,0.03)')}; border:1px solid ${isArb ? 'rgba(16,185,129,0.3)' : (netProfitNum < 0 ? 'rgba(244,63,94,0.3)' : 'var(--border-subtle)')}; border-radius:8px; padding:10px 12px; margin-top:12px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
-                        <span style="font-size:11.5px; color:var(--text-secondary);">Гарантированный возврат:</span>
+                        <span style="font-size:11.5px; color:var(--text-secondary);">Возврат при обычном исходе (1 плечо из 2):</span>
                         <span class="mono" style="font-size:14px; font-weight:700; color:var(--text-primary);">$${guaranteedPayout}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-size:11.5px; font-weight:700; color:${isArb ? 'var(--accent-emerald)' : 'var(--text-secondary)'};">Чистая прибыль:</span>
-                        <span class="mono" style="font-size:15px; font-weight:800; color:${isArb ? 'var(--accent-emerald)' : 'var(--text-muted)'};">
-                            ${parseFloat(netProfitVal) >= 0 ? '+' : ''}$${netProfitVal} (${parseFloat(netProfitPct) >= 0 ? '+' : ''}${netProfitPct}%)
+                        <span style="font-size:11.5px; font-weight:700; color:${isArb ? 'var(--accent-emerald)' : 'var(--text-secondary)'};">Результат хеджа 2 плеч (без бонуски):</span>
+                        <span class="mono" style="font-size:15px; font-weight:800; color:${netProfitNum >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)'};">
+                            ${netProfitNum >= 0 ? '+' : ''}$${netProfitVal} (${netProfitNum >= 0 ? '+' : ''}${netProfitPct}%)
                         </span>
                     </div>
+                </div>
+                ${corridorHtml}
+                ${valuePlayHtml}
+                <div style="margin-top:8px; font-size:10px; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center;">
+                    <span>Прямая ссылка на этот расчет:</span>
+                    <a href="${directCalcUrl}" class="mono" style="color:var(--accent-cyan); text-decoration:none;">${directCalcUrl}</a>
                 </div>
             `;
 
@@ -5417,6 +5684,116 @@
             });
         }
 
+        // ─── All Active Bybit Contracts Ladder (Full Strike Grid without Truncation) ───
+        let cachedActiveContracts = [];
+        let activeContractsFilter = 'all';
+
+        function setActiveContractsFilter(filterVal) {
+            activeContractsFilter = filterVal;
+            const filterIds = {
+                'all': 'ac-filter-all',
+                'Target': 'ac-filter-target',
+                'unpaired': 'ac-filter-unpaired',
+                'BTC': 'ac-filter-BTC',
+                'ETH': 'ac-filter-ETH',
+                'SOL': 'ac-filter-SOL'
+            };
+            Object.entries(filterIds).forEach(([val, id]) => {
+                const btn = document.getElementById(id);
+                if (btn) btn.classList.toggle('active', val === filterVal);
+            });
+            renderActiveContractsTable();
+        }
+
+        async function fetchActiveContracts() {
+            try {
+                const res = await fetch('/api/active_contracts');
+                const data = await res.json();
+                cachedActiveContracts = data.contracts || [];
+                const countBadge = document.getElementById('active-bybit-count');
+                if (countBadge) countBadge.innerText = cachedActiveContracts.length;
+                const sumEl = document.getElementById('active-contracts-summary');
+                if (sumEl) {
+                    const paired = data.paired_count !== undefined ? data.paired_count : cachedActiveContracts.filter(x => x.has_poly_pair).length;
+                    const unpaired = data.unpaired_count !== undefined ? data.unpaired_count : (cachedActiveContracts.length - paired);
+                    const t = data.updated_at ? new Date(data.updated_at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-';
+                    sumEl.innerText = `Всего: ${cachedActiveContracts.length} (с парой Poly: ${paired} • без пары: ${unpaired}) • ${t}`;
+                }
+                renderActiveContractsTable();
+            } catch (e) {
+                console.error("Error fetching active contracts:", e);
+            }
+        }
+
+        function renderActiveContractsTable() {
+            const tbody = document.getElementById('active-contracts-body');
+            if (!tbody) return;
+
+            let filtered = cachedActiveContracts.filter(c => {
+                const cType = c.contract_type || c.type || '';
+                const cAsset = (c.asset || '').toUpperCase();
+                if (activeContractsFilter === 'Target') return cType === 'Target';
+                if (activeContractsFilter === 'unpaired') return !c.has_poly_pair;
+                if (['BTC', 'ETH', 'SOL'].includes(activeContractsFilter)) return cAsset === activeContractsFilter;
+                return true;
+            });
+
+            tbody.innerHTML = '';
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:18px;">Нет контрактов по выбранному фильтру</td></tr>';
+                return;
+            }
+
+            filtered.forEach(c => {
+                const tr = document.createElement('tr');
+                const cType = c.contract_type || c.type || 'Target';
+                const rawStrike = (c.strike_price !== undefined && c.strike_price !== null) ? c.strike_price : c.strike;
+                let strikeVal = '-';
+                if (rawStrike !== undefined && rawStrike !== null) {
+                    const numS = Number(rawStrike);
+                    strikeVal = Math.abs(numS - Math.round(numS)) < 1e-6
+                        ? '$' + Math.round(numS).toLocaleString()
+                        : '$' + numS.toLocaleString(undefined, {maximumFractionDigits: 4});
+                } else if (c.lower_bound && c.upper_bound) {
+                    strikeVal = `$${Number(c.lower_bound).toLocaleString()} – $${Number(c.upper_bound).toLocaleString()}`;
+                } else if (c.timeframe) {
+                    strikeVal = c.timeframe;
+                }
+
+                const probPct = ((c.implied_probability || 0) * 100).toFixed(2) + '%';
+                const oddsStr = c.odds ? Number(c.odds).toFixed(3) + 'x' : '-';
+                const dir = c.direction || c.outcome || '-';
+                const outTag = (dir === 'ABOVE' || dir === 'UP' || dir === 'IN' || dir === 'TOUCH')
+                    ? `<span class="badge badge-arb" style="font-size:9.5px;">${dir}</span>`
+                    : `<span class="badge badge-gap" style="font-size:9.5px;">${dir}</span>`;
+                const expStr = c.settle_date || c.expiry || c.expiration || '-';
+
+                let pairStatusHtml = '<span class="badge" style="background:rgba(255,255,255,0.06); color:var(--text-muted); font-size:9.5px;">⚪ Только Bybit (нет пары Poly)</span>';
+                if (c.has_poly_pair) {
+                    if (c.exact_poly_pair) {
+                        pairStatusHtml = `<span class="badge badge-sync" style="font-size:9.5px;">✓ Пара Poly 1-в-1 ($${Number(c.poly_strike || rawStrike).toLocaleString()})</span>`;
+                    } else {
+                        pairStatusHtml = `<span class="badge badge-gap" style="font-size:9.5px;">🎯 Ближ. Poly ($${Number(c.poly_strike || 0).toLocaleString()})</span>`;
+                    }
+                }
+
+                const linkHtml = c.url ? `<a href="${c.url}" target="_blank" style="color:var(--bybit-color); font-weight:700; font-size:11px;">Bybit ↗</a>` : '-';
+
+                tr.innerHTML = `
+                    <td><b>${c.asset || '-'}</b></td>
+                    <td><span class="mono" style="font-size:10.5px; color:var(--text-secondary);">${cType}</span></td>
+                    <td class="mono" style="font-weight:700; color:var(--text-primary);">${strikeVal}</td>
+                    <td>${outTag}</td>
+                    <td class="mono" style="font-size:10.5px; color:var(--text-muted);">${expStr}</td>
+                    <td class="odds">${oddsStr}</td>
+                    <td class="mono">${probPct}</td>
+                    <td>${pairStatusHtml}</td>
+                    <td>${linkHtml}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
         // ─── Debug Raw Table ───
         function renderDebug(data) {
             const tbody = document.getElementById('debug-body');
@@ -5465,6 +5842,7 @@
                 if (el) el.style.display = (tab === t) ? 'block' : 'none';
                 if (btn) btn.classList.toggle('tab-btn-active', tab === t);
             });
+            if (tab === 'comp') fetchActiveContracts();
             if (tab === 'debug') fetchRawSpreads();
             if (tab === 'paper') {
                 renderPaperPortfolio();

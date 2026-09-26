@@ -46,6 +46,8 @@ class AutoPaperTrader:
             "default_stake": 5.0,
             "min_spread_pct": 3.5,
             "auto_cross_arbs": True,
+            "auto_corridor_2x": True,
+            "corridor_max_cost": 1.15,
             "auto_5min_momentum": True,
             "auto_poly_48s_lag": True,
             "auto_two_step_hedge": True,
@@ -79,7 +81,7 @@ class AutoPaperTrader:
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS paper_trades (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                deal_type TEXT,            -- Main: cross_arb, cross_value | 5/15m Test: sync_start_arb, two_step_hedge, poly_48s_lag, updown_5m
+                deal_type TEXT,            -- Main: cross_arb, corridor_2x, cross_value | 5/15m Test: sync_start_arb, two_step_hedge, poly_48s_lag, updown_5m
                 event_key TEXT,
                 title TEXT,
                 coin TEXT,
@@ -95,6 +97,8 @@ class AutoPaperTrader:
                 total_stake REAL,
                 hedge_cost REAL DEFAULT 0,
                 strike_price REAL DEFAULT 0,
+                strike_b REAL DEFAULT 0,
+                resolution_note TEXT DEFAULT '',
                 status TEXT,               -- OPEN / WON / LOST
                 entry_time TEXT,
                 expiry_time TEXT,
@@ -110,7 +114,9 @@ class AutoPaperTrader:
 
         for col_name, col_type in [
             ("hedge_cost", "REAL DEFAULT 0"),
-            ("strike_price", "REAL DEFAULT 0")
+            ("strike_price", "REAL DEFAULT 0"),
+            ("strike_b", "REAL DEFAULT 0"),
+            ("resolution_note", "TEXT DEFAULT ''")
         ]:
             try:
                 cursor.execute(f"ALTER TABLE paper_trades ADD COLUMN {col_name} {col_type}")
@@ -149,13 +155,36 @@ class AutoPaperTrader:
                 pass
         return 0.0
 
+    @staticmethod
+    def parse_both_strikes_from_title(title: str) -> tuple:
+        """Extract (strike_bybit, strike_poly) from title like 'BTC $83,500 / Poly $84,000 [ABOVE]'."""
+        matches = re.findall(r'\$([0-9,]+(?:\.[0-9]+)?)', title or "")
+        vals = []
+        for m in matches:
+            try:
+                vals.append(float(m.replace(",", "")))
+            except Exception:
+                pass
+        if len(vals) >= 2:
+            return vals[0], vals[1]
+        elif len(vals) == 1:
+            return vals[0], vals[0]
+        return 0.0, 0.0
+
     def check_and_place_cross_trades(self):
-        """Scan latest daily target spreads for confirmed surebets or high-value divergences."""
-        if not self.config.get("auto_cross_arbs", True):
+        """
+        Scan latest daily target spreads for:
+          1. `corridor_2x`: 🎯 Бонуска «Коридор 2x» (when strikes form a winning corridor [S_low, S_high] and hedge_cost <= corridor_max_cost)
+          2. `cross_arb`: 🔥 Чистая вилка / 2-плечевой хедж в плюс (hedge_cost < 1.0 and no strike gap risk)
+          3. `cross_value`: 💎 Value 1-плечо (ONLY when strikes match 100% 1-to-1!)
+        Strictly blocks any deal with 'Зазор страйков' (strike gap risk where both legs can lose).
+        """
+        if not self.config.get("auto_cross_arbs", True) and not self.config.get("auto_corridor_2x", True):
             return
 
         active_cnt = self.get_active_trades_count()
-        if active_cnt >= self.config.get("max_active_trades", 25):
+        max_trades = self.config.get("max_active_trades", 60)
+        if active_cnt >= max_trades:
             return
 
         conn = sqlite3.connect(self.db_path)
@@ -163,6 +192,7 @@ class AutoPaperTrader:
         cursor = conn.cursor()
 
         min_spread = self.config.get("min_spread_pct", 3.5) / 100.0
+        corridor_max_cost = float(self.config.get("corridor_max_cost", 1.15))
         now_dt = datetime.now(timezone.utc)
         now_iso = now_dt.isoformat()
 
@@ -173,22 +203,32 @@ class AutoPaperTrader:
                 WHERE platform_a != platform_b
                   AND event_key NOT LIKE '%5MIN%'
                   AND event_key NOT LIKE '%15MIN%'
-                  AND (is_arb = 1 OR hedge_margin > 0 OR spread_after_fees >= ?)
+                  AND odds_a > 1.02 AND odds_b > 1.02
+                  AND (is_arb = 1 OR hedge_margin > 0 OR time_warning LIKE '%Коридор 2x%' OR spread_after_fees >= ?)
                   AND detected_at >= datetime('now', '-15 minutes')
             ) WHERE rn = 1
-            ORDER BY is_arb DESC, hedge_margin DESC, spread_after_fees DESC
-            LIMIT 5
+            ORDER BY
+                CASE WHEN time_warning LIKE '%Коридор 2x%' THEN 1 ELSE 0 END DESC,
+                is_arb DESC,
+                hedge_margin DESC,
+                spread_after_fees DESC
+            LIMIT 12
         ''', (min_spread,))
 
         rows = cursor.fetchall()
 
         for row_obj in rows:
-            if active_cnt >= self.config.get("max_active_trades", 25):
+            if active_cnt >= max_trades:
                 break
 
             r = dict(row_obj)
             event_key = r["event_key"]
             title = r.get("title") or event_key
+            time_warn = r.get("time_warning") or ""
+
+            # NEVER enter a deal with Strike Gap Risk (where both legs can lose if price lands in the gap)
+            if "Зазор страйков" in time_warn:
+                continue
 
             exp_time = self.parse_expiry_from_title(title, event_key)
             if exp_time <= now_iso:
@@ -201,10 +241,48 @@ class AutoPaperTrader:
             bank = float(self.config.get("default_stake", 5.0))
             hedge_cost = float(r.get("hedge_cost") or 0.0)
             is_arb = int(r.get("is_arb") or 0)
+            spread_val = float(r.get("spread_after_fees") or 0.0)
 
-            split_a = r.get("stake_a") if r.get("stake_a") and r.get("stake_a") > 0 else 0.5
-            stake_a = max(1.0, round(bank * split_a, 2))
-            stake_b = max(1.0, round(bank - stake_a, 2))
+            strike_a, strike_b = self.parse_both_strikes_from_title(title)
+            has_corridor = ("Коридор 2x" in time_warn) or (
+                strike_a > 0 and strike_b > 0 and abs(strike_a - strike_b) > 1e-6 and (
+                    ("ABOVE" in event_key and strike_a < strike_b) or
+                    ("BELOW" in event_key and strike_a > strike_b)
+                )
+            )
+            exact_strike = (strike_a > 0 and abs(strike_a - strike_b) <= 1e-6 and ("/ Poly" not in title) and (not has_corridor))
+
+            # Determine deal_type according to strict methodological rules:
+            if has_corridor:
+                if not self.config.get("auto_corridor_2x", True):
+                    continue
+                if hedge_cost <= 0 or hedge_cost > corridor_max_cost:
+                    continue
+                deal_type = "corridor_2x"
+            elif is_arb == 1 or (0 < hedge_cost < 1.0):
+                if not self.config.get("auto_cross_arbs", True):
+                    continue
+                deal_type = "cross_arb"
+            elif exact_strike and spread_val >= max(min_spread, 0.08):
+                # Value 1-leg is ONLY allowed when Bybit and Polymarket strikes match 1-to-1!
+                if not self.config.get("auto_cross_arbs", True):
+                    continue
+                deal_type = "cross_value"
+            else:
+                continue
+
+            odds_a_val = float(r.get("odds_a") or 1.8)
+            cost_a_val = (1.0 / odds_a_val) if odds_a_val > 0 else 0.5
+            if hedge_cost > cost_a_val:
+                cost_b_opp = hedge_cost - cost_a_val
+                odds_b_hedge = round(1.0 / cost_b_opp, 4)
+                split_a = cost_a_val / hedge_cost
+            else:
+                odds_b_hedge = float(r.get("odds_b") or 1.8)
+                split_a = r.get("stake_a") if (r.get("stake_a") and r.get("stake_a") > 0) else 0.5
+
+            stake_a = round(bank * split_a, 2)
+            stake_b = round(bank - stake_a, 2)
 
             coin = "BTC"
             for c in ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB"]:
@@ -212,29 +290,31 @@ class AutoPaperTrader:
                     coin = c
                     break
 
-            strike = self.parse_strike_from_title(title)
-            deal_type = "cross_arb" if (is_arb == 1 or (0 < hedge_cost < 1.0)) else "cross_value"
             direction = "ABOVE" if "ABOVE" in event_key else "BELOW"
+            s_low, s_high = min(strike_a, strike_b), max(strike_a, strike_b)
+            res_note = f"Коридор 2x: ${s_low:,.0f}–${s_high:,.0f}" if deal_type == "corridor_2x" else (
+                "Чистая вилка 2п" if deal_type == "cross_arb" else "Value 1-плечо (страйки 1-в-1)"
+            )
 
             cursor.execute('''
                 INSERT INTO paper_trades (
                     deal_type, event_key, title, coin, direction,
                     platform_a, platform_b, action_a, action_b,
                     odds_a, odds_b, stake_a, stake_b, total_stake,
-                    hedge_cost, strike_price,
+                    hedge_cost, strike_price, strike_b, resolution_note,
                     status, entry_time, expiry_time, entry_price, created_by
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OPEN', ?, ?, ?, 'auto')
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OPEN', ?, ?, ?, 'auto')
             ''', (
                 deal_type, event_key, title, coin, direction,
                 r.get("platform_a", ""), r.get("platform_b", ""),
                 r.get("action_a", ""), r.get("action_b", ""),
-                r.get("odds_a", 0.0), r.get("odds_b", 0.0),
+                odds_a_val, odds_b_hedge if deal_type in ("corridor_2x", "cross_arb") else float(r.get("odds_b") or 0.0),
                 stake_a, stake_b, bank,
-                hedge_cost, strike,
+                hedge_cost, strike_a, strike_b, res_note,
                 now_iso, exp_time, r.get("prob_a", 0.0)
             ))
             active_cnt += 1
-            print(f"[AutoPaper] Placed {deal_type} demo trade: {title} ($ {bank}, Exp: {exp_time[:16]})")
+            print(f"[AutoPaper] Placed {deal_type} demo trade: {title} (${bank}, Cost={hedge_cost:.3f}, Exp: {exp_time[:16]})")
 
         conn.commit()
         conn.close()
@@ -542,6 +622,17 @@ class AutoPaperTrader:
             stake = float(trade.get("total_stake") or 5.0)
             c_data = latest_prices.get(coin, {})
             live_idx_price = c_data.get("index") or c_data.get("spot") or 0.0
+            if not live_idx_price and os.path.exists(self.ticks_db_path):
+                try:
+                    t_conn = sqlite3.connect(self.ticks_db_path)
+                    t_cur = t_conn.cursor()
+                    t_cur.execute("SELECT index_price FROM sec_ticks WHERE coin = ? ORDER BY id DESC LIMIT 1", (coin,))
+                    t_row = t_cur.fetchone()
+                    t_conn.close()
+                    if t_row and t_row[0]:
+                        live_idx_price = float(t_row[0])
+                except Exception:
+                    pass
             live_twap = twap_by_coin.get(coin) or live_idx_price
 
             # 1. Settle Scheme 1 Bybit Up/Down 5M & 15M contracts (against exact entry_price = Bybit Strike at click)
@@ -616,25 +707,76 @@ class AutoPaperTrader:
                 ''', (status, settle_idx, payout, net_profit, roi_pct, t_id))
                 print(f"[AutoPaper] Settled {deal_type} {trade['title']}: {status} (Profit=${net_profit:+.2f})")
 
-            # 4. Settle Daily Cross-Platform Arbitrage
+            # 4. Settle Daily Cross-Platform Arbitrage (with optional 2x Corridor Jackpot!)
             elif deal_type == "cross_arb":
                 hedge_cost = float(trade.get("hedge_cost") or 0.96)
-                if 0 < hedge_cost < 1.0:
-                    payout = round(stake / hedge_cost, 2)
+                s_a = float(trade.get("strike_price") or 0.0)
+                s_b = float(trade.get("strike_b") or 0.0)
+                if not s_a or not s_b:
+                    p_sa, p_sb = self.parse_both_strikes_from_title(trade.get("title", ""))
+                    s_a = s_a or p_sa
+                    s_b = s_b or p_sb
+                s_low = min(s_a, s_b) if (s_a > 0 and s_b > 0) else 0.0
+                s_high = max(s_a, s_b) if (s_a > 0 and s_b > 0) else 0.0
+                settle_price = live_idx_price or s_a
+
+                if s_low > 0 and s_low < s_high and settle_price > 0 and (s_low <= settle_price <= s_high):
+                    payout = round(2.0 * (stake / hedge_cost), 2) if hedge_cost > 0 else round(stake * 2.0, 2)
+                    res_note = f"🎯 2X ДЖЕКПОТ! В коридоре ${s_low:,.0f}–${s_high:,.0f}"
                 else:
-                    payout = round(stake * 1.02, 2)
+                    payout = round(stake / hedge_cost, 2) if 0 < hedge_cost < 1.0 else round(stake * 1.02, 2)
+                    res_note = "Гарант. вилка (1 плечо)"
+
                 net_profit = round(payout - stake, 2)
                 status = "WON" if net_profit >= 0 else "LOST"
                 roi_pct = round((net_profit / stake) * 100.0, 2)
 
                 cursor.execute('''
                     UPDATE paper_trades
-                    SET status = ?, settle_price = ?, payout = ?, net_profit = ?, roi_pct = ?
+                    SET status = ?, settle_price = ?, payout = ?, net_profit = ?, roi_pct = ?, resolution_note = ?
                     WHERE id = ?
-                ''', (status, live_idx_price, payout, net_profit, roi_pct, t_id))
-                print(f"[AutoPaper] Settled Cross Arb {trade['title']}: {status} (Profit: ${net_profit:+.2f})")
+                ''', (status, settle_price, payout, net_profit, roi_pct, res_note, t_id))
+                print(f"[AutoPaper] Settled Cross Arb {trade['title']}: {status} ({res_note}, Profit: ${net_profit:+.2f})")
 
-            # 5. Settle Daily Cross-Platform Value Bet
+            # 4b. Settle 2x Corridor Deal (🎯 Коридор 2x выигрыша)
+            elif deal_type == "corridor_2x":
+                hedge_cost = float(trade.get("hedge_cost") or 1.05)
+                if hedge_cost <= 0:
+                    hedge_cost = 1.05
+                s_a = float(trade.get("strike_price") or 0.0)
+                s_b = float(trade.get("strike_b") or 0.0)
+                if not s_a or not s_b:
+                    p_sa, p_sb = self.parse_both_strikes_from_title(trade.get("title", ""))
+                    s_a = s_a or p_sa
+                    s_b = s_b or p_sb
+                s_low = min(s_a, s_b)
+                s_high = max(s_a, s_b)
+                settle_price = live_idx_price or s_a
+
+                # Check if settle_price landed INSIDE the 2x Corridor [s_low, s_high]
+                in_corridor = (s_low > 0 and s_high > s_low and settle_price > 0 and (s_low <= settle_price <= s_high))
+                if in_corridor:
+                    # Both legs win! Payout = 2 * (stake / hedge_cost)
+                    payout = round(2.0 * (stake / hedge_cost), 2)
+                    net_profit = round(payout - stake, 2)
+                    status = "WON"
+                    res_note = f"🎯 2X ДЖЕКПОТ! Финиш ${settle_price:,.0f} в коридоре ${s_low:,.0f}–${s_high:,.0f}"
+                else:
+                    # Outside corridor: 1 of 2 legs always wins! Payout = 1 * (stake / hedge_cost)
+                    payout = round(stake / hedge_cost, 2)
+                    net_profit = round(payout - stake, 2)
+                    status = "WON" if net_profit >= 0 else "LOST"
+                    res_note = f"1 плечо из 2 (финиш ${settle_price:,.0f} вне коридора ${s_low:,.0f}–${s_high:,.0f})"
+
+                roi_pct = round((net_profit / stake) * 100.0, 2)
+                cursor.execute('''
+                    UPDATE paper_trades
+                    SET status = ?, settle_price = ?, payout = ?, net_profit = ?, roi_pct = ?, resolution_note = ?
+                    WHERE id = ?
+                ''', (status, settle_price, payout, net_profit, roi_pct, res_note, t_id))
+                print(f"[AutoPaper] Settled Corridor 2x {trade['title']}: {status} ({res_note}, PnL=${net_profit:+.2f})")
+
+            # 5. Settle Daily Cross-Platform Value Bet (Exact strike 1-leg only)
             elif deal_type == "cross_value":
                 strike = float(trade.get("strike_price") or 0.0)
                 direction = trade.get("direction", "ABOVE")
@@ -670,7 +812,7 @@ class AutoPaperTrader:
 
     def get_trades(self, limit: int = 100, mode: str = "all") -> list:
         """
-        mode='main': only daily Target trades (cross_arb, cross_value)
+        mode='main': only daily Target trades (cross_arb, corridor_2x, cross_value)
         mode='fast': only 5/15m Test Polygon trades (sync_start_arb, two_step_hedge, poly_48s_lag, updown_5m)
         mode='all': all trades
         """
@@ -680,13 +822,13 @@ class AutoPaperTrader:
         if mode == "main":
             cursor.execute('''
                 SELECT * FROM paper_trades
-                WHERE deal_type IN ('cross_arb', 'cross_value')
+                WHERE deal_type IN ('cross_arb', 'corridor_2x', 'cross_value')
                 ORDER BY id DESC LIMIT ?
             ''', (limit,))
         elif mode == "fast":
             cursor.execute('''
                 SELECT * FROM paper_trades
-                WHERE deal_type NOT IN ('cross_arb', 'cross_value')
+                WHERE deal_type NOT IN ('cross_arb', 'corridor_2x', 'cross_value')
                 ORDER BY id DESC LIMIT ?
             ''', (limit,))
         else:
@@ -699,9 +841,9 @@ class AutoPaperTrader:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         if mode == "main":
-            cursor.execute("DELETE FROM paper_trades WHERE deal_type IN ('cross_arb', 'cross_value')")
+            cursor.execute("DELETE FROM paper_trades WHERE deal_type IN ('cross_arb', 'corridor_2x', 'cross_value')")
         elif mode == "fast":
-            cursor.execute("DELETE FROM paper_trades WHERE deal_type NOT IN ('cross_arb', 'cross_value')")
+            cursor.execute("DELETE FROM paper_trades WHERE deal_type NOT IN ('cross_arb', 'corridor_2x', 'cross_value')")
         else:
             cursor.execute("DELETE FROM paper_trades")
         conn.commit()

@@ -58,6 +58,77 @@ def get_spread_history(event_key: str = "", title: str = "", hours: int = 12):
     # Returns chronological spread history points and stats for charts
     return db.get_spread_history(event_key=event_key, title=title, hours=hours)
 
+@app.get("/api/active_contracts")
+def get_active_contracts():
+    """Returns all active Bybit Odds contracts (including fine-step Target strikes without a Polymarket pair)."""
+    import json
+    import sqlite3
+    from collectors.bybit import BybitOddsCollector
+    active_file = os.path.join(os.path.dirname(__file__), "..", "engine", ".active_contracts.json")
+    if os.path.exists(active_file):
+        try:
+            with open(active_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    # Fallback: read latest Bybit ticks from price_history in spreads.db
+    try:
+        conn = sqlite3.connect(db.db_path)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT * FROM (
+                SELECT *, ROW_NUMBER() OVER (PARTITION BY market_id ORDER BY timestamp DESC) as rn
+                FROM price_history
+                WHERE platform = 'bybit_odds'
+                  AND timestamp >= datetime('now', '-30 minutes')
+            ) WHERE rn = 1
+        ''')
+        rows = cur.fetchall()
+        conn.close()
+        contracts = []
+        for r in rows:
+            sym = r["market_id"]
+            info = BybitOddsCollector.parse_symbol(sym)
+            strike = None
+            if info.get("target_price"):
+                try:
+                    strike = float(str(info["target_price"]).replace(",", ""))
+                except ValueError:
+                    pass
+            contracts.append({
+                "market_id": sym,
+                "raw_title": r["title"],
+                "asset": info.get("coin", ""),
+                "contract_type": info.get("type", ""),
+                "strike_price": strike,
+                "lower_bound": info.get("lower_bound"),
+                "upper_bound": info.get("upper_bound"),
+                "direction": info.get("direction", ""),
+                "expiry_tag": info.get("expiry_tag", ""),
+                "settle_date": BybitOddsCollector.parse_expiry_date(info.get("expiry_tag", "")),
+                "implied_probability": r["prob"],
+                "odds": r["odds"],
+                "url": f"https://www.bybit.com/ru-RU/trade/odds/{sym}",
+                "has_poly_pair": False
+            })
+        contracts.sort(key=lambda x: (
+            x.get("asset") or "ZZZ",
+            x.get("contract_type") or "ZZZ",
+            x.get("settle_date") or "9999-99-99",
+            float(x.get("strike_price") or x.get("lower_bound") or 0),
+            x.get("direction") or ""
+        ))
+        return {
+            "updated_at": "",
+            "total_bybit": len(contracts),
+            "paired_count": 0,
+            "unpaired_count": len(contracts),
+            "contracts": contracts
+        }
+    except Exception as e:
+        return {"total_bybit": 0, "contracts": [], "error": str(e)}
+
 @app.get("/api/health")
 def get_health():
     # Health status and cycle metrics
@@ -179,6 +250,8 @@ class PaperConfigUpdate(BaseModel):
     default_stake: float | None = None
     min_spread_pct: float | None = None
     auto_cross_arbs: bool | None = None
+    auto_corridor_2x: bool | None = None
+    corridor_max_cost: float | None = None
     auto_5min_momentum: bool | None = None
     momentum_min_delta_pct: float | None = None
 

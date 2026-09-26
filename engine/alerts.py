@@ -129,10 +129,18 @@ class AlertManager:
                 "id": f"{int(now_ts * 1000)}",
                 "type": alert_type,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
+                "event_key": event_key,
                 "title": s.get("title") or event_key,
                 "spread_pct": spread_pct,
                 "margin_pct": margin_pct,
                 "is_arb": is_arb,
+                "odds_a": s.get("odds_a", 0.0),
+                "odds_b": s.get("odds_b", 0.0),
+                "prob_a": s.get("prob_a", 0.0),
+                "prob_b": s.get("prob_b", 0.0),
+                "hedge_cost": s.get("hedge_cost", 0.0),
+                "stake_a": s.get("stake_pos_pct", 0.5),
+                "stake_b": s.get("stake_neg_pct", 0.5),
                 "action_a": s.get("action_a", ""),
                 "action_b": s.get("action_b", ""),
                 "url_a": s.get("url_a", ""),
@@ -149,14 +157,15 @@ class AlertManager:
     def _dispatch_alert(self, alert: Dict[str, Any]):
         """Send alert to local log and Telegram if enabled."""
         # 1. Log to file
-        log_line = f"[{alert['timestamp']}] [{alert['type']}] {alert['title']} | Spread: +{alert['spread_pct']}% | Margin: +{alert['margin_pct']}%\n"
+        margin_val = float(alert.get("margin_pct") or 0.0)
+        log_line = f"[{alert['timestamp']}] [{alert['type']}] {alert['title']} | Spread: +{alert['spread_pct']}% | Margin: {margin_val:+.2f}%\n"
         try:
             with open(LOG_PATH, "a", encoding="utf-8") as f:
                 f.write(log_line)
         except Exception:
             pass
 
-        print(f"\n🔔 [ALERT - {alert['type']}] {alert['title']} -> Spread: +{alert['spread_pct']}% | Margin: +{alert['margin_pct']}%")
+        print(f"\n🔔 [ALERT - {alert['type']}] {alert['title']} -> Spread: +{alert['spread_pct']}% | Margin: {margin_val:+.2f}%")
 
         # 2. Telegram message
         if self.config.get("telegram_enabled", False):
@@ -166,21 +175,128 @@ class AlertManager:
                 self.send_telegram_alert(token, chat_id, alert)
 
     def send_telegram_alert(self, token: str, chat_id: str, alert: Dict[str, Any]) -> bool:
-        """Send formatted HTML alert to Telegram via Bot API."""
+        """Send formatted HTML alert to Telegram via Bot API with $100 calculation and localhost deep link."""
         try:
-            type_badge = "⚡ <b>ГАРАНТИРОВАННАЯ ВИЛКА (SUREBET)!</b>" if alert.get("is_arb") else "🔥 <b>МЕГА-СПРЕД КОТИРОВОК</b>"
-            time_warn = f"\n⚠️ <i>{alert['time_warning']}</i>" if alert.get("time_warning") else ""
-            
+            import re
+            from urllib.parse import quote
+
+            is_arb = bool(alert.get("is_arb"))
+            spread_pct = float(alert.get("spread_pct") or 0.0)
+            margin_pct = float(alert.get("margin_pct") or 0.0)
+            odds_a = float(alert.get("odds_a") or 1.80)
+            odds_b = float(alert.get("odds_b") or 1.80)
+            prob_a_pct = round(float(alert.get("prob_a") or (1.0 / odds_a if odds_a > 0 else 0.5)) * 100, 1)
+            prob_b_pct = round(float(alert.get("prob_b") or (1.0 / odds_b if odds_b > 0 else 0.5)) * 100, 1)
+            hedge_cost = float(alert.get("hedge_cost") or 0.0)
+
+            # Strip redundant prefixes like "Bybit: " or "Poly: "
+            act_a = re.sub(r"^(Bybit|Polymarket|Poly)\s*:\s*", "", str(alert.get("action_a") or ""), flags=re.I)
+            act_b = re.sub(r"^(Bybit|Polymarket|Poly)\s*:\s*", "", str(alert.get("action_b") or ""), flags=re.I)
+
+            # Calculate $100 bankroll breakdown
+            bank = 100.0
+            cost_a = (1.0 / odds_a) if odds_a > 0 else 0.50
+            cost_b_opp = max(0.01, hedge_cost - cost_a) if hedge_cost > cost_a else max(0.01, 1.0 - (prob_b_pct / 100.0))
+            total_cost = cost_a + cost_b_opp
+            odds_b_opp = round(1.0 / cost_b_opp, 2)
+
+            stake_a = round(bank * (cost_a / total_cost), 2) if total_cost > 0 else 50.0
+            stake_b = round(bank - stake_a, 2)
+            pct_a = round((stake_a / bank) * 100)
+            pct_b = 100 - pct_a
+
+            payout_single = round(stake_a * odds_a, 2)
+            net_single = round(payout_single - bank, 2)
+            payout_double = round(payout_single * 2.0, 2)
+            net_double = round(payout_double - bank, 2)
+
+            raw_warn = str(alert.get("time_warning") or "").strip()
+            has_corridor = "Коридор 2x" in raw_warn
+
+            # Extract corridor range if present
+            corridor_line = ""
+            exp_line = ""
+            if raw_warn:
+                parts = [p.strip() for p in raw_warn.split("|") if p.strip()]
+                for p in parts:
+                    clean_p = re.sub(r"^⚠️\s*", "", p).strip()
+                    if "Коридор" in clean_p:
+                        corridor_line = f"\n{clean_p}"
+                    else:
+                        exp_line = f"\n⚠️ <i>{clean_p}</i>"
+
+            if is_arb:
+                type_badge = f"⚡ <b>ГАРАНТИРОВАННАЯ ВИЛКА (+{margin_pct:.2f}%)</b>"
+            elif has_corridor:
+                type_badge = f"🎯 <b>КОРИДОР 2X + СПРЕД (+{spread_pct:.2f}%)</b>"
+            else:
+                type_badge = f"🔥 <b>МЕГА-СПРЕД КОТИРОВОК (+{spread_pct:.2f}%)</b>"
+
+            title_str = str(alert.get("title") or "")
+            exact_strike_match = bool(
+                alert.get("exact_strike_match", True)
+                and not has_corridor
+                and "/ Poly " not in title_str
+                and "Зазор" not in raw_warn
+            )
+
+            # Value 1-leg comparison ONLY when strikes match exactly
+            if odds_a >= odds_b:
+                val_side = f"Bybit дает <b>{odds_a:.2f}x</b> против {odds_b:.2f}x на Poly ($100 ➔ <b>${100*odds_a:.0f}</b>, чистыми <b>+${100*(odds_a-1):.0f}</b>)"
+            else:
+                val_side = f"Poly дает <b>{odds_b:.2f}x (${1.0/odds_b:.2f})</b> против {odds_a:.2f}x на Bybit ($100 ➔ <b>${100*odds_b:.0f}</b>, чистыми <b>+${100*(odds_b-1):.0f}</b>)"
+
+            # Outcome summary for $100
+            if is_arb or net_single >= 0:
+                outcome_block = (
+                    f"• Любой обычный исход: возврат <b>${payout_single:.2f}</b> "
+                    f"(Чистыми: <b>+${net_single:.2f} / {margin_pct:+.2f}%</b>)"
+                )
+                if has_corridor:
+                    outcome_block += (
+                        f"\n• 🎯 <b>Бонуска 2x (внутри коридора):</b> возврат <b>${payout_double:.2f}</b> "
+                        f"(Чистыми: <b>+${net_double:.2f}!</b>)"
+                    )
+            elif has_corridor:
+                outcome_block = (
+                    f"• Обычный исход (1 плечо): возврат <b>${payout_single:.2f}</b> (хедж: <code>${net_single:+.2f}</code>)\n"
+                    f"• 🎯 <b>Бонуска 2x (внутри коридора):</b> возврат <b>${payout_double:.2f}</b> "
+                    f"(Чистыми: <b>+${net_double:.2f} / +{net_double:.0f}%!</b>)"
+                )
+            elif exact_strike_match:
+                outcome_block = (
+                    f"• Полный хедж 2 плеч: возврат <b>${payout_single:.2f}</b> (<code>${net_single:+.2f}</code>)\n"
+                    f"• 💎 <b>Value (1 плечо без хеджа):</b> {val_side}"
+                )
+            else:
+                outcome_block = (
+                    f"• Полный хедж 2 плеч: возврат <b>${payout_single:.2f}</b> (<code>${net_single:+.2f}</code>)"
+                )
+
+            # Build direct localhost calculator link
+            ev_key = str(alert.get("event_key") or alert.get("title") or "")
+            calc_slug = ev_key.split("::")[0].strip() or ev_key
+            calc_url = f"http://127.0.0.1:8000/?calc={quote(calc_slug)}&bank=100"
+
             text = (
                 f"{type_badge}\n"
                 f"━━━━━━━━━━━━━━━━━━\n"
                 f"🎯 <b>Рынок:</b> {alert.get('title')}\n"
-                f"📈 <b>Чистый спред:</b> <code>+{alert.get('spread_pct')}%</code>\n"
-                f"💰 <b>Маржа хеджа:</b> <code>+{alert.get('margin_pct')}%</code>\n"
+                f"📊 <b>Вероятности:</b> Bybit <code>{prob_a_pct}%</code> vs Poly <code>{prob_b_pct}%</code> (Спред: <code>+{spread_pct:.2f}%</code>)\n"
+                f"💰 <b>Маржа хеджа:</b> <code>{margin_pct:+.2f}%</code> (Стоимость: <code>${total_cost:.2f}</code>)\n"
                 f"━━━━━━━━━━━━━━━━━━\n"
-                f"🟡 <b>Bybit:</b> {alert.get('action_a')}\n"
-                f"🔵 <b>Polymarket:</b> {alert.get('action_b')}"
-                f"{time_warn}\n\n"
+                f"💵 <b>РАСЧЕТ НА ПРИМЕРЕ $100:</b>\n"
+                f"1️⃣ <b>Bybit — поставить ${stake_a:.2f} ({pct_a}%):</b>\n"
+                f"   🟡 {act_a} ➔ выплата <b>${payout_single:.2f}</b>\n"
+                f"2️⃣ <b>Polymarket — поставить ${stake_b:.2f} ({pct_b}%):</b>\n"
+                f"   🔵 {act_b} ({odds_b_opp:.2f}x) ➔ выплата <b>${payout_single:.2f}</b>\n\n"
+                f"📌 <b>Итог со $100:</b>\n"
+                f"{outcome_block}"
+                f"{corridor_line}"
+                f"{exp_line}\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"🧮 <a href='{calc_url}'>Открыть панель расчета ($100) в терминале</a>\n"
+                f"<code>{calc_url}</code>\n"
                 f"🔗 <a href='{alert.get('url_a') or '#'}'>Открыть Bybit</a> | "
                 f"<a href='{alert.get('url_b') or '#'}'>Открыть Polymarket</a>\n"
                 f"⏱ <i>{datetime.now(timezone.utc).strftime('%H:%M:%S UTC')}</i>"
@@ -200,25 +316,29 @@ class AlertManager:
             return False
 
     def send_test_telegram(self, token: str, chat_id: str) -> Dict[str, Any]:
-        """Send a test ping to verify Telegram Bot token and chat ID."""
+        """Send a test ping with a sample $100 calculation and localhost calculator link."""
         try:
-            url = f"https://api.telegram.org/bot{token}/sendMessage"
-            payload = {
-                "chat_id": chat_id,
-                "text": (
-                    "🔔 <b>ODDS PULSE — Тестовый сигнал</b>\n\n"
-                    "✅ Telegram-бот успешно подключен к терминалу арбитража!\n"
-                    "Теперь сюда будут приходить мгновенные пуш-уведомления о найденных вилках и крупных спредах.\n\n"
-                    "⏱ <i>Статус: LIVE</i>"
-                ),
-                "parse_mode": "HTML"
+            sample_alert = {
+                "is_arb": False,
+                "event_key": "ETHUSDT-27SEP26-2690-ABOVE::sample",
+                "title": "ETH $2,690 / Poly $2,700 [ABOVE] (2026-09-27)",
+                "spread_pct": 10.85,
+                "margin_pct": -11.05,
+                "odds_a": 2.00,
+                "odds_b": 2.55,
+                "prob_a": 0.50,
+                "prob_b": 0.3915,
+                "hedge_cost": 1.11,
+                "action_a": "Bybit: Взять ABOVE $2,690 (Выше) @ 2.00x",
+                "action_b": "Poly: Купить NO $2,700 (Ниже) @ $0.61",
+                "url_a": "https://www.bybit.com/ru-RU/trade/odds/ETHUSDT-27SEP26-2690-ABOVE",
+                "url_b": "https://polymarket.com/event/ethereum-above-on-september-27-2026",
+                "time_warning": "🎯 Коридор 2x выигрыша: $2,690–$2,700 | ⚠️ Разница экспирации: 8.0ч (bybit_odds 08:00 vs polymarket 16:00 UTC)"
             }
-            r = requests.post(url, json=payload, timeout=8)
-            res_json = r.json()
-            if r.status_code == 200 and res_json.get("ok"):
-                return {"status": "success", "message": "Тестовое сообщение успешно отправлено!"}
-            else:
-                return {"status": "error", "error": res_json.get("description", "Ошибка Telegram API")}
+            ok = self.send_telegram_alert(token, chat_id, sample_alert)
+            if ok:
+                return {"status": "success", "message": "Обновленный тестовый сигнал ($100 расчет + ссылка) успешно отправлен!"}
+            return {"status": "error", "error": "Ошибка отправки через Telegram API"}
         except Exception as e:
             return {"status": "error", "error": str(e)}
 

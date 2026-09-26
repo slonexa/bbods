@@ -371,11 +371,29 @@ class Database:
                 WHERE platform_a != platform_b
                   AND event_key NOT LIKE '%5MIN%'
                   AND event_key NOT LIKE '%15MIN%'
+                  AND odds_a > 1.01 AND odds_b > 1.01
+                  AND odds_a < 500 AND odds_b < 500
+                  AND detected_at >= datetime('now', '-30 minutes')
             ) WHERE rn = 1
             ORDER BY spread_after_fees DESC
         '''
         cursor.execute(query_cross)
         cross_rows = cursor.fetchall()
+        if not cross_rows:
+            # Fallback if scanner is paused for >30m
+            cursor.execute('''
+                SELECT * FROM (
+                    SELECT *, ROW_NUMBER() OVER (PARTITION BY event_key ORDER BY detected_at DESC) as rn
+                    FROM spreads
+                    WHERE platform_a != platform_b
+                      AND event_key NOT LIKE '%5MIN%'
+                      AND event_key NOT LIKE '%15MIN%'
+                      AND odds_a > 1.01 AND odds_b > 1.01
+                      AND odds_a < 500 AND odds_b < 500
+                ) WHERE rn = 1
+                ORDER BY spread_after_fees DESC
+            ''')
+            cross_rows = cursor.fetchall()
         
         # 2. Window query getting latest complementary pairs
         query_comp = '''
@@ -383,6 +401,8 @@ class Database:
                 SELECT *, ROW_NUMBER() OVER (PARTITION BY event_key ORDER BY detected_at DESC) as rn
                 FROM spreads
                 WHERE platform_a = platform_b
+                  AND odds_a < 500 AND odds_b < 500
+                  AND detected_at >= datetime('now', '-30 minutes')
             ) WHERE rn = 1
             ORDER BY detected_at DESC
             LIMIT 25
@@ -411,7 +431,15 @@ class Database:
                     clean_strikes[clean_title] = d
                 
         cross_results = list(clean_strikes.values())
-        cross_results.sort(key=lambda x: (x.get("is_arb", 0) or 0, x.get("spread_after_fees", 0) or 0), reverse=True)
+        cross_results.sort(
+            key=lambda x: (
+                x.get("is_arb", 0) or 0,
+                0 if " / Poly " in (x.get("title") or "") else 1,
+                x.get("hedge_margin", -999) if x.get("hedge_margin") is not None else -999,
+                x.get("spread_after_fees", 0) or 0
+            ),
+            reverse=True
+        )
         
         # Combine clean cross strikes + latest complementary Bybit pairs
         return cross_results[:limit] + [dict(r) for r in comp_rows]

@@ -70,22 +70,42 @@ class Normalizer:
         targets_a = [e for e in events_a if e.get("contract_type") == "Target" and e.get("strike_price")]
         targets_b = [e for e in events_b if e.get("contract_type") == "Target" and e.get("strike_price")]
         
+        # Pre-index available strikes per (asset, settle_date) on platform B (Polymarket)
+        b_strikes_by_key = {}
+        for eb in targets_b:
+            key = (eb.get("asset"), eb.get("settle_date"))
+            b_strikes_by_key.setdefault(key, set()).add(float(eb["strike_price"]))
+
         for ea in targets_a:
+            asset_a = ea.get("asset")
+            date_a = ea.get("settle_date")
+            strike_a = float(ea.get("strike_price") or 0)
+            if not asset_a or not date_a or strike_a <= 0:
+                continue
+
+            avail_b_strikes = b_strikes_by_key.get((asset_a, date_a), set())
+            if not avail_b_strikes:
+                continue
+
+            # If exact strike exists on platform B, match exact; otherwise match closest strike within 1.0%
+            if strike_a in avail_b_strikes:
+                target_b_strike = strike_a
+            else:
+                closest_b = min(avail_b_strikes, key=lambda s: abs(s - strike_a))
+                rel_diff = abs(strike_a - closest_b) / max(strike_a, closest_b)
+                if rel_diff <= 0.01:
+                    target_b_strike = closest_b
+                else:
+                    continue
+
             for eb in targets_b:
-                # 1. Asset check (BTC, ETH)
-                asset_a = ea.get("asset")
-                asset_b = eb.get("asset")
-                if not asset_a or not asset_b or asset_a != asset_b:
+                # 1. Asset & date check
+                if eb.get("asset") != asset_a or eb.get("settle_date") != date_a:
                     continue
                     
-                # 2. Strike price check
-                if ea.get("strike_price") != eb.get("strike_price"):
-                    continue
-                    
-                # 3. Settlement date check
-                date_a = ea.get("settle_date")
-                date_b = eb.get("settle_date")
-                if not date_a or not date_b or date_a != date_b:
+                # 2. Strike price check (exact or closest within 1.0%)
+                strike_b = float(eb.get("strike_price") or 0)
+                if strike_b != target_b_strike:
                     continue
                     
                 # 4. Direction compatibility
@@ -97,7 +117,19 @@ class Normalizer:
                     bybit_dir = bybit_ev.get("direction", "") # ABOVE / BELOW
                     poly_outcome = poly_ev.get("outcome", "") # Yes / No
                     poly_dir = poly_ev.get("direction", "")   # ABOVE / BELOW
+                    s_bybit = float(bybit_ev.get("strike_price") or 0)
+                    s_poly = float(poly_ev.get("strike_price") or 0)
                     
+                    # When strikes differ, only match the Polish Middle (Double-Win Corridor) direction:
+                    # - s_bybit < s_poly -> Bybit ABOVE + Poly NO (both win if price lands in [s_bybit, s_poly])
+                    # - s_bybit > s_poly -> Bybit BELOW + Poly YES (both win if price lands in [s_poly, s_bybit])
+                    exact_strike_match = abs(s_bybit - s_poly) <= 1e-6
+                    if not exact_strike_match:
+                        if s_bybit < s_poly and bybit_dir != "ABOVE":
+                            continue
+                        if s_bybit > s_poly and bybit_dir != "BELOW":
+                            continue
+
                     is_compatible = False
                     if poly_dir == "ABOVE":
                         if bybit_dir == "ABOVE" and poly_outcome == "Yes":
@@ -114,6 +146,7 @@ class Normalizer:
                         continue
                 else:
                     # Generic fallback: same direction and outcome
+                    exact_strike_match = abs(strike_a - strike_b) <= 1e-6
                     if ea.get("outcome") != eb.get("outcome"):
                         continue
                         
@@ -142,6 +175,8 @@ class Normalizer:
                 eb_copy["time_diff_hours"] = diff_hours
                 ea_copy["time_warning"] = time_warning
                 eb_copy["time_warning"] = time_warning
+                ea_copy["exact_strike_match"] = exact_strike_match
+                eb_copy["exact_strike_match"] = exact_strike_match
                 
                 matched.append((ea_copy, eb_copy))
 

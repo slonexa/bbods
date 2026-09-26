@@ -281,13 +281,18 @@ class HighFrequencyTickLogger:
                         )
                         if rb.status_code == 200:
                             books = rb.json()
+                            books_by_asset = {
+                                b.get("asset_id"): b
+                                for b in books
+                                if isinstance(b, dict) and b.get("asset_id")
+                            }
                             now_book_ts = time.time()
                             with self._lock:
                                 for idx, (key, t_info) in enumerate(active_keys):
-                                    if idx * 2 + 1 >= len(books):
-                                        break
-                                    b_up = books[idx * 2]
-                                    b_down = books[idx * 2 + 1]
+                                    b_up = books_by_asset.get(t_info["up_token"])
+                                    b_down = books_by_asset.get(t_info["down_token"])
+                                    if not b_up or not b_down:
+                                        continue
                                     up_asks = b_up.get("asks", [])
                                     down_asks = b_down.get("asks", [])
                                     up_bids = b_up.get("bids", [])

@@ -20,16 +20,22 @@ class PolymarketCollector(BaseCollector):
         results = []
         events_by_id = {}
         
-        # Fetch top 400 high-volume events across 4 pages to capture daily BTC, ETH, SOL targets
-        # without missing markets pushed down by political/elections events
-        for offset in [0, 100, 200, 300]:
+        # Fetch active crypto events explicitly via tag_slug=crypto across 3 pages (captures 100% of daily/weekly BTC/ETH/SOL targets)
+        # plus top general events on page 0
+        query_batches = [
+            {"tag_slug": "crypto", "offset": 0},
+            {"tag_slug": "crypto", "offset": 100},
+            {"tag_slug": "crypto", "offset": 200},
+            {"offset": 0},
+        ]
+        for batch in query_batches:
             params = {
                 "active": "true",
                 "closed": "false",
                 "limit": 100,
                 "order": "volume24hr",
                 "ascending": "false",
-                "offset": offset
+                **batch
             }
             try:
                 response = self.session.get(self.api_url, params=params, timeout=10)
@@ -37,7 +43,7 @@ class PolymarketCollector(BaseCollector):
                     for ev in response.json():
                         events_by_id[ev.get("id")] = ev
             except Exception as e:
-                print(f"[{self.platform_name}] Error querying Gamma API (offset {offset}): {e}")
+                print(f"[{self.platform_name}] Error querying Gamma API ({batch}): {e}")
 
         events = list(events_by_id.values())
         
@@ -216,13 +222,15 @@ class PolymarketCollector(BaseCollector):
         if not pending_markets:
             return []
 
-        books = []
+        books_by_asset = {}
         try:
             rb = self.session.post("https://clob.polymarket.com/books", json=token_requests, timeout=4)
             if rb.status_code == 200:
-                books = rb.json()
+                for b in rb.json():
+                    if isinstance(b, dict) and b.get("asset_id"):
+                        books_by_asset[b["asset_id"]] = b
         except Exception:
-            books = []
+            books_by_asset = {}
 
         updown_events = []
         for idx, (asset, tf_label, win_id, slug, ev, m, tids) in enumerate(pending_markets):
@@ -245,9 +253,9 @@ class PolymarketCollector(BaseCollector):
             up_prob = float(raw_prices[0]) if len(raw_prices) > 0 else 0.5
             down_prob = float(raw_prices[1]) if len(raw_prices) > 1 else 0.5
 
-            if idx * 2 + 1 < len(books):
-                b_up = books[idx * 2]
-                b_down = books[idx * 2 + 1]
+            b_up = books_by_asset.get(tids[0])
+            b_down = books_by_asset.get(tids[1])
+            if b_up and b_down:
                 u_asks = b_up.get("asks", [])
                 d_asks = b_down.get("asks", [])
                 ua = min((float(x["price"]) for x in u_asks), default=0.0)

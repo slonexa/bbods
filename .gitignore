@@ -44,3 +44,4 @@ engine/alert_config.json
 engine/paper_config.json
 engine/.health.json
 engine/.sec_logger_health.json
+engine/.active_contracts.json

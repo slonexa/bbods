@@ -135,13 +135,32 @@ class SpreadEngine:
 
                 # Asset, strike, dates
                 asset = bybit_ev.get("asset") or poly_ev.get("asset")
-                strike = bybit_ev.get("strike_price") or poly_ev.get("strike_price")
+                strike_bybit = bybit_ev.get("strike_price") or bybit_ev.get("strike")
+                strike_poly = poly_ev.get("strike_price") or poly_ev.get("strike")
+                strike = strike_bybit or strike_poly
                 date = bybit_ev.get("settle_date") or poly_ev.get("settle_date")
                 outcome_a = bybit_ev.get("outcome", "")
                 outcome_b = poly_ev.get("outcome", "")
 
-                if asset and strike:
-                    title = f"{asset} ${int(strike):,} [{outcome_a}] ({date})"
+                def _fmt_strike(val) -> str:
+                    fval = float(val)
+                    return f"${int(fval):,}" if fval.is_integer() else f"${fval:,.2f}".rstrip("0").rstrip(".")
+
+                has_both_strikes = (strike_bybit is not None) and (strike_poly is not None)
+                exact_strike_match = bool(
+                    ea.get("exact_strike_match")
+                    if "exact_strike_match" in ea
+                    else (
+                        abs(float(strike_bybit) - float(strike_poly)) <= 1e-6
+                        if has_both_strikes
+                        else True
+                    )
+                )
+
+                if asset and has_both_strikes and not exact_strike_match:
+                    title = f"{asset} {_fmt_strike(strike_bybit)} / Poly {_fmt_strike(strike_poly)} [{outcome_a}] ({date})"
+                elif asset and strike:
+                    title = f"{asset} {_fmt_strike(strike)} [{outcome_a}] ({date})"
                 else:
                     title = bybit_ev.get("raw_title", "") + f" [{outcome_a}]"
 
@@ -195,9 +214,25 @@ class SpreadEngine:
                 total_fees = self.fee_a + self.fee_b + self.slippage
                 hedge_margin = round(1.0 - real_hedge_cost - total_fees, 4)
 
-                time_safe = abs(time_diff_h) <= self.max_time_diff_hours
+                # Evaluate strike gap / Polish Middle corridor if strikes differ
+                has_strike_gap_risk = False
+                if has_both_strikes and not exact_strike_match:
+                    s_low = _fmt_strike(min(float(strike_bybit), float(strike_poly)))
+                    s_high = _fmt_strike(max(float(strike_bybit), float(strike_poly)))
+                    # Bybit ABOVE S_bybit + Poly NO (Below S_poly): corridor if S_bybit < S_poly; gap if S_bybit > S_poly
+                    # Bybit BELOW S_bybit + Poly YES (Above S_poly): corridor if S_bybit > S_poly; gap if S_bybit < S_poly
+                    if (bybit_dir == "ABOVE" and float(strike_bybit) < float(strike_poly)) or (bybit_dir == "BELOW" and float(strike_bybit) > float(strike_poly)):
+                        time_warning = f"🎯 Коридор 2x выигрыша: {s_low}–{s_high} | {time_warning}"
+                    else:
+                        has_strike_gap_risk = True
+                        time_warning = f"⚠️ Зазор страйков: {s_low}–{s_high} | {time_warning}"
+
+                time_safe = (abs(time_diff_h) <= self.max_time_diff_hours) and (not has_strike_gap_risk)
                 is_cross_arb = (hedge_margin > 0) and time_safe
                 is_arb_time_risky = (hedge_margin > 0) and (not time_safe)
+
+                # Value 1-leg is ONLY valid when strikes match exactly (Task 2 methodological rule)
+                can_show_value_1leg = bool(exact_strike_match)
 
                 # --- 4. Mathematical Stakes (Guarantees Equal Payout) ---
                 stake_bybit_pct = round(cost_bybit / real_hedge_cost, 4) if real_hedge_cost > 0 else 0.5
@@ -211,8 +246,12 @@ class SpreadEngine:
                     bybit_desc = "Выше" if bybit_dir == "ABOVE" else "Ниже"
                     poly_desc = "Ниже" if opp_poly_out == "NO" else "Выше"
 
-                action_a = f"Bybit: Взять {bybit_dir} ({bybit_desc}) @ {odds_bybit:.2f}x"
-                action_b = f"Poly: Купить {opp_poly_out} ({poly_desc}) @ ${cost_poly_opp:.2f}"
+                if has_both_strikes and not exact_strike_match:
+                    action_a = f"Bybit: Взять {bybit_dir} {_fmt_strike(strike_bybit)} ({bybit_desc}) @ {odds_bybit:.2f}x"
+                    action_b = f"Poly: Купить {opp_poly_out} {_fmt_strike(strike_poly)} ({poly_desc}) @ ${cost_poly_opp:.2f}"
+                else:
+                    action_a = f"Bybit: Взять {bybit_dir} ({bybit_desc}) @ {odds_bybit:.2f}x"
+                    action_b = f"Poly: Купить {opp_poly_out} ({poly_desc}) @ ${cost_poly_opp:.2f}"
                 action_summary = f"Bybit: {bybit_dir} + Poly: {opp_poly_out}"
 
                 # Assign stakes according to which platform is ea vs eb
@@ -240,6 +279,8 @@ class SpreadEngine:
                     "is_arb": is_cross_arb,
                     "is_arb_time_risky": is_arb_time_risky,
                     "opp_price_is_synthetic": opp_price_is_synthetic,
+                    "exact_strike_match": exact_strike_match,
+                    "can_show_value_1leg": can_show_value_1leg,
                     "action_a": action_a,
                     "action_b": action_b,
                     "action_summary": action_summary,

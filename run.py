@@ -15,6 +15,7 @@ from normalizer.mapper import Normalizer
 from engine.spread import SpreadEngine
 from engine.db import Database
 from engine.alerts import AlertManager
+from engine.auto_paper import AutoPaperTrader
 
 def main():
     print("Initializing collectors...")
@@ -28,6 +29,7 @@ def main():
     engine = SpreadEngine(fee_a=0.0, fee_b=0.0, slippage=0.001)
     db = Database()
     alert_manager = AlertManager()
+    paper_trader = AutoPaperTrader()
     
     poll_interval = 10  # seconds
     
@@ -109,6 +111,13 @@ def main():
                     db.save_spreads(all_spreads)
                     print(f"\n[OK] Saved {len(all_spreads)} entries to DB.")
                     alert_manager.process_spreads(all_spreads)
+                    try:
+                        paper_trader.config = paper_trader.load_config()
+                        if paper_trader.config.get("enabled", True):
+                            paper_trader.check_and_place_cross_trades()
+                            paper_trader.settle_expired_trades()
+                    except Exception as pe:
+                        print(f"[WARN] AutoPaper check error: {pe}")
                 else:
                     print("\n[!] No spreads to save this cycle.")
                     
@@ -135,6 +144,50 @@ def main():
                     db.save_price_history(history_data)
                     print(f"[DB] Logged {len(history_data)} dynamic price ticks (deduplicated from {len(raw_pool)}).")
                 
+                # 4b. Save full snapshot of all active Bybit contracts (including unpaired fine-step strikes) for dashboard visibility
+                try:
+                    import json
+                    active_contracts_file = os.path.join(os.path.dirname(__file__), "engine", ".active_contracts.json")
+                    matched_bybit_ids = {}
+                    for ea, eb in cross_matches:
+                        b_ev = ea if ea.get("platform") == "bybit_odds" else (eb if eb.get("platform") == "bybit_odds" else None)
+                        p_ev = eb if eb.get("platform") == "polymarket" else (ea if ea.get("platform") == "polymarket" else None)
+                        if b_ev and p_ev:
+                            matched_bybit_ids[b_ev["market_id"]] = {
+                                "poly_market_id": p_ev.get("market_id"),
+                                "poly_strike": p_ev.get("strike_price"),
+                                "exact_strike_match": bool(b_ev.get("exact_strike_match", True))
+                            }
+
+                    bybit_active_list = []
+                    for item in bybit_data:
+                        row_item = dict(item)
+                        m_info = matched_bybit_ids.get(item.get("market_id"))
+                        row_item["has_poly_pair"] = bool(m_info)
+                        row_item["exact_poly_pair"] = bool(m_info and m_info.get("exact_strike_match"))
+                        row_item["poly_strike"] = m_info.get("poly_strike") if m_info else None
+                        bybit_active_list.append(row_item)
+
+                    # Sort by coin, settle_date, strike_price ASC, direction
+                    bybit_active_list.sort(key=lambda x: (
+                        x.get("asset") or "ZZZ",
+                        x.get("contract_type") or "ZZZ",
+                        x.get("settle_date") or "9999-99-99",
+                        float(x.get("strike_price") or x.get("lower_bound") or 0),
+                        x.get("direction") or ""
+                    ))
+
+                    with open(active_contracts_file, "w", encoding="utf-8") as af:
+                        json.dump({
+                            "updated_at": datetime.now(timezone.utc).isoformat(),
+                            "total_bybit": len(bybit_active_list),
+                            "paired_count": sum(1 for x in bybit_active_list if x.get("has_poly_pair")),
+                            "unpaired_count": sum(1 for x in bybit_active_list if not x.get("has_poly_pair")),
+                            "contracts": bybit_active_list
+                        }, af)
+                except Exception as e:
+                    print(f"[WARN] Could not write .active_contracts.json: {e}")
+
                 # 5. Write health metrics
                 elapsed = time.time() - start_time
                 try:
