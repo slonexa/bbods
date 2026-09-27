@@ -234,7 +234,7 @@ class AutoPaperTrader:
             if exp_time <= now_iso:
                 continue
 
-            cursor.execute("SELECT COUNT(*) FROM paper_trades WHERE event_key = ?", (event_key,))
+            cursor.execute("SELECT COUNT(*) FROM paper_trades WHERE event_key = ? OR title = ?", (event_key, title))
             if cursor.fetchone()[0] > 0:
                 continue
 
@@ -292,7 +292,7 @@ class AutoPaperTrader:
 
             direction = "ABOVE" if "ABOVE" in event_key else "BELOW"
             s_low, s_high = min(strike_a, strike_b), max(strike_a, strike_b)
-            res_note = f"Коридор 2x: ${s_low:,.0f}–${s_high:,.0f}" if deal_type == "corridor_2x" else (
+            res_note = f"🎯 Коридор 2x: ${s_low:,.0f}–${s_high:,.0f}" if deal_type == "corridor_2x" else (
                 "Чистая вилка 2п" if deal_type == "cross_arb" else "Value 1-плечо (страйки 1-в-1)"
             )
 
@@ -345,7 +345,12 @@ class AutoPaperTrader:
             return
 
         windows = health.get("windows", [])
+        prices_map = health.get("prices", {})
         now_ts = time.time()
+        btc_upd = float(prices_map.get("BTC", {}).get("updated_at") or 0.0)
+        if btc_upd > 0 and (now_ts - btc_upd) > 30.0:
+            # Internet / live feed is stale — do not place new HFT trades
+            return
         now_iso = datetime.now(timezone.utc).isoformat()
         min_delta = self.config.get("momentum_min_delta_pct", 0.03)
         stake = float(self.config.get("default_stake", 5.0))
@@ -583,13 +588,45 @@ class AutoPaperTrader:
         conn.commit()
         conn.close()
 
+    def fetch_historical_index_price(self, coin: str, expiry_iso: str) -> float:
+        """
+        Fetch exact historical Bybit Index Price at `expiry_iso` from V5 `/v5/market/index-price-kline`.
+        Used when settling daily 08:00 UTC contracts or recovering after an internet outage.
+        """
+        try:
+            import urllib.request
+            dt = datetime.fromisoformat(str(expiry_iso).replace("Z", "+00:00"))
+            ts_ms = int(dt.timestamp() * 1000)
+            sym = f"{coin}USDT"
+            url = (
+                f"https://api.bybit.com/v5/market/index-price-kline"
+                f"?category=linear&symbol={sym}&interval=1&start={ts_ms - 60000}&end={ts_ms + 60000}&limit=5"
+            )
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=4) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            klines = data.get("result", {}).get("list", [])
+            best_p = 0.0
+            best_diff = 1e18
+            for k in klines:
+                k_ts = int(k[0])
+                diff = abs(k_ts - ts_ms)
+                if diff < best_diff:
+                    best_diff = diff
+                    best_p = float(k[1])
+            return best_p
+        except Exception:
+            return 0.0
+
     def settle_expired_trades(self):
         """Check all OPEN trades past their expiry_time and calculate simulated P&L."""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        now_iso = datetime.now(timezone.utc).isoformat()
+        now_dt = datetime.now(timezone.utc)
+        now_iso = now_dt.isoformat()
+        now_ts = now_dt.timestamp()
         cursor.execute("SELECT * FROM paper_trades WHERE status = 'OPEN' AND expiry_time <= ?", (now_iso,))
         expired = cursor.fetchall()
 
@@ -614,15 +651,38 @@ class AutoPaperTrader:
             if c and w.get("twap_60s"):
                 twap_by_coin[c] = w["twap_60s"]
 
+        hist_cache = {}
+
         for row_obj in expired:
             trade = dict(row_obj)
             t_id = trade["id"]
             deal_type = trade["deal_type"]
             coin = trade.get("coin") or "BTC"
             stake = float(trade.get("total_stake") or 5.0)
+            exp_str = str(trade.get("expiry_time") or "")
             c_data = latest_prices.get(coin, {})
-            live_idx_price = c_data.get("index") or c_data.get("spot") or 0.0
-            if not live_idx_price and os.path.exists(self.ticks_db_path):
+            updated_at = float(c_data.get("updated_at") or 0.0)
+            is_live_fresh = (updated_at == 0.0) or ((now_ts - updated_at) <= 45.0)
+
+            delay_sec = 0.0
+            try:
+                exp_dt = datetime.fromisoformat(exp_str.replace("Z", "+00:00"))
+                delay_sec = (now_dt - exp_dt).total_seconds()
+            except Exception:
+                pass
+
+            live_idx_price = (c_data.get("index") or c_data.get("spot") or 0.0) if is_live_fresh else 0.0
+
+            # If trade expired > 45s ago (e.g. during internet outage) or live feed is stale, query official Bybit historical kline at expiry_time
+            if delay_sec > 45.0 or not live_idx_price:
+                cache_key = f"{coin}_{exp_str[:16]}"
+                if cache_key not in hist_cache:
+                    hist_cache[cache_key] = self.fetch_historical_index_price(coin, exp_str)
+                hist_price = hist_cache.get(cache_key) or 0.0
+                if hist_price > 0:
+                    live_idx_price = hist_price
+
+            if not live_idx_price and is_live_fresh and os.path.exists(self.ticks_db_path):
                 try:
                     t_conn = sqlite3.connect(self.ticks_db_path)
                     t_cur = t_conn.cursor()
@@ -633,7 +693,12 @@ class AutoPaperTrader:
                         live_idx_price = float(t_row[0])
                 except Exception:
                     pass
-            live_twap = twap_by_coin.get(coin) or live_idx_price
+
+            # If internet is currently offline (no fresh live price AND historical API unreachable), wait until connection returns!
+            if not live_idx_price and updated_at > 0 and not is_live_fresh:
+                continue
+
+            live_twap = (twap_by_coin.get(coin) if (is_live_fresh and delay_sec <= 45.0) else None) or live_idx_price
 
             # 1. Settle Scheme 1 Bybit Up/Down 5M & 15M contracts (against exact entry_price = Bybit Strike at click)
             if deal_type in ("updown_5m", "updown_15m"):

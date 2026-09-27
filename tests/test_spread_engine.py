@@ -162,7 +162,7 @@ class TestStatisticalAndLagMethodology(unittest.TestCase):
         for idx, st in enumerate(raw_strikes):
             wp_val = round(0.75 - idx * 0.08, 4)
             pr_val = round(1.0 / wp_val, 4)
-            sym = f"ETHUSDT-27SEP26-{st}-ABOVE"
+            sym = f"ETHUSDT-27DEC99-{st}-ABOVE"
             collector.tickers[sym] = {
                 "symbol": sym,
                 "wp": str(wp_val),
@@ -185,8 +185,8 @@ class TestStatisticalAndLagMethodology(unittest.TestCase):
             "asset": "ETH",
             "contract_type": "Target",
             "strike_price": 2700.0,
-            "settle_date": "2026-09-27",
-            "settle_time": "2026-09-27T16:00:00Z",
+            "settle_date": "2099-12-27",
+            "settle_time": "2099-12-27T16:00:00Z",
             "outcome": "Yes",
             "direction": "ABOVE",
             "implied_probability": 0.25,
