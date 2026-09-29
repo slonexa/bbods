@@ -30,6 +30,7 @@ class AutoPaperTrader:
     def __init__(self, db_path: str = "spreads.db"):
         self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.db_path = os.path.join(self.base_dir, db_path)
+        self.ticks_db_path = os.path.join(self.base_dir, "ticks.db")
         self.config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "paper_config.json")
         self.sec_health_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".sec_logger_health.json")
 
@@ -203,7 +204,7 @@ class AutoPaperTrader:
                 WHERE platform_a != platform_b
                   AND event_key NOT LIKE '%5MIN%'
                   AND event_key NOT LIKE '%15MIN%'
-                  AND odds_a > 1.02 AND odds_b > 1.02
+                  AND odds_a > 1.002 AND odds_b > 1.002
                   AND (is_arb = 1 OR hedge_margin > 0 OR time_warning LIKE '%Коридор 2x%' OR spread_after_fees >= ?)
                   AND detected_at >= datetime('now', '-15 minutes')
             ) WHERE rn = 1
@@ -322,12 +323,12 @@ class AutoPaperTrader:
     def check_and_place_hft_signals(self):
         """
         Evaluate live 1s HFT windows from sec_logger for the 5/15m Test Polygon:
-          1. `sync_start_arb`: Simultaneous entry in first 0..25s when timers & strikes match 1-to-1.
-          2. `two_step_hedge`: True Risk-Free 2-Step Lock-In Hedge within the SAME window:
-             - Leg 1 anchored in first 0..25s of the window (Strike = S_0, Expiry = T_end)
-             - Leg 2 bought on impulse during the window when opposite outcome drops so Cost(Leg1 + Leg2) <= 0.92!
-             - Zero time mismatch, zero strike gap -> guaranteed risk-free payout at T_end!
-          3. `poly_48s_lag`: Polymarket 47–51s window opening TWAP lag test.
+          1. `sync_start_arb`: Simultaneous entry in first 0..20s when timers & strikes have zero gap.
+          2. `two_step_hedge`: Cross-Platform (Bybit + Polymarket) No-Gap 2-Step Hedge:
+             - Step 1 (0.5..12s): Enter Leg 1 on Bybit Odds ONLY when Bybit strike forms a Corridor (zero strike gap!) against Polymarket S_0.
+             - Step 2 (15..dur-20s): Lock in Leg 2 on Polymarket when opposite outcome drops so (1/bb_odds + ask2) <= 0.92.
+             - Spins real Bybit Odds volume for the $12,000 Promo Leaderboard with zero look-ahead bias!
+          3. `poly_48s_lag`: Polymarket 42–68s window opening TWAP lag test.
           4. `updown_5m`: Bybit 5MIN/15MIN early momentum test.
         """
         if not os.path.exists(self.sec_health_file):
@@ -382,129 +383,125 @@ class AutoPaperTrader:
 
             anchor_key = (sym, win_id)
 
-            # ─── Step 1 of Two-Step Hedge: Record Window-Start Anchor (0..30s) ───
-            if 0.0 <= sec_from_start <= 30.0 and poly_accepting:
-                if anchor_key not in self.window_start_anchors and (poly_up_ask > 0 or poly_down_ask > 0):
-                    self.window_start_anchors[anchor_key] = {
-                        "up_ask": poly_up_ask if 0.35 <= poly_up_ask <= 0.55 else 0.50,
-                        "down_ask": poly_down_ask if 0.35 <= poly_down_ask <= 0.55 else 0.50,
-                        "bb_odds": bb_odds,
-                        "open_idx": open_idx,
-                        "recorded_sec": round(sec_from_start, 1)
-                    }
-                    if len(self.window_start_anchors) > 40:
-                        oldest = sorted(self.window_start_anchors.keys(), key=lambda k: k[1])[:15]
-                        for ok in oldest:
-                            self.window_start_anchors.pop(ok, None)
+            # ─── 1. Synchronized Start Arb (0..20s, strictly NO strike gap!) ───
+            if 0.0 <= sec_from_start <= 20.0 and poly_accepting and abs(delta_pct) <= 0.025:
+                for bb_dir, p_dir, p_ask, p_odds in [
+                    ("UP", "DOWN", poly_down_ask, poly_odds_down),
+                    ("DOWN", "UP", poly_up_ask, poly_odds_up)
+                ]:
+                    # Block if Bybit strike at click (idx_p) creates a Strike Gap against Polymarket S_0 (open_idx)
+                    has_gap = (bb_dir == "UP" and idx_p > open_idx * 1.00005) or (bb_dir == "DOWN" and idx_p < open_idx * 0.99995)
+                    if has_gap:
+                        continue
+                    if 0.15 <= p_ask <= 0.41:
+                        h_cost = round((1.0 / bb_odds) + p_ask, 4)
+                        if h_cost <= 0.965:
+                            ev_key = f"SYNCSTART-{sym}-{win_id}"
+                            cursor.execute("SELECT COUNT(*) FROM paper_trades WHERE event_key = ?", (ev_key,))
+                            if cursor.fetchone()[0] == 0:
+                                stake_a = round(stake * ((1.0 / bb_odds) / h_cost), 2)
+                                stake_b = round(stake - stake_a, 2)
+                                exp_epoch = int(round(now_ts)) + dur_sec
+                                exp_iso = datetime.fromtimestamp(exp_epoch, timezone.utc).isoformat()
+                                cursor.execute('''
+                                    INSERT INTO paper_trades (
+                                        deal_type, event_key, title, coin, direction,
+                                        platform_a, platform_b, action_a, action_b,
+                                        odds_a, odds_b, stake_a, stake_b, total_stake,
+                                        hedge_cost, strike_price, strike_b,
+                                        status, entry_time, expiry_time, entry_price, created_by
+                                    ) VALUES (?, ?, ?, ?, ?, 'bybit_odds', 'polymarket', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OPEN', ?, ?, ?, 'auto')
+                                ''', (
+                                    "sync_start_arb", ev_key,
+                                    f"🔒 Синхр. Старт ({sec_from_start:.0f}с): {coin} {wtype} (Cost: {h_cost:.2f})",
+                                    coin, f"SYNC:{bb_dir}+{p_dir}",
+                                    f"Bybit (+{sec_from_start:.0f}с): {bb_dir} @ {bb_odds:.2f}x (Страйк ${idx_p:,.1f})",
+                                    f"Poly (0с): {p_dir} @ ${p_ask:.2f} ({p_odds:.2f}x, Страйк ${open_idx:,.1f})",
+                                    bb_odds, p_odds, stake_a, stake_b, stake,
+                                    h_cost, idx_p, open_idx,
+                                    now_iso, exp_iso, idx_p
+                                ))
+                                active_cnt += 1
+                                print(f"[AutoPaper] Placed Sync Start Arb: {coin} {wtype} (Cost={h_cost:.3f})")
+                            break
 
-                # Also check if there is an immediate Synchronized Start Arb right at 0..25s (0 time gap, 0 strike gap)
-                if sec_from_start <= 25.0 and abs(delta_pct) <= 0.025:
-                    for bb_dir, p_dir, p_ask, p_odds in [
-                        ("UP", "DOWN", poly_down_ask, poly_odds_down),
-                        ("DOWN", "UP", poly_up_ask, poly_odds_up)
-                    ]:
-                        if 0.15 <= p_ask <= 0.41:
-                            h_cost = round((1.0 / bb_odds) + p_ask, 4)
-                            if h_cost <= 0.965:
-                                ev_key = f"SYNCSTART-{sym}-{win_id}"
-                                cursor.execute("SELECT COUNT(*) FROM paper_trades WHERE event_key = ?", (ev_key,))
-                                if cursor.fetchone()[0] == 0:
-                                    stake_a = round(stake * ((1.0 / bb_odds) / h_cost), 2)
-                                    stake_b = round(stake - stake_a, 2)
-                                    exp_iso = datetime.fromtimestamp(win_id + dur_sec, timezone.utc).isoformat()
-                                    cursor.execute('''
-                                        INSERT INTO paper_trades (
-                                            deal_type, event_key, title, coin, direction,
-                                            platform_a, platform_b, action_a, action_b,
-                                            odds_a, odds_b, stake_a, stake_b, total_stake,
-                                            hedge_cost, strike_price,
-                                            status, entry_time, expiry_time, entry_price, created_by
-                                        ) VALUES (?, ?, ?, ?, ?, 'bybit_odds', 'polymarket', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OPEN', ?, ?, ?, 'auto')
-                                    ''', (
-                                        "sync_start_arb", ev_key,
-                                        f"🔒 Синхр. Старт ({sec_from_start:.0f}с): {coin} {wtype} (Cost: {h_cost:.2f})",
-                                        coin, f"SYNC:{bb_dir}+{p_dir}",
-                                        f"Bybit (0с): {bb_dir} @ {bb_odds:.2f}x (Страйк ${open_idx:,.1f})",
-                                        f"Poly (0с): {p_dir} @ ${p_ask:.2f} ({p_odds:.2f}x, Страйк ${open_idx:,.1f})",
-                                        bb_odds, p_odds, stake_a, stake_b, stake,
-                                        h_cost, open_idx,
-                                        now_iso, exp_iso, open_idx
-                                    ))
-                                    active_cnt += 1
-                                    print(f"[AutoPaper] Placed Sync Start Arb: {coin} {wtype} (Cost={h_cost:.3f})")
-                                break
+            # ─── 2. Honest Cross-Platform Two-Step Hedge: Bybit + Polymarket (No-Gap Corridor & Zero Look-Ahead!) ───
+            # Step 1 (0.5..12s): Enter Leg 1 in real time on Bybit Odds (spinning Bybit Promo volume!) ONLY when
+            #                    idx_p <= open_idx (for UP) or idx_p >= open_idx (for DOWN) — zero Strike Gap!
+            # Step 2 (15..dur-20s): If opposite Polymarket outcome drops so (1/bb_odds + ask2) <= 0.92, lock in Step 2!
+            # If Step 2 never triggers, Step 1 remains unhedged on Bybit and settles honestly (WIN or LOSS) at +300s/+900s!
+            if self.config.get("auto_two_step_hedge", True) and poly_accepting:
+                ev_key_hedge = f"LOCKHEDGE-{sym}-{win_id}"
+                if 0.5 <= sec_from_start <= 12.0:
+                    chosen_dir1 = None
+                    if poly_up_ask >= 0.52 and idx_p <= open_idx * 1.00002:
+                        chosen_dir1 = "UP"
+                    elif poly_down_ask >= 0.52 and idx_p >= open_idx * 0.99998:
+                        chosen_dir1 = "DOWN"
 
-            # ─── Step 2 of Two-Step Hedge: Lock-In Risk-Free Profit on Mid-Window Impulse ───
-            # Both Leg 1 (opened at t=0..25s) and Leg 2 (bought now at t=35..240s) share the EXACT SAME window_id,
-            # EXACT SAME strike (S_0 = open_idx), and EXACT SAME expiry time (win_id + dur_sec)!
-            if self.config.get("auto_two_step_hedge", True) and poly_accepting and 30.0 < sec_from_start <= (dur_sec - 45):
-                anchor = self.window_start_anchors.get(anchor_key)
-                if anchor:
-                    # Check if price moved UP (so Poly DOWN is now cheap) OR moved DOWN (so Poly UP is now cheap)
-                    # Option 1: Leg 1 was Poly UP at start (cost = anchor['up_ask']), Leg 2 is Poly DOWN now (cost = poly_down_ask)
-                    # Option 2: Leg 1 was Bybit UP at start (cost = 1/1.80 = 0.5556), Leg 2 is Poly DOWN now (cost = poly_down_ask)
-                    candidates = []
-                    if 0.12 <= poly_down_ask <= 0.38 and delta_pct > 0.02:
-                        # Price pumped -> lock with Poly DOWN
-                        cost_poly_pair = round(anchor["up_ask"] + poly_down_ask, 4)
-                        cost_cross_pair = round((1.0 / anchor["bb_odds"]) + poly_down_ask, 4)
-                        if cost_cross_pair <= 0.92:
-                            candidates.append((
-                                "Bybit+Poly", "UP", anchor["bb_odds"], round(1.0 / anchor["bb_odds"], 4),
-                                "DOWN", poly_down_ask, poly_odds_down, cost_cross_pair
-                            ))
-                        elif cost_poly_pair <= 0.88:
-                            candidates.append((
-                                "Poly+Poly", "UP", round(1.0 / anchor["up_ask"], 2), anchor["up_ask"],
-                                "DOWN", poly_down_ask, poly_odds_down, cost_poly_pair
-                            ))
-
-                    if 0.12 <= poly_up_ask <= 0.38 and delta_pct < -0.02:
-                        # Price dumped -> lock with Poly UP
-                        cost_poly_pair = round(anchor["down_ask"] + poly_up_ask, 4)
-                        cost_cross_pair = round((1.0 / anchor["bb_odds"]) + poly_up_ask, 4)
-                        if cost_cross_pair <= 0.92:
-                            candidates.append((
-                                "Bybit+Poly", "DOWN", anchor["bb_odds"], round(1.0 / anchor["bb_odds"], 4),
-                                "UP", poly_up_ask, poly_odds_up, cost_cross_pair
-                            ))
-                        elif cost_poly_pair <= 0.88:
-                            candidates.append((
-                                "Poly+Poly", "DOWN", round(1.0 / anchor["down_ask"], 2), anchor["down_ask"],
-                                "UP", poly_up_ask, poly_odds_up, cost_poly_pair
-                            ))
-
-                    if candidates:
-                        mode_lbl, dir1, odds1, cost1, dir2, ask2, odds2, total_h_cost = candidates[0]
-                        ev_key = f"LOCKHEDGE-{sym}-{win_id}"
-                        cursor.execute("SELECT COUNT(*) FROM paper_trades WHERE event_key = ?", (ev_key,))
+                    if chosen_dir1:
+                        odds1 = win.get("odds_up", 1.8) if chosen_dir1 == "UP" else win.get("odds_down", 1.8)
+                        cost1 = round(1.0 / odds1, 4) if odds1 > 0 else 0.5556
+                        cursor.execute("SELECT COUNT(*) FROM paper_trades WHERE event_key = ?", (ev_key_hedge,))
                         if cursor.fetchone()[0] == 0:
-                            stake_a = round(stake * (cost1 / total_h_cost), 2)
-                            stake_b = round(stake - stake_a, 2)
-                            exp_iso = datetime.fromtimestamp(win_id + dur_sec, timezone.utc).isoformat()
-                            s0 = anchor["open_idx"]
-                            t0_sec = anchor["recorded_sec"]
-
+                            exp_epoch = int(round(now_ts)) + dur_sec
+                            exp_iso = datetime.fromtimestamp(exp_epoch, timezone.utc).isoformat()
                             cursor.execute('''
                                 INSERT INTO paper_trades (
                                     deal_type, event_key, title, coin, direction,
                                     platform_a, platform_b, action_a, action_b,
                                     odds_a, odds_b, stake_a, stake_b, total_stake,
-                                    hedge_cost, strike_price,
+                                    hedge_cost, strike_price, strike_b, resolution_note,
                                     status, entry_time, expiry_time, entry_price, created_by
-                                ) VALUES (?, ?, ?, ?, ?, 'bybit_odds', 'polymarket', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OPEN', ?, ?, ?, 'auto')
+                                ) VALUES (?, ?, ?, ?, ?, 'bybit_odds', 'polymarket', ?, ?, ?, 0, ?, 0, ?, ?, ?, ?, ?, 'OPEN', ?, ?, ?, 'auto')
                             ''', (
-                                "two_step_hedge", ev_key,
-                                f"🛡️ 2-Шаговый Хедж ({mode_lbl}): {coin} {wtype} (Cost: {total_h_cost:.2f}, Без риска)",
-                                coin, f"LOCK:{dir1}+{dir2}",
-                                f"Шаг 1 (+{t0_sec:.0f}с): {dir1} @ {odds1:.2f}x (Страйк ${s0:,.1f})",
-                                f"Шаг 2 (+{sec_from_start:.0f}с): Хедж {dir2} @ ${ask2:.2f} ({odds2:.2f}x, Страйк ${s0:,.1f})",
-                                odds1, odds2, stake_a, stake_b, stake,
-                                total_h_cost, s0,
-                                now_iso, exp_iso, s0
+                                "two_step_hedge", ev_key_hedge,
+                                f"🛡️ 2-Шаговый Хедж (Шаг 1/2): {coin} {wtype} (Bybit {chosen_dir1} @ {odds1:.2f}x)",
+                                coin, f"STEP1:{chosen_dir1}",
+                                f"Шаг 1 (+{sec_from_start:.0f}с): Bybit {chosen_dir1} @ {odds1:.2f}x (Страйк ${idx_p:,.1f})",
+                                "⏳ Ожидание Шага 2 на Polymarket (замок <= 0.92)...",
+                                odds1, stake, stake,
+                                cost1, idx_p, open_idx, "Шаг 1 открыт на Bybit (без зазора страйков, ожидание замка Poly)",
+                                now_iso, exp_iso, idx_p
                             ))
                             active_cnt += 1
-                            print(f"[AutoPaper] Locked 2-Step Risk-Free Hedge: {coin} {wtype} ({dir1}+{dir2}, Cost={total_h_cost:.3f})")
+                            print(f"[AutoPaper] Opened Step 1 of Bybit+Poly 2-Step Hedge: {coin} {wtype} (Bybit {chosen_dir1} @ {odds1:.2f}x, Strike=${idx_p:,.1f}, S0=${open_idx:,.1f})")
+
+                elif 15.0 <= sec_from_start <= (dur_sec - 20):
+                    cursor.execute(
+                        "SELECT id, direction, odds_a, hedge_cost, strike_price, strike_b FROM paper_trades WHERE event_key = ? AND status = 'OPEN'",
+                        (ev_key_hedge,)
+                    )
+                    step1_row = cursor.fetchone()
+                    if step1_row and str(step1_row[1]).startswith("STEP1:"):
+                        t_id_h = step1_row[0]
+                        dir1 = str(step1_row[1]).split(":")[1]
+                        odds1 = float(step1_row[2] or 1.8)
+                        cost1 = float(step1_row[3] or (1.0 / odds1))
+                        s_a = float(step1_row[4] or idx_p)
+                        s0 = float(step1_row[5] or open_idx)
+                        dir2 = "DOWN" if dir1 == "UP" else "UP"
+                        ask2 = poly_down_ask if dir2 == "DOWN" else poly_up_ask
+                        odds2 = poly_odds_down if dir2 == "DOWN" else poly_odds_up
+                        total_h_cost = round(cost1 + ask2, 4)
+
+                        if 0.08 <= ask2 <= 0.42 and total_h_cost <= 0.92:
+                            stake_a = round(stake * (cost1 / total_h_cost), 2)
+                            stake_b = round(stake - stake_a, 2)
+                            cursor.execute('''
+                                UPDATE paper_trades
+                                SET title = ?, direction = ?, action_b = ?, odds_b = ?,
+                                    stake_a = ?, stake_b = ?, hedge_cost = ?, resolution_note = ?
+                                WHERE id = ?
+                            ''', (
+                                f"🛡️ 2-Шаговый Хедж (Замок 🔒): {coin} {wtype} (Cost: {total_h_cost:.2f})",
+                                f"LOCK:{dir1}+{dir2}",
+                                f"Шаг 2 (+{sec_from_start:.0f}с): Poly {dir2} @ ${ask2:.2f} ({odds2:.2f}x, S₀=${s0:,.1f})",
+                                odds2, stake_a, stake_b, total_h_cost,
+                                f"🔒 Замок Bybit+Poly закрыт на +{sec_from_start:.0f}с (Cost={total_h_cost:.2f})",
+                                t_id_h
+                            ))
+                            print(f"[AutoPaper] Locked Step 2 of Bybit+Poly 2-Step Hedge: {coin} {wtype} ({dir1}+{dir2}, Cost={total_h_cost:.3f})")
 
             # ─── Strategy 3: Polymarket Window Lag (5MIN & 15MIN Fixed S0 Strike) ───
             if self.config.get("auto_poly_48s_lag", True) and wtype in ("5MIN", "15MIN") and poly_accepting:
@@ -752,25 +749,98 @@ class AutoPaperTrader:
                 ''', (status, settle_price, payout, net_profit, roi_pct, t_id))
                 print(f"[AutoPaper] Settled Poly 48s Lag {trade['title']}: {status} (${net_profit:+.2f})")
 
-            # 3. Settle Synchronized Start Arb & 2-Step Lock-In Hedge (Both legs share S_0 and T_end!)
+            # 3. Honest Settlement of Synchronized Start Arb & 2-Step Hedge (per-leg evaluation with exact Bybit vs Poly timer check!)
             elif deal_type in ("two_step_hedge", "sync_start_arb", "cross_5m_arb"):
-                settle_idx = live_idx_price or float(trade.get("strike_price") or 0.0)
-                hedge_cost = float(trade.get("hedge_cost") or 0.90)
-                if 0 < hedge_cost < 1.0:
-                    # Account for ~1.5% Polymarket fee on profit
-                    payout = round((stake / hedge_cost) * 0.99, 2)
-                else:
-                    payout = round(stake * 1.02, 2)
-                net_profit = round(payout - stake, 2)
-                status = "WON" if net_profit >= 0 else "LOST"
-                roi_pct = round((net_profit / stake) * 100.0, 2)
+                settle_idx_bybit = live_idx_price or float(trade.get("strike_price") or 0.0)
+                settle_idx_poly = settle_idx_bybit
 
+                # Look up exact candle-end price for Polymarket leg (win_id + dur_sec) if Bybit expired 1..12s after candle close
+                ev_k = str(trade.get("event_key") or "")
+                m_win = re.search(r'-(\d{10})$', ev_k)
+                if m_win and os.path.exists(self.ticks_db_path):
+                    try:
+                        win_id_int = int(m_win.group(1))
+                        sym_str = f"{coin}USDT-{'15MIN' if '15MIN' in ev_k else '5MIN'}"
+                        t_conn = sqlite3.connect(self.ticks_db_path)
+                        t_cur = t_conn.cursor()
+                        t_cur.execute(
+                            "SELECT index_price FROM sec_ticks WHERE symbol = ? AND window_id = ? ORDER BY id DESC LIMIT 1",
+                            (sym_str, win_id_int)
+                        )
+                        t_row = t_cur.fetchone()
+                        t_conn.close()
+                        if t_row and t_row[0]:
+                            settle_idx_poly = float(t_row[0])
+                    except Exception:
+                        pass
+
+                dir_str = str(trade.get("direction") or "")
+                s_a = float(trade.get("strike_price") or trade.get("entry_price") or settle_idx_bybit)
+                s_b = float(trade.get("strike_b") or s_a)
+                odds_a = float(trade.get("odds_a") or 1.8)
+                odds_b = float(trade.get("odds_b") or 0.0)
+                stake_a = float(trade.get("stake_a") or stake)
+                stake_b = float(trade.get("stake_b") or 0.0)
+                plat_a = str(trade.get("platform_a") or "bybit_odds")
+
+                if dir_str.startswith("STEP1:"):
+                    # Step 2 never locked! Settle as unhedged 1-leg trade on platform_a (Bybit or Poly)
+                    d1 = dir_str.split(":")[1]
+                    if plat_a == "bybit_odds":
+                        won1 = (d1 == "UP" and settle_idx_bybit > s_a) or (d1 == "DOWN" and settle_idx_bybit < s_a)
+                    else:
+                        won1 = (d1 == "UP" and settle_idx_poly >= s_a) or (d1 == "DOWN" and settle_idx_poly < s_a)
+                    if won1:
+                        gross = stake * odds_a
+                        fee = max(0.0, (gross - stake) * 0.02) if plat_a == "polymarket" else 0.0
+                        payout = round(gross - fee, 2)
+                        net_profit = round(payout - stake, 2)
+                        status = "WON"
+                        res_note = f"Шаг 2 не сработал, но Шаг 1 ({d1}) выиграл соло"
+                    else:
+                        payout = 0.0
+                        net_profit = -stake
+                        status = "LOST"
+                        res_note = f"✕ Замок Шага 2 не закрылся, Шаг 1 ({d1}) сгорел"
+                else:
+                    # 2-leg locked trade (LOCK:UP+DOWN or SYNC:UP+DOWN)
+                    clean_dirs = dir_str.replace("LOCK:", "").replace("SYNC:", "").split("+")
+                    d_a = clean_dirs[0] if len(clean_dirs) >= 1 else "UP"
+                    d_b = clean_dirs[1] if len(clean_dirs) >= 2 else ("DOWN" if d_a == "UP" else "UP")
+
+                    if plat_a == "bybit_odds":
+                        won_a = (d_a == "UP" and settle_idx_bybit > s_a) or (d_a == "DOWN" and settle_idx_bybit < s_a)
+                    else:
+                        won_a = (d_a == "UP" and settle_idx_poly >= s_a) or (d_a == "DOWN" and settle_idx_poly < s_a)
+                    won_b = (d_b == "UP" and settle_idx_poly >= s_b) or (d_b == "DOWN" and settle_idx_poly < s_b)
+
+                    payout = 0.0
+                    if won_a:
+                        gross_a = stake_a * odds_a
+                        fee_a = max(0.0, (gross_a - stake_a) * 0.02) if plat_a == "polymarket" else 0.0
+                        payout += (gross_a - fee_a)
+                    if won_b and stake_b > 0 and odds_b > 0:
+                        gross_b = stake_b * odds_b
+                        fee_b = max(0.0, (gross_b - stake_b) * 0.02)
+                        payout += (gross_b - fee_b)
+
+                    payout = round(payout, 2)
+                    net_profit = round(payout - stake, 2)
+                    status = "WON" if net_profit >= 0 else "LOST"
+                    if won_a and won_b:
+                        res_note = "🎯 2X ДЖЕКПОТ! Оба плеча выиграли"
+                    elif won_a or won_b:
+                        res_note = "🔒 Замок сработал (1 плечо из 2)"
+                    else:
+                        res_note = "✕ Разница таймеров/страйков: оба плеча проиграли!"
+
+                roi_pct = round((net_profit / stake) * 100.0, 2)
                 cursor.execute('''
                     UPDATE paper_trades
-                    SET status = ?, settle_price = ?, payout = ?, net_profit = ?, roi_pct = ?
+                    SET status = ?, settle_price = ?, payout = ?, net_profit = ?, roi_pct = ?, resolution_note = ?
                     WHERE id = ?
-                ''', (status, settle_idx, payout, net_profit, roi_pct, t_id))
-                print(f"[AutoPaper] Settled {deal_type} {trade['title']}: {status} (Profit=${net_profit:+.2f})")
+                ''', (status, settle_idx_bybit, payout, net_profit, roi_pct, res_note, t_id))
+                print(f"[AutoPaper] Settled {deal_type} {trade['title']}: {status} ({res_note}, Profit=${net_profit:+.2f})")
 
             # 4. Settle Daily Cross-Platform Arbitrage (with optional 2x Corridor Jackpot!)
             elif deal_type == "cross_arb":

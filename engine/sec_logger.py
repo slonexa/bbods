@@ -503,12 +503,15 @@ class HighFrequencyTickLogger:
                     turnover = round(tv_up + tv_down, 2)
 
                     # Polymarket live CLOB data for this exact (coin, wtype, window_id)
+                    # Guard against stale CLOB quotes (> 5.0s old) if /books endpoint lags
                     p_book = poly_snap.get((coin, wtype, window_id), {})
-                    poly_up_ask = p_book.get("up_ask", 0.0)
-                    poly_down_ask = p_book.get("down_ask", 0.0)
-                    poly_odds_up = p_book.get("odds_up", 0.0)
-                    poly_odds_down = p_book.get("odds_down", 0.0)
-                    poly_accepting = p_book.get("accepting", 0)
+                    book_age = now_ts - float(p_book.get("updated_at") or 0.0)
+                    is_book_fresh = (book_age <= 5.0)
+                    poly_up_ask = p_book.get("up_ask", 0.0) if is_book_fresh else 0.0
+                    poly_down_ask = p_book.get("down_ask", 0.0) if is_book_fresh else 0.0
+                    poly_odds_up = p_book.get("odds_up", 0.0) if is_book_fresh else 0.0
+                    poly_odds_down = p_book.get("odds_down", 0.0) if is_book_fresh else 0.0
+                    poly_accepting = (p_book.get("accepting", 0) if is_book_fresh else 0)
                     poly_slug = p_book.get("slug", "")
 
                     # Best cross-exchange hedge cost:

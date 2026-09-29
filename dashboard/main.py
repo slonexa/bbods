@@ -26,7 +26,7 @@ def read_root():
 @app.get("/api/spreads")
 def get_spreads():
     # Returns latest clean deduplicated live market strikes (1 row per strike, excluding 5m/15m test contracts)
-    spreads = db.get_latest_clean_spreads(limit=50)
+    spreads = db.get_latest_clean_spreads(limit=85)
     return {"data": spreads}
 
 @app.get("/api/updown_spreads")

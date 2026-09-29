@@ -87,25 +87,40 @@ class Normalizer:
             if not avail_b_strikes:
                 continue
 
-            # If exact strike exists on platform B, match exact; otherwise match closest strike within 1.0%
+            # If exact strike exists on platform B, match exact;
+            # otherwise select the direction-compatible Corridor 2x (Polish Middle) strike within 1 grid step (<= 4.5%):
+            # - Bybit ABOVE S_a needs Poly NO S_b with S_b > S_a (corridor [S_a, S_b])
+            # - Bybit BELOW S_a needs Poly YES S_b with S_b < S_a (corridor [S_b, S_a])
+            ea_dir = (ea.get("direction") or ea.get("outcome") or "").upper()
+            target_b_strikes = []
             if strike_a in avail_b_strikes:
-                target_b_strike = strike_a
+                target_b_strikes.append(strike_a)
             else:
-                closest_b = min(avail_b_strikes, key=lambda s: abs(s - strike_a))
-                rel_diff = abs(strike_a - closest_b) / max(strike_a, closest_b)
-                if rel_diff <= 0.01:
-                    target_b_strike = closest_b
+                if ea_dir == "ABOVE":
+                    candidates = [s for s in avail_b_strikes if s > strike_a]
+                    closest_b = min(candidates) if candidates else None
+                elif ea_dir == "BELOW":
+                    candidates = [s for s in avail_b_strikes if s < strike_a]
+                    closest_b = max(candidates) if candidates else None
                 else:
-                    continue
+                    closest_b = min(avail_b_strikes, key=lambda s: abs(s - strike_a))
+
+                if closest_b is not None:
+                    rel_diff = abs(strike_a - closest_b) / max(strike_a, closest_b)
+                    if rel_diff <= 0.045:
+                        target_b_strikes.append(closest_b)
+
+            if not target_b_strikes:
+                continue
 
             for eb in targets_b:
                 # 1. Asset & date check
                 if eb.get("asset") != asset_a or eb.get("settle_date") != date_a:
                     continue
                     
-                # 2. Strike price check (exact or closest within 1.0%)
+                # 2. Strike price check (exact or valid Corridor 2x strike within 4.5%)
                 strike_b = float(eb.get("strike_price") or 0)
-                if strike_b != target_b_strike:
+                if strike_b not in target_b_strikes:
                     continue
                     
                 # 4. Direction compatibility

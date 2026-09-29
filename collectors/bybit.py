@@ -112,9 +112,11 @@ class BybitOddsCollector(BaseCollector):
                 # Handle ticker updates (wp, pr, etc.)
                 elif topic.startswith("event.ticker.all"):
                     items = payload if isinstance(payload, list) else [payload]
+                    now_ts = time.time()
                     for item in items:
                         symbol = item.get("symbol")
                         if symbol:
+                            item["_fetched_at"] = now_ts
                             if symbol not in self.tickers:
                                 self.tickers[symbol] = {}
                             self.tickers[symbol].update(item)
@@ -127,8 +129,15 @@ class BybitOddsCollector(BaseCollector):
 
     def _on_close(self, ws, close_status_code, close_msg):
         self.connected = False
-        print(f"[{self.platform_name}] WS closed. Reconnecting in 5s...")
+        # CRITICAL: Clear stale cached data to prevent "Frozen Cache" ghost odds after reconnect!
+        with self._lock:
+            stale_count = len(self.tickers)
+            self.tickers.clear()
+            self.contracts.clear()
+        print(f"[{self.platform_name}] WS closed (cleared {stale_count} stale tickers). Reconnecting in 5s...")
         time.sleep(5)
+        # Re-seed fresh data from REST before WS reconnects (prevents gap between connect and first WS message)
+        self._refresh_tickers_from_rest()
         self._connect_ws()
 
     @staticmethod
@@ -243,8 +252,9 @@ class BybitOddsCollector(BaseCollector):
             contracts_snapshot = dict(self.contracts)
         
         for symbol, ticker in tickers_snapshot.items():
-            # Discard stale tickers older than 180s if a contract expired/disappeared
-            if now_ts - ticker.get("_fetched_at", now_ts) > 180:
+            # Discard stale tickers older than 60s (catches ghost data surviving reconnects / REST failures)
+            ticker_age = now_ts - ticker.get("_fetched_at", now_ts)
+            if ticker_age > 60:
                 continue
 
             wp_str = ticker.get("wp", "0")

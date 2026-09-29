@@ -95,7 +95,8 @@ class AlertManager:
 
         # 2. Evaluate only the single best direction per contract
         for base_key, s in best_by_contract.items():
-            is_arb = s.get("is_arb", False) or s.get("is_arb") == 1
+            is_arb = bool(s.get("is_arb", False) or s.get("is_arb") == 1)
+            is_time_risky = bool(s.get("is_arb_time_risky", False) or s.get("is_arb_time_risky") == 1)
             margin_pct = round((s.get("hedge_margin") or 0) * 100, 2)
             spread_pct = round((s.get("spread_after_fees") or 0) * 100, 2)
             event_key = s.get("event_key") or s.get("title", "")
@@ -105,10 +106,10 @@ class AlertManager:
             alert_type = ""
             odds_a = s.get("odds_a") or 0.0
             odds_b = s.get("odds_b") or 0.0
-            if odds_a <= 1.005 or odds_b <= 1.005:
+            if odds_a <= 1.002 or odds_b <= 1.002:
                 continue
             
-            if is_arb and self.config.get("notify_on_surebet", True) and margin_pct >= min_margin_pct:
+            if (is_arb or is_time_risky) and self.config.get("notify_on_surebet", True) and margin_pct >= min_margin_pct:
                 should_alert = True
                 alert_type = "SUREBET"
             elif self.config.get("notify_on_high_spread", True) and spread_pct >= min_spread_pct and margin_pct >= -15.0:

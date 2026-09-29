@@ -196,6 +196,7 @@ class TestStatisticalAndLagMethodology(unittest.TestCase):
         matched_map = {m[0]["strike_price"]: m[0]["exact_strike_match"] for m in matched}
         self.assertTrue(matched_map.get(2700.0))
         self.assertFalse(matched_map.get(2690.0))
+        self.assertFalse(matched_map.get(2640.0))
 
     def test_value_1leg_only_on_exact_strike_match(self):
         """Task 2: Value 1-leg must be allowed ONLY when Bybit and Polymarket strikes match 1-to-1."""

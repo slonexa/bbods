@@ -4503,7 +4503,7 @@
                     }
                 }
 
-                const trueArbs = cachedData.filter(r => (r.is_arb === 1 || r.is_arb === true) && (r.hedge_margin > 0));
+                const trueArbs = cachedData.filter(r => (r.is_arb === 1 || r.is_arb === true || r.is_arb_time_risky === 1 || r.is_arb_time_risky === true) && (r.hedge_margin > 0));
                 if (trueArbs.length > lastArbCount) {
                     if (soundAlertsEnabled) playArbChime();
                     if ("Notification" in window && Notification.permission === "granted") {
@@ -4558,7 +4558,7 @@
             if (!container) return;
 
             const cross = data.filter(r => !r.prob_sum || r.prob_sum === 0);
-            const arbs = cross.filter(r => (r.is_arb === 1 || r.is_arb === true) && (r.hedge_margin > 0));
+            const arbs = cross.filter(r => (r.is_arb === 1 || r.is_arb === true || r.is_arb_time_risky === 1 || r.is_arb_time_risky === true) && (r.hedge_margin > 0));
 
             let items = [];
             const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
@@ -4591,7 +4591,7 @@
 
             if (totalEl) totalEl.innerText = cross.length;
 
-            const arbs = cross.filter(r => (r.is_arb === 1 || r.is_arb === true) && (r.hedge_margin > 0));
+            const arbs = cross.filter(r => (r.is_arb === 1 || r.is_arb === true || r.is_arb_time_risky === 1 || r.is_arb_time_risky === true) && (r.hedge_margin > 0));
             if (arbsEl) arbsEl.innerText = arbs.length;
 
             let maxSpread = 0;
@@ -4694,7 +4694,7 @@
                 }
 
                 if (filterArbOnly) {
-                    const isArb = (row.is_arb === 1 || row.is_arb === true) && (row.hedge_margin > 0);
+                    const isArb = (row.is_arb === 1 || row.is_arb === true || row.is_arb_time_risky === 1 || row.is_arb_time_risky === true) && (row.hedge_margin > 0);
                     if (!isArb) return false;
                 }
 

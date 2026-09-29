@@ -356,7 +356,7 @@ class Database:
         
         return [dict(r) for r in rows]
 
-    def get_latest_clean_spreads(self, limit: int = 50) -> List[Dict]:
+    def get_latest_clean_spreads(self, limit: int = 85) -> List[Dict]:
         """Fetch latest deduplicated spreads per market strike (excluding 5MIN/15MIN cross-platform test contracts)."""
         import re
         conn = sqlite3.connect(self.db_path)
@@ -371,7 +371,7 @@ class Database:
                 WHERE platform_a != platform_b
                   AND event_key NOT LIKE '%5MIN%'
                   AND event_key NOT LIKE '%15MIN%'
-                  AND odds_a > 1.01 AND odds_b > 1.01
+                  AND odds_a > 1.002 AND odds_b > 1.002
                   AND odds_a < 500 AND odds_b < 500
                   AND detected_at >= datetime('now', '-30 minutes')
             ) WHERE rn = 1
@@ -388,7 +388,7 @@ class Database:
                     WHERE platform_a != platform_b
                       AND event_key NOT LIKE '%5MIN%'
                       AND event_key NOT LIKE '%15MIN%'
-                      AND odds_a > 1.01 AND odds_b > 1.01
+                      AND odds_a > 1.002 AND odds_b > 1.002
                       AND odds_a < 500 AND odds_b < 500
                 ) WHERE rn = 1
                 ORDER BY spread_after_fees DESC
@@ -422,8 +422,8 @@ class Database:
                 clean_strikes[clean_title] = d
             else:
                 existing = clean_strikes[clean_title]
-                d_arb = d.get('is_arb', 0) or 0
-                e_arb = existing.get('is_arb', 0) or 0
+                d_arb = 1 if ((d.get('is_arb', 0) or 0) or (d.get('is_arb_time_risky', 0) or 0)) else 0
+                e_arb = 1 if ((existing.get('is_arb', 0) or 0) or (existing.get('is_arb_time_risky', 0) or 0)) else 0
                 d_margin = d.get('hedge_margin', -999) if d.get('hedge_margin') is not None else -999
                 e_margin = existing.get('hedge_margin', -999) if existing.get('hedge_margin') is not None else -999
                 if (d_arb > e_arb) or (d_arb == e_arb and d_margin > e_margin):
@@ -434,8 +434,9 @@ class Database:
         cross_results.sort(
             key=lambda x: (
                 x.get("is_arb", 0) or 0,
-                0 if " / Poly " in (x.get("title") or "") else 1,
+                x.get("is_arb_time_risky", 0) or 0,
                 x.get("hedge_margin", -999) if x.get("hedge_margin") is not None else -999,
+                0 if " / Poly " in (x.get("title") or "") else 1,
                 x.get("spread_after_fees", 0) or 0
             ),
             reverse=True
@@ -464,21 +465,46 @@ class Database:
         return [dict(r) for r in rows]
 
     def get_top_spreads(self, limit: int = 15) -> List[Dict]:
-        """Fetch the highest profit / spread opportunities recorded in the database (excluding 5m/15m test contracts)."""
+        """Fetch the highest profit / spread opportunities recorded in the database (excluding 5m/15m test contracts).
+        
+        Deduplicated by event_key (only the most recent snapshot per contract is shown)
+        and limited to data from the last 30 minutes to prevent stale post-reconnect ghosts.
+        """
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
+        # Deduplicated: only the latest row per event_key, within 30-minute freshness window
         cursor.execute('''
-            SELECT * FROM spreads
-            WHERE (is_arb = 1 OR spread_after_fees > 0)
-              AND event_key NOT LIKE '%5MIN%'
-              AND event_key NOT LIKE '%15MIN%'
-            ORDER BY is_arb DESC, hedge_margin DESC, spread_after_fees DESC
+            SELECT * FROM (
+                SELECT *, ROW_NUMBER() OVER (PARTITION BY event_key ORDER BY detected_at DESC) as rn
+                FROM spreads
+                WHERE (is_arb = 1 OR is_arb_time_risky = 1 OR spread_after_fees > 0)
+                  AND event_key NOT LIKE '%5MIN%'
+                  AND event_key NOT LIKE '%15MIN%'
+                  AND detected_at >= datetime('now', '-30 minutes')
+            ) WHERE rn = 1
+            ORDER BY is_arb DESC, is_arb_time_risky DESC, hedge_margin DESC, spread_after_fees DESC
             LIMIT ?
         ''', (limit,))
         
         rows = cursor.fetchall()
+        
+        # Fallback: if scanner just restarted and no recent data exists, use all-time (still deduplicated)
+        if not rows:
+            cursor.execute('''
+                SELECT * FROM (
+                    SELECT *, ROW_NUMBER() OVER (PARTITION BY event_key ORDER BY detected_at DESC) as rn
+                    FROM spreads
+                    WHERE (is_arb = 1 OR is_arb_time_risky = 1 OR spread_after_fees > 0)
+                      AND event_key NOT LIKE '%5MIN%'
+                      AND event_key NOT LIKE '%15MIN%'
+                ) WHERE rn = 1
+                ORDER BY is_arb DESC, is_arb_time_risky DESC, hedge_margin DESC, spread_after_fees DESC
+                LIMIT ?
+            ''', (limit,))
+            rows = cursor.fetchall()
+        
         conn.close()
         
         return [dict(r) for r in rows]
