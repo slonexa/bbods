@@ -125,6 +125,77 @@ class TestDashboardUIAndDesign(unittest.TestCase):
         for dom_id in required_ids:
             self.assertIn(f'id="{dom_id}"', self.html, f"Missing required element #{dom_id}")
 
+    def test_top_spreads_equal_halves_layout(self):
+        """Verify Top Spreads cards enforce strict 50/50 equal halves (minmax(0, 1fr)) without overflow."""
+        self.assertIn("grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)", self.html)
+        self.assertIn('class="top-legs-grid"', self.html)
+        self.assertIn('class="top-split-bar"', self.html)
+
+    def test_debug_telemetry_bento_and_engine_log(self):
+        """Verify Debug tab has the 2x2 Telemetry Cards, ENGINE.LOG console, and Anomaly Inspector."""
+        debug_ids = [
+            "dbg-bybit-ms",
+            "dbg-poly-ms",
+            "dbg-matcher-state",
+            "dbg-hft-ticks",
+            "dbg-engine-log-list",
+            "dbg-log-count",
+            "dbg-anom-total-val",
+            "dbg-anom-arb-val",
+            "dbg-anom-gap-val",
+            "dbg-anom-synth-val",
+            "dbg-search-input",
+        ]
+        for dom_id in debug_ids:
+            self.assertIn(f'id="{dom_id}"', self.html, f"Missing Debug element #{dom_id}")
+        self.assertIn("ENGINE.LOG", self.html)
+        self.assertIn("runDebugDiagnosticProbe", self.html)
+
+    def test_phase2_ui_upgrades_present(self):
+        """Verify Phase-2 UI upgrades: 50/50 Deal Modal, Active Contracts Bento Header, 5/15m Collapsible Guide, and Live Footer."""
+        phase2_ids = [
+            "ac-kpi-total",
+            "ac-kpi-paired",
+            "ac-kpi-paired-pct",
+            "ac-kpi-unpaired",
+            "ac-coverage-bar",
+            "ac-search-input",
+            "fast-guide-body",
+            "fast-guide-chevron",
+            "footer-latency-ms",
+            "footer-matcher-state",
+        ]
+        for dom_id in phase2_ids:
+            self.assertIn(f'id="{dom_id}"', self.html, f"Missing Phase-2 UI element #{dom_id}")
+        self.assertIn("handleActiveContractsSearch", self.html)
+        self.assertIn("toggleFastGuide", self.html)
+        self.assertIn("POLY HEDGE", self.html)
+
+    def test_no_emojis_and_vector_svg_icons_valid(self):
+        """Verify all emojis have been removed from index.html and replaced with valid vector SVG icons."""
+        emoji_pattern = re.compile(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]")
+        leftover_emojis = emoji_pattern.findall(self.html)
+        self.assertEqual(
+            leftover_emojis,
+            [],
+            f"Found leftover emoji characters in index.html: {set(leftover_emojis)}",
+        )
+        self.assertIn(".ui-icon", self.html)
+        self.assertIn("UI_ICON_PATHS", self.html)
+        self.assertIn("function uiIcon(", self.html)
+
+        # Ensure every uiIcon('name', ...) call references a key defined in UI_ICON_PATHS
+        paths_block = re.search(r"const\s+UI_ICON_PATHS\s*=\s*\{(.*?)\};", self.html, re.S)
+        self.assertIsNotNone(paths_block, "UI_ICON_PATHS object not found in index.html")
+        defined_icons = set(re.findall(r"['\"]?([a-zA-Z0-9_-]+)['\"]?\s*:\s*'", paths_block.group(1)))
+        used_icons = set(re.findall(r"uiIcon\(\s*['\"]([a-zA-Z0-9_-]+)['\"]", self.html))
+        missing_icons = used_icons - defined_icons
+        self.assertEqual(
+            missing_icons,
+            set(),
+            f"uiIcon() called with undefined icon keys: {sorted(missing_icons)}",
+        )
+
     def test_dashboard_http_endpoints(self):
         """Verify main page and JSON API endpoints respond with HTTP 200."""
         endpoints = [
@@ -142,3 +213,4 @@ class TestDashboardUIAndDesign(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
