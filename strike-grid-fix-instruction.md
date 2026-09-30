@@ -1,3 +1,8 @@
+# ✅ ЗАКРЫТО (выполнено 26-27.09.2026)
+
+> **Статус:** ✅ Задача 1 (парсинг страйков без привязки к шагу сетки) — сделана, тест `test_bybit_mixed_step_strike_grid_no_loss` подтверждает.
+> ✅ Задача 2 (Value 1-плечо только при exact strike match) — сделана, `can_show_value_1leg = bool(exact_strike_match)` в spread.py.
+
 # Задача: страйки Bybit Target — не хардкодить шаг сетки
 
 ## Контекст

@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] — 2026-09-30
+
+### Added
+- **4 HFT Auto-Paper Strategies (`engine/auto_paper.py`)**: Implemented `sync_start_arb` (simultaneous Bybit+Poly entry in first 0-25s, WR=96.3%), `poly_48s_lag` (Poly CLOB lag exploitation, WR=62.9%), `two_step_hedge` (2-step hedging with locked profit), `corridor_2x` (asymmetric corridor on different strikes).
+- **Polymarket CLOB 1-Second Poller**: Added real-time orderbook polling for 5MIN/15MIN Up/Down contracts via `clob.polymarket.com/books` with 5.0s staleness guard.
+- **Rolling 60s TWAP**: Computes Chainlink-compatible rolling TWAP from Bybit index price stream for Polymarket settlement proxy.
+- **Direction-Aware Corridor Matching**: Upgraded `process_matches` to pair 44→100+ contracts via complementary direction resolution (`ABOVE↔NO`, `BELOW↔YES`).
+- **`is_arb_time_risky` Flag**: Added expiration time divergence check — surebets with >30min time gap marked as risky, not guaranteed.
+- **Real Poly Opposite Price**: Replaced synthetic `1.0 - prob_poly` with actual market price from `poly_lookup` cache, with `opp_price_is_synthetic` fallback flag.
+- **Flexible Strike Grid Parsing**: Bybit parser now accepts any strike step ($10, $50, $100+) without hardcoded grid assumptions. Test: `test_bybit_mixed_step_strike_grid_no_loss`.
+- **Value 1-Leg Guard**: `💎 Value 1-плечо` badge only shown when Bybit and Poly strikes match exactly — prevents false value signals from different strike levels.
+- **Unit Test Suite (8 tests)**: Covers spread math, Dutch Book, surebet time blocking, corridor settlement, binomial gates, Telegram dedup, lag methodology, and mixed strike grids.
+
+### Fixed
+- **Frozen Cache v4 — WS Reconnect Stale Data (`collectors/bybit.py`)**: On WebSocket disconnect, `_on_close` now clears `self.tickers` and `self.contracts` before reconnecting, then re-seeds fresh data from REST. Previously, stale ticker data from before the disconnect persisted in RAM, causing ghost odds (e.g., 8.62x on ABOVE showing +23% phantom arbitrage after internet outage).
+- **WS Ticker Timestamps**: Added `_fetched_at = time.time()` to all WebSocket-received ticker updates. Previously WS data had no timestamp, making the staleness check in `fetch()` ineffective (always passed via `now_ts` fallback).
+- **Staleness Threshold Tightened (180s → 60s)**: Reduced stale ticker tolerance from 3 minutes to 60 seconds to catch post-reconnect ghost data faster. REST refreshes every 10s, so 60s is safe with 6x margin.
+- **Top Spreads Deduplication (`engine/db.py`)**: Added `ROW_NUMBER() OVER (PARTITION BY event_key ORDER BY detected_at DESC)` to `get_top_spreads` — one card per contract, not 3+ duplicates. Added 30-minute freshness window with fallback.
+- **`ticks_db_path` Attribute Error**: Fixed `AutoPaperTrader` missing `ticks_db_path` initialization causing fast 1s cycle crashes.
+- **Poly CLOB Freshness Guard**: If Polymarket orderbook data is older than 5.0s, it's zeroed out to prevent false arbitrage against frozen/lagged prices.
+
 ## [Unreleased]
 
 ### Added
