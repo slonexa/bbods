@@ -1,3 +1,10 @@
+# ✅ ЗАКРЫТО (выполнено 30.09.2026)
+
+> **Реализация:**
+> - `dashboard/main.py` — добавлен `/api/live_quote` (1с Bybit odds из `sec_logger`, CLOB orderbook + `compute_avg_fill_price` + `round_bybit_stakes`)
+> - `engine/sec_logger.py` — экспортирует `all_bybit_odds` и `updated_at` в `.sec_logger_health.json` каждую секунду
+> - `dashboard/static/index.html` — авто-опрос каждые 1.5с при открытии модалки Расчёт (`startLiveQuotePolling`/`stopLiveQuotePolling`), синхронизация тикетов и матрицы выплат с округлёнными ставками
+
 # Идея: Live-режим для модалки "Расчёт" (точечная живая котировка перед входом)
 
 **Приоритет: средний — не блокирует текущую работу, но недорогая и полезная фича, когда дойдут

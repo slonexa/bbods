@@ -177,6 +177,11 @@
             50% { opacity: 0.45; transform: scale(0.75); }
         }
 
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
         @keyframes flash-up {
             0% { background-color: rgba(61, 255, 193, 0.18); }
             100% { background-color: transparent; }
@@ -916,13 +921,13 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 14px;
             padding: 13px 14px;
-            min-width: 345px;
-            max-width: 390px;
-            flex: 1 0 345px;
+            min-width: 385px;
+            max-width: 445px;
+            flex: 1 0 385px;
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
-            gap: 9px;
+            gap: 8px;
             cursor: pointer;
             transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
             position: relative;
@@ -1432,48 +1437,61 @@
             font-size: 10.5px;
         }
 
-        /* ─── Badges & Tags ─── */
+        /* ─── Badges & Tags (Semantic Hierarchy) ─── */
         .badge {
             display: inline-flex;
             align-items: center;
             gap: 4px;
             padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
+            border-radius: 5px;
+            font-size: 9.5px;
             font-weight: 700;
+            font-family: var(--font-mono);
             letter-spacing: 0.02em;
+            white-space: nowrap;
         }
 
         .badge-arb {
-            background: rgba(61, 255, 193, 0.15);
+            background: rgba(61, 255, 193, 0.14);
             color: var(--color-profit);
-            border: 1px solid rgba(61, 255, 193, 0.30);
+            border: 1px solid rgba(61, 255, 193, 0.38);
         }
 
         .badge-sync {
-            background: rgba(61, 255, 193, 0.10);
-            color: var(--color-profit);
-            border: 1px solid rgba(61, 255, 193, 0.22);
+            background: rgba(255, 255, 255, 0.045);
+            color: var(--color-mist);
+            border: 1px solid rgba(255, 255, 255, 0.09);
         }
 
         .badge-gap {
             background: rgba(255, 193, 74, 0.12);
             color: var(--color-warn);
-            border: 1px solid rgba(255, 193, 74, 0.25);
+            border: 1px solid rgba(255, 193, 74, 0.28);
         }
 
-        .badge-corridor {
-            background: rgba(255, 193, 74, 0.15);
-            color: var(--color-warn);
-            font-size: 9px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            padding: 2px 6px;
-            border-radius: 4px;
-            display: inline-flex;
-            align-items: center;
-            gap: 3px;
+        .badge-corridor,
+        .badge-corridor-new {
+            background: rgba(167, 139, 250, 0.16);
+            color: #c4b5fd;
+            border: 1px solid rgba(167, 139, 250, 0.44);
+        }
+
+        .badge-shift-danger {
+            background: rgba(255, 93, 115, 0.15);
+            color: var(--color-loss);
+            border: 1px solid rgba(255, 93, 115, 0.40);
+        }
+
+        .badge-time-risk {
+            background: rgba(255, 159, 67, 0.15);
+            color: #ff9f43;
+            border: 1px solid rgba(255, 159, 67, 0.40);
+        }
+
+        .badge-value {
+            background: rgba(56, 216, 255, 0.12);
+            color: var(--color-cyan);
+            border: 1px solid rgba(56, 216, 255, 0.35);
         }
 
         .pin-badge {
@@ -1482,12 +1500,284 @@
             gap: 3px;
             font-size: 9px;
             font-weight: 700;
-            color: var(--color-profit);
-            background: rgba(61, 255, 193, 0.14);
-            border: 1px solid rgba(61, 255, 193, 0.35);
-            padding: 1px 5px;
+            color: var(--color-cyan);
+            background: rgba(56, 216, 255, 0.14);
+            border: 1px solid rgba(56, 216, 255, 0.35);
+            padding: 1.5px 5px;
             border-radius: 4px;
             margin-left: 4px;
+            white-space: nowrap;
+        }
+
+        /* ─── Strike Bar, Leg Order Tickets & Payoff Matrix (PRO Details) ─── */
+        .strike-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            color: var(--color-mist);
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            white-space: nowrap;
+            gap: 6px;
+        }
+        .strike-bar-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+        .strike-bar-item b {
+            font-family: var(--font-mono);
+            color: var(--color-snow);
+        }
+        .strike-range-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            background: rgba(167, 139, 250, 0.15);
+            color: #c4b5fd;
+            border: 1px solid rgba(167, 139, 250, 0.35);
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 9.5px;
+        }
+
+        .leg-ticket {
+            background: var(--color-obsidian);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 7px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            text-decoration: none;
+            color: inherit;
+            transition: border-color 0.15s, filter 0.15s;
+            min-width: 0;
+        }
+        .leg-ticket:hover {
+            border-color: rgba(255, 255, 255, 0.22);
+            filter: brightness(1.06);
+        }
+        .leg-ticket-bybit {
+            border-left: 3px solid var(--color-bybit);
+            background: linear-gradient(90deg, rgba(246, 178, 60, 0.06) 0%, var(--color-obsidian) 52%);
+        }
+        .leg-ticket-poly {
+            border-left: 3px solid var(--color-poly);
+            background: linear-gradient(90deg, rgba(91, 140, 255, 0.07) 0%, var(--color-obsidian) 52%);
+        }
+        .leg-ticket-head,
+        .leg-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            white-space: nowrap;
+            gap: 4px;
+        }
+        .leg-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            white-space: nowrap;
+        }
+        .leg-odds-wrap {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 3px;
+            font-family: var(--font-mono);
+            white-space: nowrap;
+        }
+        .leg-odds-main,
+        .leg-odds-val {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--color-snow);
+        }
+        .leg-odds-cents,
+        .cent-tag {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            color: var(--color-mist);
+        }
+        .leg-ticket-mid,
+        .leg-mid {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            white-space: nowrap;
+            gap: 4px;
+        }
+        .leg-strike-tag {
+            font-family: var(--font-mono);
+            font-size: 9.5px;
+            color: var(--color-mist);
+            white-space: nowrap;
+        }
+        .dir-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 1px 5px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        .dir-up {
+            background: rgba(61, 255, 193, 0.11);
+            color: var(--color-profit);
+        }
+        .dir-down {
+            background: rgba(255, 93, 115, 0.12);
+            color: #ff7588;
+        }
+        .leg-ticket-foot,
+        .leg-foot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 4px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.07);
+            font-size: 9.5px;
+            color: var(--color-mist);
+            font-family: var(--font-mono);
+            white-space: nowrap;
+            gap: 4px;
+        }
+        .leg-payout-val {
+            color: var(--color-cloud);
+            white-space: nowrap;
+        }
+        .leg-payout-val b {
+            color: var(--color-snow);
+        }
+
+        .payoff-matrix {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        .payoff-cell {
+            padding: 5px 7px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        .payoff-label,
+        .payoff-cell-label {
+            font-size: 8.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--color-fog);
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .payoff-val,
+        .payoff-cell-val {
+            font-family: var(--font-mono);
+            font-size: 10.5px;
+            font-weight: 700;
+            color: var(--color-cloud);
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .payoff-sub {
+            font-size: 9.5px;
+            font-weight: 600;
+        }
+        .payoff-cell.payoff-arb,
+        .payoff-cell.cell-arb {
+            background: rgba(61, 255, 193, 0.09);
+            border-color: rgba(61, 255, 193, 0.32);
+        }
+        .payoff-cell.payoff-corridor,
+        .payoff-cell.cell-corridor {
+            background: rgba(167, 139, 250, 0.11);
+            border-color: rgba(167, 139, 250, 0.36);
+        }
+        .payoff-cell.payoff-warn,
+        .payoff-cell.cell-risk {
+            background: rgba(255, 159, 67, 0.09);
+            border-color: rgba(255, 159, 67, 0.30);
+        }
+        .payoff-cell.cell-value {
+            background: rgba(56, 216, 255, 0.09);
+            border-color: rgba(56, 216, 255, 0.30);
+        }
+
+        .telemetry-pill {
+            font-family: var(--font-mono);
+            font-size: 9.5px;
+            color: var(--color-mist);
+            background: rgba(255, 255, 255, 0.035);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            padding: 1.5px 5.5px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 3.5px;
+            white-space: nowrap;
+        }
+
+        .row-leg-ticket {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: var(--color-obsidian);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 6px 10px;
+            min-width: 245px;
+            text-decoration: none;
+            color: inherit;
+            transition: border-color 0.15s, filter 0.15s;
+        }
+        .row-leg-ticket:hover {
+            border-color: rgba(255, 255, 255, 0.22);
+            filter: brightness(1.06);
+        }
+        .row-leg-bybit {
+            border-left: 3px solid var(--color-bybit);
+            background: linear-gradient(90deg, rgba(246, 178, 60, 0.05) 0%, var(--color-obsidian) 55%);
+        }
+        .row-leg-poly {
+            border-left: 3px solid var(--color-poly);
+            background: linear-gradient(90deg, rgba(91, 140, 255, 0.06) 0%, var(--color-obsidian) 55%);
+        }
+        .row-leg-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .row-leg-bot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding-top: 3px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.06);
+            font-size: 10.5px;
+            white-space: nowrap;
         }
 
         /* ─── Crypto Coins (AssetGlyph) ─── */
@@ -3249,7 +3539,10 @@
                     </span>
                     <div>
                         <h3 id="modal-title" style="font-size:14px; font-weight:600; color:var(--color-snow);">Калькулятор сделки</h3>
-                        <div id="modal-subtitle" style="font-size:11px; color:var(--color-mist); margin-top:2px;">Детализация арбитражной позиции</div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span id="modal-subtitle" style="font-size:11px; color:var(--color-mist);">Детализация арбитражной позиции</span>
+                            <span id="modal-live-indicator" style="font-size:9.5px; font-weight:700; letter-spacing:0.05em;"></span>
+                        </div>
                     </div>
                 </div>
                 <button class="btn-mini-tool" onclick="closeModal()" style="font-size:14px; padding:4px 8px;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -3515,7 +3808,9 @@
             star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
             'arrow-right': '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>',
             'check-circle': '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
-            'x-circle': '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>'
+            'x-circle': '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
+            activity: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+            layers: '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>'
         };
 
         function uiIcon(name, size = 12) {
@@ -5926,7 +6221,7 @@
                 const sp = ((h.spread_after_fees || 0) * 100).toFixed(2);
                 const hasCorr = (h.time_warning || '').includes('Коридор 2x');
                 const tag = hasCorr
-                    ? '<span class="badge badge-gap" style="padding:1px 5px; font-size:9.5px;">КОРИДОР 2X</span>'
+                    ? '<span class="badge badge-corridor-new" style="padding:1px 5px; font-size:9.5px;">КОРИДОР 2X</span>'
                     : '<span class="badge badge-value" style="padding:1px 5px; font-size:9.5px;">SPREAD</span>';
                 items.push(`
                     <span class="ticker-item" style="display:inline-flex; align-items:center; gap:6px;">
@@ -6040,6 +6335,53 @@
             return `<span class="coin-badge coin-other" style="${style}" title="Crypto">$</span>`;
         }
 
+        // ─── Strike & Corridor Breakdown Helper ───
+        function extractStrikeDetails(title, timeWarning) {
+            const rawTitle = title || '';
+            const rawWarn = timeWarning || '';
+            const priceMatches = rawTitle.match(/\$[0-9,]+(\.[0-9]+)?/g) || [];
+            const warnMatches = rawWarn.match(/\$[0-9,]+(\.[0-9]+)?/g) || [];
+            const parseNum = (s) => parseFloat((s || '').replace(/[$,]/g, '')) || 0;
+            const fmtUsd = (n) => '$' + Math.round(n).toLocaleString('en-US');
+
+            let strikeA = priceMatches[0] || null;
+            let strikeB = priceMatches[1] || priceMatches[0] || null;
+
+            if ((!strikeA || strikeA === strikeB) && warnMatches.length >= 2) {
+                strikeA = warnMatches[0];
+                strikeB = warnMatches[1];
+            }
+
+            const numA = parseNum(strikeA);
+            const numB = parseNum(strikeB);
+
+            if (numA > 0 && numB > 0 && Math.abs(numA - numB) > 0.001) {
+                const low = Math.min(numA, numB);
+                const high = Math.max(numA, numB);
+                const width = Math.abs(high - low);
+                return {
+                    isCorridor: true,
+                    strikeA: fmtUsd(numA),
+                    strikeB: fmtUsd(numB),
+                    corridorRange: `${fmtUsd(low)} – ${fmtUsd(high)}`,
+                    corridorWidth: width,
+                    corridorWidthFmt: fmtUsd(width),
+                    singleStrike: fmtUsd(numA)
+                };
+            }
+
+            const single = numA > 0 ? fmtUsd(numA) : (strikeA || 'Точный');
+            return {
+                isCorridor: false,
+                strikeA: single,
+                strikeB: single,
+                corridorRange: null,
+                corridorWidth: 0,
+                corridorWidthFmt: null,
+                singleStrike: single
+            };
+        }
+
         // ─── Rendering Engine ───
         function renderTables(data) {
             const complementary = data.filter(r => r.prob_sum && r.prob_sum > 0);
@@ -6145,12 +6487,10 @@
                     }
                 };
 
-                const probA = (row.prob_a * 100).toFixed(1) + '%';
-                const probB = (row.prob_b * 100).toFixed(1) + '%';
                 const oddsA_num = parseFloat(row.odds_a) || 0;
                 const oddsB_num = parseFloat(row.odds_b) || 0;
-                const oddsA = oddsA_num > 0 ? oddsA_num.toFixed(3) + 'x' : '-';
-                const oddsB = oddsB_num > 0 ? oddsB_num.toFixed(3) + 'x' : '-';
+                const oddsA = oddsA_num > 0 ? oddsA_num.toFixed(2) + 'x' : '-';
+                const oddsB = oddsB_num > 0 ? oddsB_num.toFixed(2) + 'x' : '-';
                 const spread = (row.spread_after_fees * 100).toFixed(2) + '%';
                 const time = new Date(row.detected_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
 
@@ -6158,44 +6498,56 @@
                 const totalHedgeCostRow = (row.hedge_cost && row.hedge_cost > costA_calc) ? parseFloat(row.hedge_cost) : (costA_calc + (oddsB_num > 0 ? (1.0 / oddsB_num) : 0.5));
                 const costB_oppRow = Math.max(0.01, totalHedgeCostRow - costA_calc);
                 const oddsB_hedgeRow = 1.0 / costB_oppRow;
+                const centsA = (costA_calc * 100).toFixed(1);
+                const centsB_hedge = (costB_oppRow * 100).toFixed(1);
+
                 const hasCorridor = (row.time_warning || '').includes('Коридор 2x');
                 const hasDiffStrikes = hasCorridor || (row.exact_strike_match === false || row.exact_strike_match === 0) || (row.title || '').includes('/ Poly') || (row.time_warning || '').includes('Зазор');
                 const isExactStrike = !hasDiffStrikes;
+                const strikeInfo = extractStrikeDetails(row.title || row.event_key, row.time_warning);
 
                 const coinBadge = getCoinBadge(row.title, 22);
                 let arbBadge = '';
                 if (isTrueArb) {
                     arbBadge = `<span class="badge badge-arb">${uiIcon('zap', 11)} ВИЛКА</span>`;
-                } else if (isTimeRisky) {
-                    arbBadge = `<span class="badge badge-gap" title="Хедж > 0%, но разница экспираций > 0.5ч">${uiIcon('alert', 11)} РИСК ВРЕМЕНИ</span>`;
                 } else if (hasCorridor) {
-                    arbBadge = `<span class="badge badge-gap" title="Оба плеча выиграют, если цена закроется внутри коридора страйков">${uiIcon('target', 11)} КОРИДОР 2X</span>`;
+                    arbBadge = `<span class="badge badge-corridor-new" title="Оба плеча выиграют, если цена закроется внутри коридора страйков">${uiIcon('target', 11)} КОРИДОР 2X</span>`;
+                } else if (isTimeRisky) {
+                    arbBadge = `<span class="badge badge-time-risk" title="Хедж > 0%, но разница экспираций > 0.5ч">${uiIcon('alert', 11)} РИСК ВРЕМЕНИ</span>`;
                 } else if (isExactStrike && totalHedgeCostRow > 1.12) {
                     arbBadge = `<span class="badge badge-value" title="Страйки совпадают 1-в-1; выгодно брать 1 недооцененное плечо (Value)">${uiIcon('gem', 11)} VALUE 1П</span>`;
                 }
                 const pinBadge = isSelected ? `<span class="pin-badge">${uiIcon('pin', 10)} ПИН</span>` : '';
                 const starClass = isStarred ? 'star-toggle starred' : 'star-toggle';
 
-                let expInfo = '-';
+                let expInfo = '';
                 const diffH = (row.time_diff_hours !== undefined && row.time_diff_hours !== null && row.time_diff_hours !== 0)
                     ? Math.abs(row.time_diff_hours).toFixed(1)
                     : null;
-                const fullWarn = (row.time_warning || (diffH ? `Разница экспирации: ${diffH}ч` : '')).replace(/\u26A0\uFE0F?\s*/g, '');
+                const fullWarn = (row.time_warning || (diffH ? `Разница экспирации: ${diffH}ч` : '')).replace(/\u26A0\uFE0F?\s*/g, '').replace(/\uD83C\uDFAF\s*/g, '');
 
                 if (diffH && parseFloat(diffH) > 0.1) {
-                    expInfo = `<span class="badge badge-gap" title="${fullWarn}">${uiIcon('alert', 11)} ${diffH}ч сдвиг</span>`;
-                } else if (row.time_warning) {
-                    expInfo = `<span class="badge badge-gap" title="${fullWarn}">${uiIcon('alert', 11)} Сдвиг</span>`;
+                    expInfo = `<span class="badge badge-shift-danger" title="${fullWarn}">${uiIcon('clock', 10)} ${diffH}ч сдвиг</span>`;
+                } else if (row.time_warning && (row.time_warning.includes('Разница') || !hasCorridor)) {
+                    expInfo = `<span class="badge badge-shift-danger" title="${fullWarn}">${uiIcon('clock', 10)} Сдвиг</span>`;
                 } else {
                     expInfo = `<span class="badge badge-sync">${uiIcon('check', 10)} 0ч</span>`;
                 }
 
+                const corridorMetaBadge = (hasCorridor && strikeInfo.corridorWidthFmt)
+                    ? `<span class="badge badge-corridor-new" title="Коридор 2x выигрыша: ${strikeInfo.corridorRange}">${uiIcon('target', 10)} Ширина ${strikeInfo.corridorWidthFmt}</span>`
+                    : '';
+
                 // Leg actions & stakes calculation
                 const isBybitAbove = (row.action_summary && row.action_summary.includes('Bybit: ABOVE')) || (row.action_a && row.action_a.includes('ABOVE'));
                 const bybitActionText = row.action_a ? row.action_a.replace('Bybit: ', '') : (isBybitAbove ? 'Взять ABOVE' : 'Взять BELOW');
+                const bybitDirLabel = isBybitAbove ? '▲ ABOVE' : '▼ BELOW';
+                const bybitDirSub = isBybitAbove ? 'Выше' : 'Ниже';
 
                 const isPolyYes = (row.action_summary && row.action_summary.includes('Poly: YES')) || (row.action_b && row.action_b.includes('YES'));
                 const polyActionText = row.action_b ? row.action_b.replace('Poly: ', '') : (isPolyYes ? 'Купить YES' : 'Купить NO');
+                const polyDirLabel = isPolyYes ? '▲ BUY YES' : '▼ BUY NO';
+                const polyDirSub = isPolyYes ? 'Выше' : 'Ниже';
 
                 let splitA = Math.round((costA_calc / totalHedgeCostRow) * 100);
                 let splitB = 100 - splitA;
@@ -6203,6 +6555,8 @@
                 const bank = currentBankroll;
                 const stakeA_num = Math.max(0.01, Math.round((bank * (costA_calc / totalHedgeCostRow)) * 100) / 100);
                 const stakeB_num = Math.max(0.01, Math.round((bank - stakeA_num) * 100) / 100);
+                const payoutA_row = (stakeA_num * (oddsA_num || 1)).toFixed(2);
+                const payoutB_row = (stakeB_num * oddsB_hedgeRow).toFixed(2);
 
                 const minPct = Math.min(splitA, splitB) / 100.0;
                 const recommendedBank = minPct > 0 ? Math.ceil(1.0 / minPct) : 20;
@@ -6224,24 +6578,24 @@
                         profitHtml = `<span class="profit-preview mono" style="color:var(--color-warn);" title="Риск несовпадения экспираций: $${bank} → $${payout}">Хедж: ~$${payout} (+$${profitVal} / +${profitPct}%)</span>`;
                     } else {
                         const lossColor = profitValNum < -2 ? 'var(--color-loss)' : 'var(--color-mist)';
-                        profitHtml = `<div class="profit-preview mono" style="color:${lossColor};" title="Итог при срабатывании 1 плеча из 2 (обычный исход)">Хедж 2п: $${bank} → $${payout} (${profitValNum >= 0 ? '+' : ''}$${profitVal} / ${profitPct}%)</div>`;
+                        profitHtml = `<div class="profit-preview mono" style="color:${lossColor};" title="Итог при срабатывании 1 плеча из 2 (обычный исход)">1п: $${bank} → $${payout} (${profitValNum >= 0 ? '+' : ''}$${profitVal})</div>`;
                     }
 
                     if (hasCorridor) {
-                        profitHtml += `<div class="mono" style="font-size:10px; color:var(--color-warn); font-weight:600; margin-top:2px;" title="Если цена финиширует между страйками Bybit и Poly — выигрывают ОБА плеча!">${uiIcon('target', 11)} Коридор 2x: $${doublePayout} (чистыми +$${doubleProfit})</div>`;
+                        profitHtml += `<div class="mono" style="font-size:10px; color:#c4b5fd; font-weight:700; margin-top:2px;" title="Если цена финиширует между страйками Bybit и Poly — выигрывают ОБА плеча!">${uiIcon('target', 11)} 2x Бонус: $${doublePayout} (+$${doubleProfit})</div>`;
                     }
 
                     if (isExactStrike && totalHedgeCostRow > 1.12 && oddsA_num > 0 && oddsB_num > 0) {
                         if (oddsB_num > oddsA_num) {
                             const sameOutPoly = isPolyYes ? 'NO (Ниже)' : 'YES (Выше)';
-                            profitHtml += `<div class="mono" style="font-size:10px; color:var(--color-poly); margin-top:2px;">${uiIcon('gem', 11)} Value 1п: Poly ${sameOutPoly} @ ${oddsB_num.toFixed(2)}x ($${(1/oddsB_num).toFixed(2)})</div>`;
+                            profitHtml += `<div class="mono" style="font-size:10px; color:var(--color-cyan); font-weight:600; margin-top:2px;">${uiIcon('gem', 11)} Value: Poly ${sameOutPoly} @ ${oddsB_num.toFixed(2)}x</div>`;
                         } else {
-                            profitHtml += `<div class="mono" style="font-size:10px; color:var(--color-poly); margin-top:2px;">${uiIcon('gem', 11)} Value 1п: Bybit @ ${oddsA_num.toFixed(2)}x</div>`;
+                            profitHtml += `<div class="mono" style="font-size:10px; color:var(--color-cyan); font-weight:600; margin-top:2px;">${uiIcon('gem', 11)} Value: Bybit @ ${oddsA_num.toFixed(2)}x</div>`;
                         }
                     }
                 }
 
-                const synthBadge = isSynthetic ? '<span style="font-size:9px; color:var(--color-warn); margin-left:3px;" title="Синтетическая цена (1 - P)">~синтет</span>' : '';
+                const synthBadge = isSynthetic ? '<span style="font-size:9px; color:var(--color-warn); margin-left:3px;" title="Синтетическая цена (1 - P)">~синт</span>' : '';
 
                 const liqBVal = parseFloat(row.liquidity_b) || 0;
                 let liqBadge = '';
@@ -6274,38 +6628,43 @@
                                 <div class="event-meta">
                                     <span class="mono">${time}</span>
                                     ${expInfo}
+                                    ${corridorMetaBadge}
                                     ${liqBadge}
                                 </div>
                             </div>
                         </div>
                     </td>
                     <td>
-                        <div class="exchange-col-cell">
-                            <div class="exchange-odds-row">
-                                <span class="odds-val odds-bybit">${oddsA}</span>
-                                <span class="prob-tag" title="Оценка вероятности Bybit">(${probA})</span>
+                        <a href="${row.url_bybit || (row.platform_a === 'bybit_odds' ? row.url_a : row.url_b) || '#'}" target="_blank" class="row-leg-ticket row-leg-bybit" onclick="event.stopPropagation();" title="Открыть Bybit (${bybitActionText}) ↗">
+                            <div class="row-leg-top">
+                                <span style="display:inline-flex; align-items:center; gap:5px;">
+                                    <img src="${LOGO_BYBIT}" alt="Bybit" style="height:10px; display:block;">
+                                    <span class="mono" style="font-size:9.5px; color:var(--color-mist); font-weight:600;">· ${splitA}%</span>
+                                </span>
+                                <span class="mono" style="font-size:12px; font-weight:700; color:var(--color-snow);">${oddsA} <span style="font-size:10px; color:var(--color-fog);">(${centsA}¢)</span></span>
                             </div>
-                            <a href="${row.url_bybit || (row.platform_a === 'bybit_odds' ? row.url_a : row.url_b) || '#'}" target="_blank" class="leg-pill leg-pill-bybit" onclick="event.stopPropagation();" title="Открыть Bybit (${bybitActionText}) ↗">
-                                <img src="${LOGO_BYBIT}" alt="Bybit" style="height:10px; flex-shrink:0;">
-                                <span style="overflow:hidden; text-overflow:ellipsis;">${bybitActionText}</span>
-                                <span class="leg-stake leg-stake-bybit">$${stakeA_num.toFixed(2)} ↗</span>
-                            </a>
-                        </div>
+                            <div class="row-leg-bot">
+                                <span class="dir-badge ${isBybitAbove ? 'dir-up' : 'dir-down'}" style="padding:1px 5px; font-size:9.5px;">${bybitDirLabel} <span style="opacity:0.75; font-weight:500;">(${bybitDirSub})</span></span>
+                                <span class="mono" style="font-size:10.5px; color:var(--color-cloud);"><b style="color:var(--color-bybit);">$${stakeA_num.toFixed(2)}</b> -> $${payoutA_row} <span style="font-size:9.5px; color:var(--color-fog);">↗</span></span>
+                            </div>
+                        </a>
                     </td>
                     <td>
-                        <div class="exchange-col-cell">
-                            <div class="exchange-odds-row" style="flex-wrap:wrap; gap:4px;">
-                                <span class="odds-val odds-poly" title="Кэф того же направления на Polymarket">${oddsB}</span>
-                                <span class="prob-tag">(${probB})</span>
-                                <span class="mono" style="font-size:10px; color:var(--color-poly); background:rgba(91,140,255,0.12); padding:1px 5px; border-radius:4px;" title="Кэф противоположного плеча для хеджа">Хедж ${oddsB_hedgeRow.toFixed(2)}x ($${costB_oppRow.toFixed(2)})</span>
-                                ${synthBadge}
+                        <a href="${row.url_poly || (row.platform_b === 'polymarket' ? row.url_b : row.url_a) || '#'}" target="_blank" class="row-leg-ticket row-leg-poly" onclick="event.stopPropagation();" title="Открыть Polymarket (${polyActionText}, прямой кэф: ${oddsB}) ↗">
+                            <div class="row-leg-top">
+                                <span style="display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:700; color:var(--color-poly);">
+                                    <img src="${LOGO_POLY}" alt="Poly" style="width:12px; height:12px; border-radius:3px; display:block;">
+                                    <span>POLY</span>
+                                    <span class="mono" style="font-size:9.5px; color:var(--color-mist); font-weight:600;">· ${splitB}%</span>
+                                    ${synthBadge}
+                                </span>
+                                <span class="mono" style="font-size:12px; font-weight:700; color:var(--color-snow);">${oddsB_hedgeRow.toFixed(2)}x <span style="font-size:10px; color:var(--color-fog);">(${centsB_hedge}¢)</span></span>
                             </div>
-                            <a href="${row.url_poly || (row.platform_b === 'polymarket' ? row.url_b : row.url_a) || '#'}" target="_blank" class="leg-pill leg-pill-poly" onclick="event.stopPropagation();" title="Открыть Polymarket (${polyActionText}) ↗">
-                                <img src="${LOGO_POLY}" alt="Poly" style="height:12px; border-radius:3px; flex-shrink:0;">
-                                <span style="overflow:hidden; text-overflow:ellipsis;">${polyActionText}</span>
-                                <span class="leg-stake leg-stake-poly">$${stakeB_num.toFixed(2)} ↗</span>
-                            </a>
-                        </div>
+                            <div class="row-leg-bot">
+                                <span class="dir-badge ${isPolyYes ? 'dir-up' : 'dir-down'}" style="padding:1px 5px; font-size:9.5px;">${polyDirLabel} <span style="opacity:0.75; font-weight:500;">(${polyDirSub})</span></span>
+                                <span class="mono" style="font-size:10.5px; color:var(--color-cloud);"><b style="color:var(--color-poly);">$${stakeB_num.toFixed(2)}</b> -> $${payoutB_row} <span style="font-size:9.5px; color:var(--color-fog);">↗</span></span>
+                            </div>
+                        </a>
                     </td>
                     <td style="text-align:center;">
                         <div class="split-cell" style="margin:0 auto;">
@@ -6442,7 +6801,7 @@
             `;
         }
 
-        // ─── Top Spreads Carousel Cards (Mockup Top Spreads) ───
+        // ─── Top Spreads Carousel Cards (PRO Execution Tickets) ───
         function renderTopSpreadsCards(data) {
             const container = document.getElementById('top-spreads-container');
             if (!container) return;
@@ -6458,7 +6817,12 @@
                 const itemKey = item.title || item.event_key;
                 const isSelected = selectedMarketKey && (selectedMarketKey === itemKey || selectedMarketKey === item.title);
                 const isTrueArbCard = (item.is_arb && item.hedge_margin > 0);
+                const hasCorridorCard = (item.time_warning || '').includes('Коридор 2x');
+                const hasDiffStrikesCard = hasCorridorCard || (item.exact_strike_match === false || item.exact_strike_match === 0) || (item.title || '').includes('/ Poly') || (item.time_warning || '').includes('Зазор');
+                const isExactStrikeCard = !hasDiffStrikesCard;
+                const strikeInfo = extractStrikeDetails(item.title || item.event_key, item.time_warning);
 
+                // Keep calm original outer border (only glow-profit on true surebets)
                 card.className = 'top-card card-sheen' + (isSelected ? ' card-selected' : '') + (isTrueArbCard ? ' glow-profit' : '');
                 card.onclick = (e) => {
                     if (!e.target.closest('a') && !e.target.closest('button')) {
@@ -6468,26 +6832,41 @@
 
                 const spreadPct = (item.spread_after_fees * 100).toFixed(2) + '%';
                 const time = new Date(item.detected_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                const isArb = isTrueArbCard
-                    ? `<span class="badge badge-arb" style="font-size:9.5px;">${uiIcon('zap', 10)} ВИЛКА</span>`
-                    : (item.is_arb_time_risky ? `<span class="badge badge-gap" style="font-size:9.5px;" title="Хедж > 0%, но разница экспираций > 0.5ч">${uiIcon('alert', 10)} РИСК ВРЕМЕНИ</span>` : '');
+
+                const oddsA_num = parseFloat(item.odds_a) || 0;
+                const oddsB_num = parseFloat(item.odds_b) || 0;
+                const costA_card = oddsA_num > 0 ? (1.0 / oddsA_num) : 0.5;
+                const totalHedgeCostCard = (item.hedge_cost && item.hedge_cost > costA_card) ? parseFloat(item.hedge_cost) : (costA_card + (oddsB_num > 0 ? (1.0 / oddsB_num) : 0.5));
+                const costB_oppCard = Math.max(0.01, totalHedgeCostCard - costA_card);
+                const oddsB_hedgeCard = 1.0 / costB_oppCard;
+
+                let outcomeBadge = '';
+                if (isTrueArbCard) {
+                    outcomeBadge = `<span class="badge badge-arb" style="font-size:9.5px;">${uiIcon('zap', 10)} ВИЛКА</span>`;
+                } else if (hasCorridorCard) {
+                    outcomeBadge = `<span class="badge badge-corridor-new" style="font-size:9.5px;">${uiIcon('target', 10)} КОРИДОР 2X</span>`;
+                } else if (item.is_arb_time_risky) {
+                    outcomeBadge = `<span class="badge badge-time-risk" style="font-size:9.5px;" title="Хедж > 0%, но разница экспираций > 0.5ч">${uiIcon('alert', 10)} РИСК ВРЕМЕНИ</span>`;
+                } else if (isExactStrikeCard && totalHedgeCostCard > 1.12) {
+                    outcomeBadge = `<span class="badge badge-value" style="font-size:9.5px;">${uiIcon('gem', 10)} VALUE 1П</span>`;
+                }
 
                 const diffH = (item.time_diff_hours !== undefined && item.time_diff_hours !== null && item.time_diff_hours !== 0)
                     ? Math.abs(item.time_diff_hours).toFixed(1)
                     : null;
-                const fullWarn = (item.time_warning || (diffH ? `Разница экспирации: ${diffH}ч` : '')).replace(/\u26A0\uFE0F?\s*/g, '');
+                const fullWarn = (item.time_warning || (diffH ? `Разница экспирации: ${diffH}ч` : '')).replace(/\u26A0\uFE0F?\s*/g, '').replace(/\uD83C\uDFAF\s*/g, '');
 
                 let shiftBadge = '';
                 if (diffH && parseFloat(diffH) > 0.1) {
-                    shiftBadge = `<span class="badge badge-gap" style="font-size:9.5px;" title="${fullWarn}">${uiIcon('alert', 10)} ${diffH}ч сдвиг</span>`;
-                } else if (item.time_warning) {
-                    shiftBadge = `<span class="badge badge-gap" style="font-size:9.5px;" title="${fullWarn}">${uiIcon('alert', 10)} Сдвиг</span>`;
+                    shiftBadge = `<span class="badge badge-shift-danger" style="font-size:9.5px;" title="${fullWarn}">${uiIcon('clock', 10)} ${diffH}ч сдвиг</span>`;
+                } else if (item.time_warning && (item.time_warning.includes('Разница') || !hasCorridorCard)) {
+                    shiftBadge = `<span class="badge badge-shift-danger" style="font-size:9.5px;" title="${fullWarn}">${uiIcon('clock', 10)} Сдвиг</span>`;
                 } else {
                     shiftBadge = `<span class="badge badge-sync" style="font-size:9.5px;">${uiIcon('check', 10)} 0ч синхрон</span>`;
                 }
 
                 const pinBadge = isSelected ? `<span class="pin-badge">${uiIcon('pin', 10)} ПИН</span>` : '';
-                const coinBadge = getCoinBadge(item.title, 22);
+                const coinBadge = getCoinBadge(item.title, 24);
 
                 const isBybitAbove = (item.action_summary && item.action_summary.includes('Bybit: ABOVE')) || (item.action_a && item.action_a.includes('ABOVE'));
                 const bybitActionRaw = item.action_a ? item.action_a.replace('Bybit: ', '') : (isBybitAbove ? 'Взять ABOVE' : 'Взять BELOW');
@@ -6500,16 +6879,8 @@
                 let splitA = item.stake_a ? Math.round(item.stake_a * 100) : null;
                 let splitB = item.stake_b ? Math.round(item.stake_b * 100) : null;
                 if (!splitA || !splitB || (splitA === 0 && splitB === 0)) {
-                    if (item.odds_a > 0 && item.odds_b > 0) {
-                        const invA = 1.0 / item.odds_a;
-                        const invB = 1.0 / item.odds_b;
-                        const tot = invA + invB;
-                        splitA = Math.round((invA / tot) * 100);
-                        splitB = 100 - splitA;
-                    } else {
-                        splitA = 50;
-                        splitB = 50;
-                    }
+                    splitA = Math.round((costA_card / totalHedgeCostCard) * 100);
+                    splitB = 100 - splitA;
                 } else {
                     splitB = 100 - splitA;
                 }
@@ -6521,20 +6892,42 @@
                 const minPct = Math.min(splitA, splitB) / 100.0;
                 const recommendedBank = minPct > 0 ? Math.ceil(1.0 / minPct) : 20;
 
-                const oddsA_num = parseFloat(item.odds_a) || 0;
-                const oddsB_num = parseFloat(item.odds_b) || 0;
-                const costA_card = oddsA_num > 0 ? (1.0 / oddsA_num) : 0.5;
-                const totalHedgeCostCard = (item.hedge_cost && item.hedge_cost > costA_card) ? parseFloat(item.hedge_cost) : (costA_card + (oddsB_num > 0 ? (1.0 / oddsB_num) : 0.5));
-                const costB_oppCard = Math.max(0.01, totalHedgeCostCard - costA_card);
-                const oddsB_hedgeCard = 1.0 / costB_oppCard;
-
                 const oddsA_str = oddsA_num > 0 ? `${oddsA_num.toFixed(2)}x` : '-';
                 const oddsB_str = `${oddsB_hedgeCard.toFixed(2)}x`;
-                const hasCorridorCard = (item.time_warning || '').includes('Коридор 2x');
-                const hasDiffStrikesCard = hasCorridorCard || (item.exact_strike_match === false || item.exact_strike_match === 0) || (item.title || '').includes('/ Poly') || (item.time_warning || '').includes('Зазор');
-                const isExactStrikeCard = !hasDiffStrikesCard;
+                const centsA_card = (costA_card * 100).toFixed(1);
+                const centsB_card = (costB_oppCard * 100).toFixed(1);
+                const payoutA_card = (stakeA_num * (oddsA_num || 1)).toFixed(2);
+                const payoutB_card = (stakeB_num * oddsB_hedgeCard).toFixed(2);
 
-                let profitBanner = '';
+                // Strike / Corridor Info Bar (time-shift stays ONLY at the top of the card, no duplicate here)
+                let strikeBarHtml = '';
+                if (hasCorridorCard && strikeInfo.isCorridor) {
+                    strikeBarHtml = `
+                        <div class="strike-bar">
+                            <div class="strike-bar-item">
+                                <span>Коридор 2x:</span>
+                                <span class="strike-range-pill">${uiIcon('target', 10)} ${strikeInfo.corridorRange}</span>
+                            </div>
+                            <div class="strike-bar-item">
+                                <span>Ширина: <b style="color:#c4b5fd;">${strikeInfo.corridorWidthFmt}</b></span>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    strikeBarHtml = `
+                        <div class="strike-bar">
+                            <div class="strike-bar-item">
+                                <span>Страйк 1-в-1: <b>${strikeInfo.singleStrike || 'Точный'}</b></span>
+                            </div>
+                            <div class="strike-bar-item">
+                                <span>Σ Cost: <b style="color:${totalHedgeCostCard < 1 ? 'var(--color-profit)' : 'var(--color-cloud)'};">$${totalHedgeCostCard.toFixed(3)}</b></span>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // 2-Column Payoff Matrix (no duplicate risk window in Card 3)
+                let payoffMatrixHtml = '';
                 if (totalHedgeCostCard > 0) {
                     const payoutNum = bank / totalHedgeCostCard;
                     const payout = payoutNum.toFixed(2);
@@ -6545,34 +6938,56 @@
                     const doubleProfit = (payoutNum * 2 - bank).toFixed(2);
 
                     if (isTrueArbCard) {
-                        profitBanner = `
-                            <div class="top-card-profit" style="border-color:rgba(61,255,193,0.35); background:rgba(61,255,193,0.08);">
-                                <span style="color:var(--color-profit); font-weight:600;">Хедж: $${bank} → $${payout} (+${profitPct}%)</span>
-                                <span style="color:var(--color-profit); font-weight:700;">+$${profitVal}</span>
-                            </div>
-                        `;
-                    } else if (item.is_arb_time_risky) {
-                        profitBanner = `
-                            <div class="top-card-profit" style="border-color:rgba(255,193,74,0.35); background:rgba(255,193,74,0.08);">
-                                <span style="color:var(--color-warn); font-weight:600;">Хедж: $${bank} → $${payout} (+${profitPct}%)</span>
-                                <span style="color:var(--color-warn); font-weight:700;">+$${profitVal}</span>
+                        payoffMatrixHtml = `
+                            <div class="payoff-matrix">
+                                <div class="payoff-cell">
+                                    <span class="payoff-label">ЛЮБОЙ ИСХОД (1П)</span>
+                                    <div class="payoff-val" style="color:var(--color-snow);">$${payout} <span class="payoff-sub" style="color:var(--color-profit);">(гарант)</span></div>
+                                </div>
+                                <div class="payoff-cell payoff-arb">
+                                    <span class="payoff-label" style="color:var(--color-profit);">${uiIcon('zap', 10)} ЧИСТЫЙ ПРОФИТ</span>
+                                    <div class="payoff-val" style="color:var(--color-profit);">+$${profitVal} <span class="payoff-sub">(+${profitPct}%)</span></div>
+                                </div>
                             </div>
                         `;
                     } else if (hasCorridorCard) {
-                        profitBanner = `
-                            <div class="top-card-profit" style="border-color:rgba(255,193,74,0.30); background:rgba(255,193,74,0.07);">
-                                <span style="color:${profitValNum < -2 ? 'var(--color-loss)' : 'var(--color-mist)'};">1п: $${payout} (${profitVal}$)</span>
-                                <span style="color:var(--color-warn); font-weight:700;">${uiIcon('target', 11)} 2x: $${doublePayout} (+$${doubleProfit})</span>
+                        payoffMatrixHtml = `
+                            <div class="payoff-matrix">
+                                <div class="payoff-cell">
+                                    <span class="payoff-label">ИСХОД 1: ОБЫЧНЫЙ (1П)</span>
+                                    <div class="payoff-val" style="color:${profitValNum < -2 ? 'var(--color-loss)' : 'var(--color-cloud)'};">$${payout} <span class="payoff-sub">(${profitValNum >= 0 ? '+' : ''}$${profitVal})</span></div>
+                                </div>
+                                <div class="payoff-cell payoff-corridor">
+                                    <span class="payoff-label" style="color:#c4b5fd;">${uiIcon('target', 10)} ИСХОД 2: КОРИДОР 2X</span>
+                                    <div class="payoff-val" style="color:var(--color-profit);">$${doublePayout} <span class="payoff-sub" style="color:#c4b5fd;">(+$${doubleProfit})</span></div>
+                                </div>
+                            </div>
+                        `;
+                    } else if (item.is_arb_time_risky) {
+                        payoffMatrixHtml = `
+                            <div class="payoff-matrix">
+                                <div class="payoff-cell">
+                                    <span class="payoff-label">ЛЮБОЙ ИСХОД (1П)</span>
+                                    <div class="payoff-val" style="color:var(--color-snow);">$${payout} <span class="payoff-sub" style="color:var(--color-mist);">(хедж 2п)</span></div>
+                                </div>
+                                <div class="payoff-cell payoff-warn">
+                                    <span class="payoff-label" style="color:var(--color-warn);">${uiIcon('alert', 10)} ПРОФИТ ХЕДЖА</span>
+                                    <div class="payoff-val" style="color:var(--color-warn);">+$${profitVal} <span class="payoff-sub">(+${profitPct}%)</span></div>
+                                </div>
                             </div>
                         `;
                     } else {
-                        const valueSpan = isExactStrikeCard
-                            ? `<span style="color:var(--color-poly); font-weight:600;">${uiIcon('gem', 11)} Value ${Math.max(oddsA_num, oddsB_num).toFixed(2)}x</span>`
-                            : `<span style="color:var(--color-fog); font-size:10px;">Хедж 2п</span>`;
-                        profitBanner = `
-                            <div class="top-card-profit">
-                                <span style="color:${profitValNum < -2 ? 'var(--color-loss)' : 'var(--color-mist)'};">Хедж: $${bank} → $${payout} (${profitVal}$)</span>
-                                ${valueSpan}
+                        const bestSingleOdds = Math.max(oddsA_num, oddsB_num);
+                        payoffMatrixHtml = `
+                            <div class="payoff-matrix">
+                                <div class="payoff-cell">
+                                    <span class="payoff-label">ХЕДЖ 2 ПЛЕЧА</span>
+                                    <div class="payoff-val" style="color:${profitValNum < -2 ? 'var(--color-loss)' : 'var(--color-mist)'};">$${payout} <span class="payoff-sub">(${profitValNum >= 0 ? '+' : ''}$${profitVal})</span></div>
+                                </div>
+                                <div class="payoff-cell" style="border-color:rgba(56,216,255,0.28); background:rgba(56,216,255,0.06);">
+                                    <span class="payoff-label" style="color:var(--color-cyan);">${uiIcon('gem', 10)} ИДЕЯ VALUE (1П)</span>
+                                    <div class="payoff-val" style="color:var(--color-cyan);">Кэф ${bestSingleOdds.toFixed(2)}x <span class="payoff-sub" style="color:var(--color-cloud);">(+$${(bank * (bestSingleOdds - 1)).toFixed(0)})</span></div>
+                                </div>
                             </div>
                         `;
                     }
@@ -6589,55 +7004,81 @@
                 window.__row_cache = window.__row_cache || {};
                 window.__row_cache[itemKey] = item;
 
-                const bybitDirLabel = isBybitAbove ? 'ABOVE' : 'BELOW';
+                const bybitDirLabel = isBybitAbove ? '▲ ABOVE' : '▼ BELOW';
                 const bybitDirSub = isBybitAbove ? 'Выше' : 'Ниже';
-                const bybitArrow = isBybitAbove ? '<span class="top-dir-arrow up">▲</span>' : '<span class="top-dir-arrow down">▼</span>';
 
-                const polyDirLabel = isPolyYes ? 'YES' : 'NO';
+                const polyDirLabel = isPolyYes ? '▲ BUY YES' : '▼ BUY NO';
                 const polyDirSub = isPolyYes ? 'Выше' : 'Ниже';
-                const polyArrow = isPolyYes ? '<span class="top-dir-arrow up">▲</span>' : '<span class="top-dir-arrow down">▼</span>';
+
+                const liqCardVal = parseFloat(item.liquidity_b) || 0;
+                const liqCardFmt = liqCardVal >= 1000 ? '$' + (liqCardVal / 1000).toFixed(1) + 'k' : (liqCardVal > 0 ? '$' + Math.round(liqCardVal) : 'Стакан ОК');
 
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
                         <div style="display:flex; align-items:center; gap:9px; min-width:0; flex:1;">
                             ${coinBadge}
                             <div style="min-width:0; flex:1;">
-                                <div style="font-size:12.5px; font-weight:600; color:var(--color-snow); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${item.title || item.event_key}">
+                                <div style="font-size:13px; font-weight:700; color:var(--color-snow); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${item.title || item.event_key}">
                                     ${item.title || item.event_key}
                                 </div>
-                                <div style="display:flex; align-items:center; gap:5px; margin-top:3px; flex-wrap:wrap;">
+                                <div style="display:flex; align-items:center; gap:5px; margin-top:4px; flex-wrap:wrap;">
                                     ${shiftBadge}
-                                    ${isArb}
+                                    ${outcomeBadge}
                                     ${pinBadge}
                                 </div>
                             </div>
                         </div>
                         <div style="text-align:right; flex-shrink:0;">
-                            <div class="mono" style="font-size:15.5px; font-weight:700; color:var(--color-profit); line-height:1.15;">+${spreadPct}</div>
-                            <div class="mono" style="font-size:10px; color:var(--color-fog); margin-top:2px;">${time}</div>
+                            <div style="display:flex; align-items:center; justify-content:flex-end; gap:7px;">
+                                ${renderSparkline(itemKey, item.spread_after_fees || 0, 56, 18)}
+                                <div class="mono" style="font-size:16px; font-weight:800; color:var(--color-profit); line-height:1.1;">+${spreadPct}</div>
+                            </div>
+                            <div class="mono" style="font-size:9.5px; color:var(--color-fog); margin-top:2px;">Обновлено ${time}</div>
                         </div>
                     </div>
 
+                    ${strikeBarHtml}
+
                     <div class="top-legs-grid">
-                        <a href="${item.url_bybit || (item.platform_a === 'bybit_odds' ? item.url_a : item.url_b) || '#'}" target="_blank" class="top-card-leg top-card-bybit" onclick="event.stopPropagation();" title="Открыть сделку на Bybit (${bybitActionText}) ↗">
-                            <div class="top-leg-head">
-                                <span style="display:inline-flex; align-items:center; gap:4px;"><img src="${LOGO_BYBIT}" alt="Bybit" style="height:10.5px; display:block;"></span>
-                                <span class="top-leg-odds">${oddsA_str}</span>
+                        <a href="${item.url_bybit || (item.platform_a === 'bybit_odds' ? item.url_a : item.url_b) || '#'}" target="_blank" class="leg-ticket leg-ticket-bybit" onclick="event.stopPropagation();" title="Открыть сделку на Bybit (${bybitActionText}) ↗">
+                            <div class="leg-ticket-head">
+                                <span class="leg-brand" style="color:var(--color-bybit);">
+                                    <img src="${LOGO_BYBIT}" alt="Bybit" style="height:10px; display:block;">
+                                    <span>· ${splitA}%</span>
+                                </span>
+                                <span class="leg-odds-wrap">
+                                    <span class="leg-odds-main">${oddsA_str}</span>
+                                    <span class="leg-odds-cents">(${centsA_card}¢)</span>
+                                </span>
                             </div>
-                            <div class="top-leg-body">
-                                <span class="top-dir-pill">${bybitArrow}<span>${bybitDirLabel}</span><span class="top-dir-sub">(${bybitDirSub})</span></span>
-                                <span class="top-leg-stake" style="color:var(--color-bybit);">$${stakeA_num.toFixed(2)}</span>
+                            <div class="leg-ticket-mid">
+                                <span class="dir-badge ${isBybitAbove ? 'dir-up' : 'dir-down'}">${bybitDirLabel} (${bybitDirSub})</span>
+                                <span class="leg-strike-tag">${strikeInfo.strikeA || ''}</span>
+                            </div>
+                            <div class="leg-ticket-foot">
+                                <span>Ставка <b style="color:var(--color-bybit);">$${stakeA_num.toFixed(2)}</b></span>
+                                <span class="leg-payout-val">-&gt; <b>$${payoutA_card}</b> <span style="opacity:0.65;">↗</span></span>
                             </div>
                         </a>
 
-                        <a href="${item.url_poly || (item.platform_b === 'polymarket' ? item.url_b : item.url_a) || '#'}" target="_blank" class="top-card-leg top-card-poly" onclick="event.stopPropagation();" title="Открыть сделку на Polymarket (${polyActionText}) ↗">
-                            <div class="top-leg-head">
-                                <span style="display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:700; letter-spacing:0.04em; color:var(--color-poly);"><img src="${LOGO_POLY}" alt="Poly" style="width:12px; height:12px; border-radius:3px; display:block;"><span>POLY</span></span>
-                                <span class="top-leg-odds">${oddsB_str}</span>
+                        <a href="${item.url_poly || (item.platform_b === 'polymarket' ? item.url_b : item.url_a) || '#'}" target="_blank" class="leg-ticket leg-ticket-poly" onclick="event.stopPropagation();" title="Открыть сделку на Polymarket (${polyActionText}) ↗">
+                            <div class="leg-ticket-head">
+                                <span class="leg-brand" style="color:var(--color-poly);">
+                                    <img src="${LOGO_POLY}" alt="Poly" style="width:12px; height:12px; border-radius:3px; display:block;">
+                                    <span>POLY · ${splitB}%</span>
+                                </span>
+                                <span class="leg-odds-wrap">
+                                    <span class="leg-odds-main">${oddsB_str}</span>
+                                    <span class="leg-odds-cents">(${centsB_card}¢)</span>
+                                </span>
                             </div>
-                            <div class="top-leg-body">
-                                <span class="top-dir-pill">${polyArrow}<span>${polyDirLabel}</span><span class="top-dir-sub">(${polyDirSub})</span></span>
-                                <span class="top-leg-stake" style="color:var(--color-poly);">$${stakeB_num.toFixed(2)}</span>
+                            <div class="leg-ticket-mid">
+                                <span class="dir-badge ${isPolyYes ? 'dir-up' : 'dir-down'}">${polyDirLabel} (${polyDirSub})</span>
+                                <span class="leg-strike-tag">${strikeInfo.strikeB || ''}</span>
+                            </div>
+                            <div class="leg-ticket-foot">
+                                <span>Ставка <b style="color:var(--color-poly);">$${stakeB_num.toFixed(2)}</b></span>
+                                <span class="leg-payout-val">-&gt; <b>$${payoutB_card}</b> <span style="opacity:0.65;">↗</span></span>
                             </div>
                         </a>
                     </div>
@@ -6647,14 +7088,17 @@
                         <div style="width:${splitB}%; background:var(--color-poly); border-radius:999px;"></div>
                     </div>
 
-                    ${profitBanner}
+                    ${payoffMatrixHtml}
                     ${minWarnHtml}
 
                     <div style="display:flex; justify-content:space-between; align-items:center; padding-top:5px; border-top:1px solid rgba(255,255,255,0.05); margin-top:auto;">
-                        <button class="btn-action-calc" style="font-size:10.5px; padding:4px 10px;" onclick="event.stopPropagation(); openDealModalByKey('${itemKeySafe}')">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" /><line x1="8" y1="6" x2="16" y2="6" /><line x1="8" y1="11" x2="10" y2="11" /><line x1="14" y1="11" x2="16" y2="11" /><line x1="8" y1="15" x2="10" y2="15" /><line x1="14" y1="15" x2="16" y2="15" /><line x1="8" y1="19" x2="16" y2="19" /></svg>
-                            <span>Расчёт</span>
-                        </button>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <button class="btn-action-calc" style="font-size:10.5px; padding:4px 10px;" onclick="event.stopPropagation(); openDealModalByKey('${itemKeySafe}')">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" /><line x1="8" y1="6" x2="16" y2="6" /><line x1="8" y1="11" x2="10" y2="11" /><line x1="14" y1="11" x2="16" y2="11" /><line x1="8" y1="15" x2="10" y2="15" /><line x1="14" y1="15" x2="16" y2="15" /><line x1="8" y1="19" x2="16" y2="19" /></svg>
+                                <span>Расчёт</span>
+                            </button>
+                            <span class="telemetry-pill">${uiIcon('droplet', 10)} Liq: ${liqCardFmt}</span>
+                        </div>
                         <div style="display:flex; align-items:center; gap:5px;">
                             <button class="btn-mini-tool" style="padding:4px 7px;" onclick="event.stopPropagation(); copyDealToClipboard(this, '${copyTextSafe}')" title="Скопировать сигнал">
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
@@ -6703,22 +7147,24 @@
             let splitA = Math.round((costA / totalHedgeCost) * 100);
             let splitB = 100 - splitA;
 
-            const stakeA = Math.max(0.01, Math.round((bank * (costA / totalHedgeCost)) * 100) / 100);
-            const stakeB = Math.max(0.01, Math.round((bank - stakeA) * 100) / 100);
+            const idealA = bank * (costA / totalHedgeCost);
+            const stakeA = Math.max(5, Math.round(idealA));
+            const stakeB = Math.max(0.01, Math.round((stakeA * oddsA_val * costB_opp) * 100) / 100);
+            const totalActualStake = stakeA + stakeB;
 
             const payoutA = (stakeA * oddsA_val).toFixed(2);
             const payoutB = (stakeB * oddsB_hedge).toFixed(2);
 
-            const payoutSingleNum = bank / totalHedgeCost;
-            const guaranteedPayout = payoutSingleNum.toFixed(2);
-            const netProfitNum = payoutSingleNum - bank;
+            const minPayoutNum = Math.min(stakeA * oddsA_val, stakeB * oddsB_hedge);
+            const guaranteedPayout = minPayoutNum.toFixed(2);
+            const netProfitNum = minPayoutNum - totalActualStake;
             const netProfitVal = netProfitNum.toFixed(2);
-            const netProfitPct = ((netProfitNum / bank) * 100).toFixed(2);
+            const netProfitPct = ((netProfitNum / totalActualStake) * 100).toFixed(2);
 
-            const payoutDoubleNum = payoutSingleNum * 2.0;
+            const payoutDoubleNum = (stakeA * oddsA_val) + (stakeB * oddsB_hedge);
             const doublePayoutStr = payoutDoubleNum.toFixed(2);
-            const doubleProfitStr = (payoutDoubleNum - bank).toFixed(2);
-            const doubleProfitPct = (((payoutDoubleNum - bank) / bank) * 100).toFixed(1);
+            const doubleProfitStr = (payoutDoubleNum - totalActualStake).toFixed(2);
+            const doubleProfitPct = (((payoutDoubleNum - totalActualStake) / totalActualStake) * 100).toFixed(1);
 
             const isArb = (row.is_arb === 1 || row.is_arb === true) && (row.hedge_margin > 0);
             const hasCorridor = (row.time_warning || '').includes('Коридор 2x');
@@ -6728,16 +7174,16 @@
             const directCalcUrl = `${window.location.origin}/?calc=${encodeURIComponent(calcSlug)}&bank=${bank}`;
 
             const corridorHtml = hasCorridor ? `
-                <div class="pnl-bento-card" style="background:rgba(255,193,74,0.08); border-color:rgba(255,193,74,0.35); margin-top:8px;">
+                <div class="pnl-bento-card" style="background:rgba(167,139,250,0.09); border-color:rgba(167,139,250,0.38); margin-top:8px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
                         <div>
-                            <div style="font-size:10.5px; font-weight:700; color:var(--color-gold); text-transform:uppercase; letter-spacing:0.06em;">
+                            <div style="font-size:10.5px; font-weight:700; color:#c4b5fd; text-transform:uppercase; letter-spacing:0.06em;">
                                 ${uiIcon('target', 12)} БОНУСКА «КОРИДОР 2X» (ОБА ОРДЕРА ВЫИГРАЮТ)
                             </div>
                             <div style="font-size:11px; color:var(--color-mist); margin-top:2px;">Если цена финиширует внутри коридора между страйками Bybit и Polymarket</div>
                         </div>
                         <div class="mono" style="font-size:15px; font-weight:800; color:var(--color-profit); text-align:right;">
-                            $${doublePayoutStr} <span style="font-size:11.5px; color:var(--color-gold);">(+$${doubleProfitStr} / +${doubleProfitPct}%)</span>
+                            $${doublePayoutStr} <span style="font-size:11.5px; color:#c4b5fd;">(+$${doubleProfitStr} / +${doubleProfitPct}%)</span>
                         </div>
                     </div>
                 </div>
@@ -6799,6 +7245,23 @@
                     </div>
                 </div>
 
+                <!-- ─── Live Quote Bar (updated every 1.5s via /api/live_quote) ─── -->
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(61,255,193,0.04); border:1px solid rgba(61,255,193,0.15); border-radius:8px; padding:6px 10px; margin-bottom:8px; font-size:11px;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span style="color:var(--color-mist);">Bybit live:</span>
+                        <b id="modal-live-bybit-odds" class="mono" style="color:var(--color-bybit); font-size:12px;">—</b>
+                        <span style="color:var(--color-fog);">│</span>
+                        <span style="color:var(--color-mist);">Poly ask:</span>
+                        <b id="modal-live-poly-ask" class="mono" style="color:var(--color-poly); font-size:12px;">—</b>
+                    </div>
+                    <span style="font-size:9px; color:var(--color-fog);">auto-refresh 1.5s</span>
+                </div>
+
+                <!-- ─── Rounded Stakes (Bybit integer + Poly recalculated) ─── -->
+                <div id="modal-rounded-stakes" style="background:var(--color-obsidian); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:6px 10px; margin-bottom:8px;">
+                    <div style="font-size:10px; color:var(--color-fog);">Загрузка округлённых ставок...</div>
+                </div>
+
                 <!-- ─── Bankroll & Quick Presets ($20 / $50 / $100 / $500) ─── -->
                 <div style="display:flex; justify-content:space-between; align-items:center; background:var(--color-obsidian); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:8px 12px; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
                     <span style="font-size:11.5px; font-weight:600; color:var(--color-cloud);">Инвестиционный банк сделки:</span>
@@ -6824,15 +7287,15 @@
                             <span class="top-leg-pill" style="background:rgba(246,178,60,0.16); color:var(--color-bybit);">Ордер 1 · ${splitA}%</span>
                         </div>
                         <div class="top-leg-odds">
-                            <span class="top-leg-odds-val">${oddsA_val.toFixed(2)}x</span>
-                            <span class="top-leg-prob">${probA_pct}%</span>
+                            <span id="modal-ticket-bybit-odds" class="top-leg-odds-val">${oddsA_val.toFixed(2)}x</span>
+                            <span id="modal-ticket-bybit-prob" class="top-leg-prob">${probA_pct}%</span>
                         </div>
                         <div style="font-size:11px; font-weight:700; color:var(--color-snow); margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${row.action_a || 'ABOVE'}">
                             ${row.action_a || 'ABOVE'}
                         </div>
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; padding-top:6px; border-top:1px solid rgba(246,178,60,0.18); font-size:11px;">
-                            <span style="color:var(--color-mist);">Ставка: <b class="mono" style="color:var(--color-bybit);">$${stakeA.toFixed(2)}</b></span>
-                            <span style="color:var(--color-mist);">Выплата: <b class="mono" style="color:var(--color-snow);">$${payoutA}</b></span>
+                            <span style="color:var(--color-mist);">Ставка: <b id="modal-ticket-bybit-stake" class="mono" style="color:var(--color-bybit);">$${stakeA.toFixed(2)}</b></span>
+                            <span style="color:var(--color-mist);">Выплата: <b id="modal-ticket-bybit-payout" class="mono" style="color:var(--color-snow);">$${payoutA}</b></span>
                         </div>
                     </div>
 
@@ -6845,34 +7308,34 @@
                             <span class="top-leg-pill" style="background:rgba(91,140,255,0.16); color:var(--color-poly);">Ордер 2 · ${splitB}%</span>
                         </div>
                         <div class="top-leg-odds">
-                            <span class="top-leg-odds-val">${oddsB_hedge.toFixed(2)}x</span>
-                            <span class="top-leg-prob">${probB_pct}%</span>
+                            <span id="modal-ticket-poly-odds" class="top-leg-odds-val">${oddsB_hedge.toFixed(2)}x</span>
+                            <span id="modal-ticket-poly-prob" class="top-leg-prob">${probB_pct}%</span>
                         </div>
                         <div style="font-size:11px; font-weight:700; color:var(--color-snow); margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${row.action_b || 'BUY NO'}">
                             ${row.action_b || 'BUY NO'}
                         </div>
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; padding-top:6px; border-top:1px solid rgba(91,140,255,0.18); font-size:11px;">
-                            <span style="color:var(--color-mist);">Ставка: <b class="mono" style="color:var(--color-poly);">$${stakeB.toFixed(2)}</b></span>
-                            <span style="color:var(--color-mist);">Выплата: <b class="mono" style="color:var(--color-snow);">$${payoutB}</b></span>
+                            <span style="color:var(--color-mist);">Ставка: <b id="modal-ticket-poly-stake" class="mono" style="color:var(--color-poly);">$${stakeB.toFixed(2)}</b></span>
+                            <span style="color:var(--color-mist);">Выплата: <b id="modal-ticket-poly-payout" class="mono" style="color:var(--color-snow);">$${payoutB}</b></span>
                         </div>
                     </div>
                 </div>
 
                 <!-- ─── Proportion Split Bar ─── -->
                 <div class="top-split-bar" style="height:5px; margin-bottom:10px;">
-                    <div class="top-split-bybit" style="width:${splitA}%;"></div>
-                    <div class="top-split-poly" style="width:${splitB}%;"></div>
+                    <div id="modal-ticket-split-bybit" class="top-split-bybit" style="width:${splitA}%;"></div>
+                    <div id="modal-ticket-split-poly" class="top-split-poly" style="width:${splitB}%;"></div>
                 </div>
 
                 <!-- ─── Payoff Matrix Summary Card ─── -->
                 <div class="pnl-bento-card" style="background:${isArb ? 'rgba(61,255,193,0.08)' : (netProfitNum < 0 ? 'rgba(255,93,115,0.06)' : 'var(--color-obsidian)')}; border-color:${isArb ? 'rgba(61,255,193,0.32)' : (netProfitNum < 0 ? 'rgba(255,93,115,0.28)' : 'rgba(255,255,255,0.07)')};">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
                         <span style="font-size:11px; color:var(--color-mist);">Гарантированный возврат при обычном исходе (1 плечо из 2):</span>
-                        <span class="mono" style="font-size:14px; font-weight:700; color:var(--color-snow);">$${guaranteedPayout}</span>
+                        <span id="modal-payoff-guaranteed" class="mono" style="font-size:14px; font-weight:700; color:var(--color-snow);">$${guaranteedPayout}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-size:11.5px; font-weight:700; color:${isArb ? 'var(--color-profit)' : 'var(--color-cloud)'};">Чистый результат хеджа 2 плеч (Cost ${totalHedgeCost.toFixed(3)}):</span>
-                        <span class="mono" style="font-size:15px; font-weight:800; color:${netProfitNum >= 0 ? 'var(--color-profit)' : 'var(--color-loss)'};">
+                        <span id="modal-payoff-net" class="mono" style="font-size:15px; font-weight:800; color:${netProfitNum >= 0 ? 'var(--color-profit)' : 'var(--color-loss)'};">
                             ${netProfitNum >= 0 ? '+' : ''}$${netProfitVal} (${netProfitNum >= 0 ? '+' : ''}${netProfitPct}%)
                         </span>
                     </div>
@@ -6887,6 +7350,114 @@
 
             modal.classList.add('show');
             loadModalChart(row.event_key, row.title, currentChartHours);
+            startLiveQuotePolling(row.event_key, bank);
+        }
+
+        // ─── Live Quote Polling for Deal Modal ───
+        let _liveQuoteTimer = null;
+        let _liveQuoteKey = null;
+
+        function startLiveQuotePolling(eventKey, bankroll) {
+            stopLiveQuotePolling();
+            _liveQuoteKey = eventKey;
+            fetchLiveQuote(eventKey, bankroll);
+            _liveQuoteTimer = setInterval(() => fetchLiveQuote(eventKey, bankroll), 1500);
+        }
+
+        function stopLiveQuotePolling() {
+            if (_liveQuoteTimer) {
+                clearInterval(_liveQuoteTimer);
+                _liveQuoteTimer = null;
+            }
+            _liveQuoteKey = null;
+        }
+
+        async function fetchLiveQuote(eventKey, bankroll) {
+            try {
+                const res = await fetch(`/api/live_quote?event_key=${encodeURIComponent(eventKey)}&bankroll=${bankroll}`);
+                const q = await res.json();
+                if (_liveQuoteKey !== eventKey) return; // modal closed or changed
+
+                // Update live indicator
+                const liveEl = document.getElementById('modal-live-indicator');
+                if (liveEl) {
+                    const age = q.data_age_sec || 0;
+                    const stale = q.stale;
+                    liveEl.innerHTML = stale
+                        ? `<span style="color:var(--color-loss);">${uiIcon('alert', 10)} STALE ${age.toFixed(0)}s</span>`
+                        : `<span style="color:var(--color-profit); animation:pulse 1.5s ease-in-out infinite;">${uiIcon('activity', 10)} LIVE ${age.toFixed(0)}s</span>`;
+                }
+
+                // Update live odds display in live quote bar
+                if (q.bybit_odds > 0) {
+                    const liveBybitEl = document.getElementById('modal-live-bybit-odds');
+                    if (liveBybitEl) liveBybitEl.textContent = q.bybit_odds.toFixed(2) + 'x';
+                    const ticketBybitOdds = document.getElementById('modal-ticket-bybit-odds');
+                    if (ticketBybitOdds) ticketBybitOdds.textContent = q.bybit_odds.toFixed(2) + 'x';
+                    const ticketBybitProb = document.getElementById('modal-ticket-bybit-prob');
+                    if (ticketBybitProb) ticketBybitProb.textContent = ((1 / q.bybit_odds) * 100).toFixed(1) + '%';
+                }
+                if (q.poly_best_ask > 0) {
+                    const livePolyEl = document.getElementById('modal-live-poly-ask');
+                    const avgLabel = q.poly_avg_fill ? ` (avg: ${q.poly_avg_fill.toFixed(2)})` : '';
+                    if (livePolyEl) livePolyEl.textContent = q.poly_best_ask.toFixed(2) + avgLabel;
+                }
+
+                // Update rounded stakes & execution tickets
+                const rs = q.rounded_stakes;
+                if (rs) {
+                    const rsEl = document.getElementById('modal-rounded-stakes');
+                    if (rsEl) {
+                        rsEl.innerHTML = `
+                            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--color-mist);">
+                                <span>Bybit: <b class="mono" style="color:var(--color-bybit);">$${rs.stake_bybit_usd}</b> (целое)</span>
+                                <span>Poly: <b class="mono" style="color:var(--color-poly);">$${rs.stake_poly_usd}</b></span>
+                                <span>Total: <b class="mono" style="color:var(--color-snow);">$${rs.total_stake}</b></span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--color-fog); margin-top:3px;">
+                                <span>Payout A: $${rs.payout_if_bybit_wins}</span>
+                                <span>Payout B: $${rs.payout_if_poly_wins}</span>
+                                <span>Imbalance: ${rs.imbalance_pct}%</span>
+                                <span>${rs.poly_price_is_avg_fill ? uiIcon('layers', 10) + ' Avg Fill' : 'Top-of-book'}</span>
+                            </div>
+                        `;
+                    }
+
+                    // Synchronize execution tickets with rounded stakes!
+                    const tStakeBybit = document.getElementById('modal-ticket-bybit-stake');
+                    if (tStakeBybit) tStakeBybit.textContent = `$${rs.stake_bybit_usd.toFixed(2)}`;
+                    const tPayoutBybit = document.getElementById('modal-ticket-bybit-payout');
+                    if (tPayoutBybit) tPayoutBybit.textContent = `$${rs.payout_if_bybit_wins.toFixed(2)}`;
+
+                    const tStakePoly = document.getElementById('modal-ticket-poly-stake');
+                    if (tStakePoly) tStakePoly.textContent = `$${rs.stake_poly_usd.toFixed(2)}`;
+                    const tPayoutPoly = document.getElementById('modal-ticket-poly-payout');
+                    if (tPayoutPoly) tPayoutPoly.textContent = `$${rs.payout_if_poly_wins.toFixed(2)}`;
+
+                    if (rs.poly_price_used > 0) {
+                        const tPolyOdds = document.getElementById('modal-ticket-poly-odds');
+                        if (tPolyOdds) tPolyOdds.textContent = `${(1 / rs.poly_price_used).toFixed(2)}x`;
+                        const tPolyProb = document.getElementById('modal-ticket-poly-prob');
+                        if (tPolyProb) tPolyProb.textContent = `${(rs.poly_price_used * 100).toFixed(1)}%`;
+                    }
+
+                    // Update payoff matrix summary
+                    const minGuaranteed = Math.min(rs.payout_if_bybit_wins, rs.payout_if_poly_wins);
+                    const netProfit = minGuaranteed - rs.total_stake;
+                    const netProfitPct = rs.total_stake > 0 ? (netProfit / rs.total_stake) * 100 : 0;
+
+                    const pGuaranteed = document.getElementById('modal-payoff-guaranteed');
+                    if (pGuaranteed) pGuaranteed.textContent = `$${minGuaranteed.toFixed(2)}`;
+
+                    const pNet = document.getElementById('modal-payoff-net');
+                    if (pNet) {
+                        pNet.style.color = netProfit >= 0 ? 'var(--color-profit)' : 'var(--color-loss)';
+                        pNet.textContent = `${netProfit >= 0 ? '+' : ''}$${netProfit.toFixed(2)} (${netProfit >= 0 ? '+' : ''}${netProfitPct.toFixed(2)}%)`;
+                    }
+                }
+            } catch (e) {
+                // Silently ignore fetch errors
+            }
         }
 
         // ─── Modal Chart History Engine ───
@@ -7011,6 +7582,7 @@
         }
 
         function closeModal() {
+            stopLiveQuotePolling();
             document.getElementById('deal-modal').classList.remove('show');
             activeModalRow = null;
         }

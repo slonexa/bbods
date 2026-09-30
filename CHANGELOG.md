@@ -14,6 +14,11 @@ All notable changes to this project will be documented in this file.
 - **Flexible Strike Grid Parsing**: Bybit parser now accepts any strike step ($10, $50, $100+) without hardcoded grid assumptions. Test: `test_bybit_mixed_step_strike_grid_no_loss`.
 - **Value 1-Leg Guard**: `💎 Value 1-плечо` badge only shown when Bybit and Poly strikes match exactly — prevents false value signals from different strike levels.
 - **Unit Test Suite (8 tests)**: Covers spread math, Dutch Book, surebet time blocking, corridor settlement, binomial gates, Telegram dedup, lag methodology, and mixed strike grids.
+- **Orderbook Depth-Weighted Fill Price (`compute_avg_fill_price`)**: Walks Polymarket CLOB ask levels to compute realistic average execution price for a given USD target, replacing naive top-of-book pricing that underestimated slippage (live example: 66¢ displayed vs 68¢ actual fill on $65).
+- **Bybit Integer Stake Rounding (`round_bybit_stakes`)**: Rounds Bybit leg to nearest whole dollar (min $5 USDT), recalculates Poly leg for equal payouts, and reports post-rounding hedge margin and imbalance %.
+- **CLOB Avg Fill in HFT Logger**: `sec_logger.py` CLOB poller now computes `up_avg_fill` / `down_avg_fill` for $50 target alongside best ask, stored in `poly_books` cache.
+- **7 Hedge Slippage Tests**: `TestHedgeSlippageAndRounding` covers single/multi-level fill, insufficient liquidity, empty book, Bybit rounding, min $5 enforcement, and avg_fill vs top-of-book comparison.
+- **Live Calc Modal (`/api/live_quote` + 1.5s Auto-Refresh)**: Opening the Deal Calculator modal now starts point-in-time 1.5s live quote polling for the selected pair (Bybit 1s odds from `sec_logger` + Polymarket live CLOB orderbook depth), dynamically updating execution tickets, integer Bybit stakes, and payoff matrix, and automatically stopping polling when closed.
 
 ### Fixed
 - **Frozen Cache v4 — WS Reconnect Stale Data (`collectors/bybit.py`)**: On WebSocket disconnect, `_on_close` now clears `self.tickers` and `self.contracts` before reconnecting, then re-seeds fresh data from REST. Previously, stale ticker data from before the disconnect persisted in RAM, causing ghost odds (e.g., 8.62x on ABOVE showing +23% phantom arbitrage after internet outage).

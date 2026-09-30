@@ -210,6 +210,46 @@ class TestDashboardUIAndDesign(unittest.TestCase):
             resp = self.client.get(ep)
             self.assertEqual(resp.status_code, 200, f"Endpoint {ep} returned {resp.status_code}")
 
+    def test_semantic_deal_badges_and_pro_tickets_present(self):
+        """Verify semantic badge classes, 2-line table leg mini-cards, and PRO execution tickets are present."""
+        required_tokens = [
+            ".badge-corridor-new",
+            ".badge-shift-danger",
+            ".badge-time-risk",
+            ".strike-bar",
+            ".leg-ticket",
+            ".payoff-matrix",
+            ".row-leg-ticket",
+            "function extractStrikeDetails(",
+        ]
+        for token in required_tokens:
+            self.assertIn(token, self.html, f"Missing semantic badge / PRO ticket token: {token}")
+        # Ensure duplicate 'Окно риска' is not rendered inside top card strike bar or payoff matrix
+        self.assertNotIn("Окно риска", self.html)
+
+    def test_live_calc_modal_and_endpoint(self):
+        """Verify Live Calc Modal DOM elements, JS polling functions, and /api/live_quote API."""
+        required_modal_tokens = [
+            "modal-live-indicator",
+            "modal-live-bybit-odds",
+            "modal-live-poly-ask",
+            "modal-rounded-stakes",
+            "modal-ticket-bybit-stake",
+            "modal-ticket-poly-stake",
+            "function startLiveQuotePolling(",
+            "function stopLiveQuotePolling(",
+            "function fetchLiveQuote(",
+        ]
+        for token in required_modal_tokens:
+            self.assertIn(token, self.html, f"Missing Live Calc Modal token: {token}")
+
+        resp = self.client.get("/api/live_quote?event_key=&bankroll=20")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn("bybit_odds", data)
+        self.assertIn("poly_best_ask", data)
+        self.assertIn("rounded_stakes", data)
+
 
 if __name__ == "__main__":
     unittest.main()

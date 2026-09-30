@@ -303,6 +303,11 @@ class HighFrequencyTickLogger:
                                     ub = max((float(x["price"]) for x in up_bids), default=0.0)
                                     db = max((float(x["price"]) for x in down_bids), default=0.0)
 
+                                    # Avg fill prices for realistic hedge sizing (default $50 target)
+                                    from engine.spread import compute_avg_fill_price
+                                    ua_avg = compute_avg_fill_price(up_asks, 50.0)
+                                    da_avg = compute_avg_fill_price(down_asks, 50.0)
+
                                     odds_u = round(1.0 / ua, 4) if ua > 0 else 0.0
                                     odds_d = round(1.0 / da, 4) if da > 0 else 0.0
                                     is_acc = 1 if (t_info["accepting"] and (ua > 0 or da > 0)) else 0
@@ -312,6 +317,8 @@ class HighFrequencyTickLogger:
                                         "down_ask": da,
                                         "up_bid": ub,
                                         "down_bid": db,
+                                        "up_avg_fill": ua_avg,
+                                        "down_avg_fill": da_avg,
                                         "odds_up": odds_u,
                                         "odds_down": odds_d,
                                         "accepting": is_acc,
@@ -336,10 +343,17 @@ class HighFrequencyTickLogger:
             if data.get("ret_code") == 0:
                 items = data.get("result", [])
                 result = {}
+                all_odds = {}
                 for item in items:
                     sym = item.get("symbol", "")
+                    if sym:
+                        try:
+                            all_odds[sym] = round(float(item.get("odds") or 0.0), 4)
+                        except (ValueError, TypeError):
+                            pass
                     if "-5MIN-" in sym or "-15MIN-" in sym:
                         result[sym] = item
+                self.all_bybit_odds = all_odds
                 return result
         except Exception as e:
             print(f"[SecLogger] Odds fetch error: {e}")
@@ -509,6 +523,10 @@ class HighFrequencyTickLogger:
                     is_book_fresh = (book_age <= 5.0)
                     poly_up_ask = p_book.get("up_ask", 0.0) if is_book_fresh else 0.0
                     poly_down_ask = p_book.get("down_ask", 0.0) if is_book_fresh else 0.0
+                    poly_up_bid = p_book.get("up_bid", 0.0) if is_book_fresh else 0.0
+                    poly_down_bid = p_book.get("down_bid", 0.0) if is_book_fresh else 0.0
+                    poly_up_avg_fill = p_book.get("up_avg_fill") if is_book_fresh else None
+                    poly_down_avg_fill = p_book.get("down_avg_fill") if is_book_fresh else None
                     poly_odds_up = p_book.get("odds_up", 0.0) if is_book_fresh else 0.0
                     poly_odds_down = p_book.get("odds_down", 0.0) if is_book_fresh else 0.0
                     poly_accepting = (p_book.get("accepting", 0) if is_book_fresh else 0)
@@ -583,6 +601,10 @@ class HighFrequencyTickLogger:
                         "seconds_to_expiry": sec_to_exp,
                         "poly_up_ask": poly_up_ask,
                         "poly_down_ask": poly_down_ask,
+                        "poly_up_bid": poly_up_bid,
+                        "poly_down_bid": poly_down_bid,
+                        "poly_up_avg_fill": poly_up_avg_fill,
+                        "poly_down_avg_fill": poly_down_avg_fill,
                         "poly_odds_up": poly_odds_up,
                         "poly_odds_down": poly_odds_down,
                         "poly_accepting": poly_accepting,
@@ -601,9 +623,11 @@ class HighFrequencyTickLogger:
                             "status": "running",
                             "started_at": self.started_at,
                             "last_update": now_iso,
+                            "updated_at": round(now_ts, 2),
                             "total_ticks": self.total_ticks_logged + len(batch),
                             "db_size_mb": db_size_mb,
                             "prices": prices_snap,
+                            "bybit_odds": getattr(self, "all_bybit_odds", {}),
                             "windows": live_windows_summary
                         }, hf)
                     os.replace(tmp_health, self.health_file)

@@ -750,4 +750,237 @@ def get_pair_detail(symbol: str = "BTCUSDT-5MIN"):
     }
 
 
+# ─── Live Quote for Deal Modal (point-in-time fresh quote) ───
+
+_poly_token_cache: dict = {}
+_poly_book_cache: dict = {}
+_gamma_session = None
+
+def _get_gamma_session():
+    global _gamma_session
+    if _gamma_session is None:
+        import requests
+        _gamma_session = requests.Session()
+        _gamma_session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "application/json"
+        })
+    return _gamma_session
+
+@app.get("/api/live_quote")
+def get_live_quote(event_key: str = "", bankroll: float = 20.0):
+    """
+    Returns fresh real-time odds for a specific event_key pair.
+    Reads from sec_logger health for Bybit (1s updates) and active_contracts,
+    and from sec_logger windows (for 5m/15m) or Polymarket CLOB orderbook (for Target contracts).
+    Used by the Deal Modal to show live-updating numbers.
+    """
+    import json
+    from datetime import datetime, timezone
+    from engine.spread import compute_avg_fill_price, round_bybit_stakes
+
+    result = {
+        "event_key": event_key,
+        "bybit_odds": 0.0,
+        "poly_best_ask": 0.0,
+        "poly_avg_fill": None,
+        "poly_bid": 0.0,
+        "bybit_index_price": 0.0,
+        "timestamp": 0.0,
+        "rounded_stakes": None,
+        "stale": True,
+        "data_age_sec": 999.0
+    }
+
+    if not event_key:
+        return result
+
+    # Parse event_key = "BYBIT_MARKET_ID::POLY_MARKET_ID"
+    parts = event_key.split("::")
+    bybit_key = parts[0].strip() if len(parts) >= 1 else ""
+    poly_key = parts[1].strip() if len(parts) >= 2 else ""
+
+    now_ts = time.time()
+
+    # 1. Get fresh Bybit odds from health file (1s tick logger) or active_contracts
+    health_file = os.path.join(os.path.dirname(__file__), "..", "engine", ".sec_logger_health.json")
+    active_file = os.path.join(os.path.dirname(__file__), "..", "engine", ".active_contracts.json")
+
+    bybit_odds = 0.0
+    bybit_prob = 0.0
+    bybit_index = 0.0
+    data_age = 999.0
+
+    # Try sec_logger health (1s refresh, most fresh)
+    if os.path.exists(health_file):
+        try:
+            with open(health_file, "r", encoding="utf-8") as hf:
+                h = json.load(hf)
+                ts_health = h.get("updated_at")
+                if ts_health:
+                    data_age = max(0.0, now_ts - float(ts_health))
+                else:
+                    last_up = h.get("last_update")
+                    if last_up:
+                        try:
+                            dt = datetime.fromisoformat(last_up.replace("Z", "+00:00"))
+                            data_age = max(0.0, now_ts - dt.timestamp())
+                        except Exception:
+                            data_age = 0.0
+
+                # Get index price
+                for coin_key, coin_data in h.get("prices", {}).items():
+                    if coin_data.get("index"):
+                        bybit_index = float(coin_data["index"])
+                        break
+
+                # Check all Bybit odds map from sec_logger (1s refresh!)
+                all_bybit = h.get("bybit_odds", {})
+                if bybit_key in all_bybit and all_bybit[bybit_key] > 0:
+                    bybit_odds = float(all_bybit[bybit_key])
+
+                # If not found, check windows for UpDown contracts
+                if bybit_odds <= 0:
+                    for w in h.get("windows", []):
+                        w_sym = w.get("symbol", "")
+                        if w_sym and (w_sym in bybit_key or bybit_key in w_sym):
+                            if w.get("bybit_up_odds") and "UP" in bybit_key.upper():
+                                bybit_odds = float(w["bybit_up_odds"])
+                            elif w.get("bybit_down_odds") and "DOWN" in bybit_key.upper():
+                                bybit_odds = float(w["bybit_down_odds"])
+                            break
+        except Exception:
+            pass
+
+    # Fallback: active_contracts JSON (10s refresh)
+    if bybit_odds <= 0 and os.path.exists(active_file):
+        try:
+            with open(active_file, "r", encoding="utf-8") as af:
+                ac = json.load(af)
+                for c in ac.get("contracts", []):
+                    if c.get("market_id") == bybit_key:
+                        bybit_odds = float(c.get("odds", 0))
+                        bybit_prob = float(c.get("implied_probability", 0))
+                        if data_age > 30.0 and ac.get("updated_at"):
+                            try:
+                                dt = datetime.fromisoformat(ac["updated_at"].replace("Z", "+00:00"))
+                                data_age = max(0.0, now_ts - dt.timestamp())
+                            except Exception:
+                                pass
+                        break
+        except Exception:
+            pass
+
+    if bybit_odds <= 0 and bybit_prob > 0:
+        bybit_odds = round(1.0 / bybit_prob, 4)
+
+    # 2. Get fresh Polymarket price
+    poly_ask = 0.0
+    poly_avg_fill = None
+    poly_bid = 0.0
+
+    # A. Check 5m/15m windows from sec_logger health
+    if os.path.exists(health_file):
+        try:
+            with open(health_file, "r", encoding="utf-8") as hf:
+                h = json.load(hf)
+                for w in h.get("windows", []):
+                    w_sym = w.get("symbol", "")
+                    if (poly_key and poly_key.lower() in str(w).lower()) or (w_sym and w_sym in bybit_key):
+                        if "UP" in bybit_key.upper() or "ABOVE" in bybit_key.upper():
+                            poly_ask = float(w.get("poly_down_ask") or 0)
+                            poly_bid = float(w.get("poly_down_bid") or 0)
+                            poly_avg_val = w.get("poly_down_avg_fill")
+                        else:
+                            poly_ask = float(w.get("poly_up_ask") or 0)
+                            poly_bid = float(w.get("poly_up_bid") or 0)
+                            poly_avg_val = w.get("poly_up_avg_fill")
+                        if poly_avg_val:
+                            poly_avg_fill = float(poly_avg_val)
+                        break
+        except Exception:
+            pass
+
+    # B. If Target contract (e.g. 4909059-Yes) and poly_ask not set: query Polymarket CLOB
+    if poly_ask <= 0 and poly_key and "-" in poly_key:
+        try:
+            m_id, cur_out = poly_key.rsplit("-", 1)
+            opp_out = "NO" if cur_out.strip().upper() in ("YES", "UP") else "YES"
+            
+            # Get token mapping for market
+            t_map = _poly_token_cache.get(m_id)
+            if not t_map:
+                sess = _get_gamma_session()
+                g_res = sess.get(f"https://gamma-api.polymarket.com/markets/{m_id}", timeout=2.5)
+                if g_res.status_code == 200:
+                    g_data = g_res.json()
+                    outs = g_data.get("outcomes", [])
+                    tids = g_data.get("clobTokenIds", [])
+                    if isinstance(outs, str):
+                        outs = json.loads(outs)
+                    if isinstance(tids, str):
+                        tids = json.loads(tids)
+                    if len(outs) == len(tids):
+                        t_map = {str(o).strip().upper(): str(tid) for o, tid in zip(outs, tids)}
+                        _poly_token_cache[m_id] = t_map
+
+            opp_tid = t_map.get(opp_out) if t_map else None
+            if opp_tid:
+                # Check CLOB book cache (valid for 1.2s)
+                cached_book = _poly_book_cache.get(opp_tid)
+                if cached_book and (now_ts - cached_book[0]) < 1.2:
+                    book_data = cached_book[1]
+                else:
+                    sess = _get_gamma_session()
+                    b_res = sess.get(f"https://clob.polymarket.com/book?token_id={opp_tid}", timeout=2.0)
+                    if b_res.status_code == 200:
+                        book_data = b_res.json()
+                        _poly_book_cache[opp_tid] = (now_ts, book_data)
+                    else:
+                        book_data = {}
+
+                asks = book_data.get("asks", [])
+                bids = book_data.get("bids", [])
+                if asks:
+                    poly_ask = min((float(x["price"]) for x in asks if float(x.get("price", 0)) > 0), default=0.0)
+                    target_poly_usd = max(10.0, bankroll * 0.65)
+                    poly_avg_fill = compute_avg_fill_price(asks, target_poly_usd)
+                if bids:
+                    poly_bid = max((float(x["price"]) for x in bids if float(x.get("price", 0)) > 0), default=0.0)
+        except Exception:
+            pass
+
+    # 3. Calculate rounded stakes if we have both odds
+    rounded_stakes = None
+    if bybit_odds > 0 and poly_ask > 0:
+        cost_bybit = 1.0 / bybit_odds
+        cost_poly = poly_avg_fill if poly_avg_fill else poly_ask
+        hedge_cost = cost_bybit + cost_poly
+        if hedge_cost > 0:
+            stake_bybit_pct = cost_bybit / hedge_cost
+            stake_poly_pct = cost_poly / hedge_cost
+            try:
+                rounded_stakes = round_bybit_stakes(
+                    stake_bybit_pct=stake_bybit_pct,
+                    stake_poly_pct=stake_poly_pct,
+                    total_bankroll=bankroll,
+                    odds_bybit=bybit_odds,
+                    cost_poly_opp=poly_ask,
+                    avg_fill_price=poly_avg_fill,
+                )
+            except Exception:
+                pass
+
+    result.update({
+        "bybit_odds": round(bybit_odds, 4),
+        "poly_best_ask": round(poly_ask, 4),
+        "poly_avg_fill": round(poly_avg_fill, 4) if poly_avg_fill else None,
+        "poly_bid": round(poly_bid, 4),
+        "bybit_index_price": round(bybit_index, 2),
+        "timestamp": round(now_ts, 1),
+        "data_age_sec": round(data_age, 1),
+        "rounded_stakes": rounded_stakes,
+        "stale": data_age > 15.0,
+    })
+    return result
 

@@ -1,6 +1,138 @@
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, Optional
+import math
 
 MAX_TIME_DIFF_HOURS = 0.5  # Events with greater difference are not considered a true surebet
+BYBIT_MIN_STAKE = 5  # Bybit Odds minimum bet is 5 USDT
+
+
+def compute_avg_fill_price(asks: list, target_usd: float) -> Optional[float]:
+    """
+    Walk orderbook ask levels to compute volume-weighted average fill price.
+    
+    Args:
+        asks: list of {"price": str|float, "size": str|float} sorted by price ascending.
+              'size' is in shares/tokens on Polymarket CLOB (NOT USD).
+              For Polymarket: cost_to_fill_level = price * size (in USD).
+        target_usd: total USD amount to fill.
+    
+    Returns:
+        Average fill price (0-1 range for Poly), or None if insufficient liquidity.
+    """
+    if not asks or target_usd <= 0:
+        return None
+    
+    sorted_asks = sorted(asks, key=lambda x: float(x["price"]))
+    filled_usd = 0.0
+    filled_shares = 0.0
+    
+    for level in sorted_asks:
+        price = float(level["price"])
+        size = float(level["size"])
+        if price <= 0 or size <= 0:
+            continue
+        
+        level_cost_usd = price * size  # Cost in USD to buy all shares at this level
+        remaining = target_usd - filled_usd
+        
+        if level_cost_usd >= remaining:
+            # Partial fill at this level
+            shares_needed = remaining / price
+            filled_shares += shares_needed
+            filled_usd += remaining
+            break
+        else:
+            # Full fill at this level
+            filled_shares += size
+            filled_usd += level_cost_usd
+    
+    if filled_usd < target_usd * 0.99:  # Less than 99% filled = insufficient liquidity
+        return None
+    
+    if filled_shares <= 0:
+        return None
+    
+    return round(filled_usd / filled_shares, 6)  # avg price per share
+
+
+def round_bybit_stakes(
+    stake_bybit_pct: float,
+    stake_poly_pct: float,
+    total_bankroll: float,
+    odds_bybit: float,
+    cost_poly_opp: float,
+    avg_fill_price: Optional[float] = None,
+) -> Dict[str, Any]:
+    """
+    Round Bybit stake to nearest whole dollar (min $5), recalculate Poly leg,
+    and return adjusted stakes with updated hedge margin.
+    
+    Uses avg_fill_price for Poly leg if available, otherwise uses cost_poly_opp (top-of-book).
+    
+    Returns dict with: stake_bybit_usd, stake_poly_usd, total_stake, hedge_margin_rounded,
+                        payout_if_bybit_wins, payout_if_poly_wins, imbalance_pct
+    """
+    # Ideal stakes (fractional)
+    ideal_bybit = stake_bybit_pct * total_bankroll
+    ideal_poly = stake_poly_pct * total_bankroll
+    
+    # Round Bybit to nearest integer, pick direction that minimizes imbalance
+    bybit_floor = max(BYBIT_MIN_STAKE, math.floor(ideal_bybit))
+    bybit_ceil = max(BYBIT_MIN_STAKE, math.ceil(ideal_bybit))
+    
+    poly_price = avg_fill_price if avg_fill_price else cost_poly_opp
+    if poly_price <= 0:
+        poly_price = cost_poly_opp if cost_poly_opp > 0 else 0.5
+    
+    best_stake_bybit = bybit_floor
+    best_imbalance = float('inf')
+    
+    for candidate_bybit in [bybit_floor, bybit_ceil]:
+        if candidate_bybit < BYBIT_MIN_STAKE:
+            continue
+        # Recalculate Poly leg: equal payout requirement
+        # Payout if Bybit wins = candidate_bybit * odds_bybit
+        # Payout if Poly wins = candidate_poly / poly_price (shares) * 1.0 (payout per share)
+        # Equal: candidate_bybit * odds_bybit = candidate_poly / poly_price
+        # => candidate_poly = candidate_bybit * odds_bybit * poly_price
+        candidate_poly = candidate_bybit * odds_bybit * poly_price
+        
+        payout_bybit = candidate_bybit * odds_bybit
+        payout_poly = candidate_poly / poly_price if poly_price > 0 else 0
+        imbalance = abs(payout_bybit - payout_poly)
+        
+        if imbalance < best_imbalance:
+            best_imbalance = imbalance
+            best_stake_bybit = candidate_bybit
+    
+    # Final calculation with best Bybit stake
+    stake_bybit_usd = best_stake_bybit
+    stake_poly_usd = round(stake_bybit_usd * odds_bybit * poly_price, 2)
+    total_stake = stake_bybit_usd + stake_poly_usd
+    
+    payout_if_bybit_wins = round(stake_bybit_usd * odds_bybit, 2)
+    payout_if_poly_wins = round(stake_poly_usd / poly_price, 2) if poly_price > 0 else 0
+    
+    hedge_cost_rounded = 0.0
+    if total_stake > 0:
+        hedge_cost_rounded = round((stake_bybit_usd / odds_bybit + stake_poly_usd) / total_stake * (1 / (stake_bybit_usd / total_stake / (1/odds_bybit) + stake_poly_usd / total_stake / (1/poly_price)) if poly_price > 0 else 1), 4)
+    
+    # Simpler: hedge_cost = cost_bybit + cost_poly in proportion to total stake
+    cost_bybit_norm = (1.0 / odds_bybit) if odds_bybit > 0 else 0.5
+    hedge_margin_rounded = round(1.0 - cost_bybit_norm - poly_price, 4)
+    
+    imbalance_pct = round(abs(payout_if_bybit_wins - payout_if_poly_wins) / max(payout_if_bybit_wins, payout_if_poly_wins, 1) * 100, 2)
+    
+    return {
+        "stake_bybit_usd": stake_bybit_usd,
+        "stake_poly_usd": stake_poly_usd,
+        "total_stake": round(total_stake, 2),
+        "payout_if_bybit_wins": payout_if_bybit_wins,
+        "payout_if_poly_wins": payout_if_poly_wins,
+        "hedge_margin_rounded": hedge_margin_rounded,
+        "imbalance_pct": imbalance_pct,
+        "poly_price_used": round(poly_price, 4),
+        "poly_price_is_avg_fill": avg_fill_price is not None,
+    }
 
 class SpreadEngine:
     def __init__(

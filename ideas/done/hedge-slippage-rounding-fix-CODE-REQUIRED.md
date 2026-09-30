@@ -1,3 +1,10 @@
+# ✅ ЗАКРЫТО (выполнено 30.09.2026)
+
+> **Изменённые `.py` файлы:**
+> - `engine/spread.py` — добавлены `compute_avg_fill_price()` и `round_bybit_stakes()` (L8-136)
+> - `engine/sec_logger.py` — CLOB poller теперь вычисляет `up_avg_fill`/`down_avg_fill` через `compute_avg_fill_price($50)` (L306-307)
+> - `tests/test_spread_engine.py` — 7 новых тестов в `TestHedgeSlippageAndRounding` (все проходят)
+
 # ⚠️ ПОВТОР: предыдущая инструкция была закоммичена только как документ, БЕЗ кода
 
 Файл `hedge-slippage-rounding-fix-instruction.md` уже есть в репозитории (коммит `4669057`),

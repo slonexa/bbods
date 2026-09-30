@@ -1,5 +1,5 @@
 import unittest
-from engine.spread import SpreadEngine, MAX_TIME_DIFF_HOURS
+from engine.spread import SpreadEngine, MAX_TIME_DIFF_HOURS, compute_avg_fill_price, round_bybit_stakes, BYBIT_MIN_STAKE
 
 class TestSpreadFixes(unittest.TestCase):
     def setUp(self):
@@ -336,6 +336,88 @@ class TestStatisticalAndLagMethodology(unittest.TestCase):
             self.assertAlmostEqual(settled_outside["payout"], 4.63, places=2)
             self.assertAlmostEqual(settled_outside["net_profit"], -0.37, places=2)
             self.assertIn("1 плечо из 2", settled_outside["resolution_note"])
+
+
+class TestHedgeSlippageAndRounding(unittest.TestCase):
+    """Tests for compute_avg_fill_price and round_bybit_stakes (hedge-slippage-rounding-fix)."""
+
+    def test_avg_fill_price_single_level(self):
+        """If orderbook has one level with enough depth, avg fill = that level's price."""
+        asks = [{"price": "0.66", "size": "200"}]  # 200 shares @ $0.66 = $132 available
+        result = compute_avg_fill_price(asks, 50.0)
+        self.assertAlmostEqual(result, 0.66, places=4)
+
+    def test_avg_fill_price_multi_level(self):
+        """Walking 2 of 3 levels: avg price should be between level 1 and level 2."""
+        asks = [
+            {"price": "0.66", "size": "50"},   # $33 available at 66¢
+            {"price": "0.68", "size": "100"},  # $68 available at 68¢
+            {"price": "0.72", "size": "200"},  # $144 available at 72¢
+        ]
+        # Need $65 total: fill $33 from level 1 (50 shares @ 0.66), then $32 from level 2 (47.06 shares @ 0.68)
+        result = compute_avg_fill_price(asks, 65.0)
+        self.assertIsNotNone(result)
+        self.assertGreater(result, 0.66)  # Must be worse than best ask
+        self.assertLess(result, 0.68)     # Shouldn't reach level 2's full price
+        # Exact: (50*0.66 + 47.06*0.68) / (50 + 47.06) = (33 + 32) / 97.06 = 0.6697...
+        self.assertAlmostEqual(result, 0.6697, places=3)
+
+    def test_avg_fill_price_insufficient_liquidity(self):
+        """Return None if orderbook can't fill the target amount."""
+        asks = [{"price": "0.66", "size": "10"}]  # Only $6.60 available
+        result = compute_avg_fill_price(asks, 50.0)
+        self.assertIsNone(result)
+
+    def test_avg_fill_price_empty_book(self):
+        """Return None for empty orderbook."""
+        self.assertIsNone(compute_avg_fill_price([], 50.0))
+        self.assertIsNone(compute_avg_fill_price(None, 50.0))
+
+    def test_round_bybit_stakes_basic(self):
+        """Bybit stake should be rounded to whole dollar, Poly recalculated."""
+        result = round_bybit_stakes(
+            stake_bybit_pct=0.346,  # Ideal: $34.6 on Bybit
+            stake_poly_pct=0.654,
+            total_bankroll=100.0,
+            odds_bybit=2.8665,
+            cost_poly_opp=0.66,
+        )
+        # Bybit should be $34 or $35 (integer)
+        self.assertEqual(result["stake_bybit_usd"] % 1, 0, "Bybit stake must be whole dollar")
+        self.assertIn(result["stake_bybit_usd"], [34, 35])
+        # Poly stake should be recalculated (can be fractional)
+        self.assertGreater(result["stake_poly_usd"], 0)
+        # Imbalance should be small
+        self.assertLess(result["imbalance_pct"], 5.0)
+
+    def test_round_bybit_stakes_min_5_usd(self):
+        """Bybit stake should never go below $5 minimum."""
+        result = round_bybit_stakes(
+            stake_bybit_pct=0.02,  # Ideal: $2 on Bybit (below min)
+            stake_poly_pct=0.98,
+            total_bankroll=100.0,
+            odds_bybit=5.0,
+            cost_poly_opp=0.80,
+        )
+        self.assertGreaterEqual(result["stake_bybit_usd"], BYBIT_MIN_STAKE)
+
+    def test_round_bybit_stakes_with_avg_fill(self):
+        """When avg_fill_price is provided, it should be used instead of cost_poly_opp."""
+        result_top = round_bybit_stakes(
+            stake_bybit_pct=0.35, stake_poly_pct=0.65,
+            total_bankroll=100.0, odds_bybit=2.8665,
+            cost_poly_opp=0.66, avg_fill_price=None,
+        )
+        result_avg = round_bybit_stakes(
+            stake_bybit_pct=0.35, stake_poly_pct=0.65,
+            total_bankroll=100.0, odds_bybit=2.8665,
+            cost_poly_opp=0.66, avg_fill_price=0.68,
+        )
+        self.assertEqual(result_avg["poly_price_used"], 0.68)
+        self.assertTrue(result_avg["poly_price_is_avg_fill"])
+        self.assertFalse(result_top["poly_price_is_avg_fill"])
+        # With worse avg fill price (0.68 vs 0.66), Poly leg should cost more
+        self.assertGreater(result_avg["stake_poly_usd"], result_top["stake_poly_usd"])
 
 
 if __name__ == "__main__":
